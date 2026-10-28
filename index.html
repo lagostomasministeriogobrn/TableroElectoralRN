@@ -60,7 +60,7 @@
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Año</label>
-                    <select id="public-year" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none">
+                    <select id="public-year" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <option value="2026" selected>2026</option>
                         <option value="2027">2027</option>
                         <option value="2025">2025</option>
@@ -68,18 +68,39 @@
                     </select>
                 </div>
                 <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
+                    <select id="public-locality" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                        <option value="Provincial" selected>🌐 Provincia / General</option>
+                        <option value="Viedma">Viedma</option>
+                        <option value="General Roca">General Roca</option>
+                        <option value="Cipolletti">Cipolletti</option>
+                        <option value="San Carlos de Bariloche">San Carlos de Bariloche</option>
+                        <option value="Villa Regina">Villa Regina</option>
+                        <option value="Cervantes">Cervantes</option>
+                        <option value="Allen">Allen</option>
+                        <option value="Cinco Saltos">Cinco Saltos</option>
+                        <option value="Catriel">Catriel</option>
+                        <option value="Choele Choel">Choele Choel</option>
+                        <option value="San Antonio Oeste">San Antonio Oeste</option>
+                        <option value="Sierra Grande">Sierra Grande</option>
+                        <option value="Jacobacci">Ingeniero Jacobacci</option>
+                        <option value="Comisión de Fomento">Comisión de Fomento (Otra)</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
-                    <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none">
+                    <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <option value="GOB" selected>Gobernador / Vice</option>
                         <option value="LEGP">Legislador Rep. Poblacional</option>
                         <option value="LEGC">Legislador Circuital</option>
                         <option value="INT">Intendente Municipal</option>
                         <option value="CON">Concejal Municipal</option>
+                        <option value="COF">Comisión de Fomento</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito / Distrito</label>
-                    <select id="public-circuit" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none">
+                    <select id="public-circuit" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <option value="RN.1">1. Valle Inferior (RN.1)</option>
                         <option value="RN.2" selected>2. Atlántico / Alto Valle Este (RN.2)</option>
                         <option value="RN.3">3. Andino (RN.3)</option>
@@ -118,7 +139,7 @@
         <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
             <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 border-b pb-2">Resultados por Fuerza Política / Lista</h2>
             <div id="public-results-container" class="space-y-4">
-                <p class="text-xs text-slate-400 italic text-center py-6">Seleccioná una categoría y circuito para ver los resultados.</p>
+                <p class="text-xs text-slate-400 italic text-center py-6">Seleccioná una localidad, categoría y circuito para ver los resultados.</p>
             </div>
         </div>
     </main>
@@ -140,6 +161,7 @@
 
         async function loadPublicData() {
             const anio = parseInt(document.getElementById('public-year').value);
+            const localidad = document.getElementById('public-locality').value;
             const categoria = document.getElementById('public-election-type').value;
             const circuito = document.getElementById('public-circuit').value;
             const statusEl = document.getElementById('public-status');
@@ -154,14 +176,15 @@
                     .from('resultados_mesas')
                     .select('*')
                     .eq('anio', anio)
+                    .eq('localidad', localidad)
                     .eq('circuito_id', circuito)
                     .eq('categoria', categoria);
 
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
-                    statusEl.innerText = "Sin datos cargados para este año.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados en Supabase para el año ${anio} (${circuito}).</p>`;
+                    statusEl.innerText = "Sin datos cargados.";
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en el año ${anio}.</p>`;
                     document.getElementById('stat-electores').innerText = "—";
                     document.getElementById('stat-procesados').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "—";

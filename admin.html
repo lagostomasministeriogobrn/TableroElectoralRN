@@ -70,18 +70,18 @@
         <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-4 gap-4">
                 <div>
-                    <h2 class="text-base font-bold text-slate-800">Editor por Año, Circuito y Categoría</h2>
+                    <h2 class="text-base font-bold text-slate-800">Editor por Año, Localidad, Circuito y Categoría</h2>
                 </div>
                 <div class="flex gap-2 w-full md:w-auto">
-                    <button onclick="resetCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded text-xs transition">Limpiar Circuito</button>
+                    <button onclick="resetCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded text-xs transition">Limpiar</button>
                     <button id="btn-save-top" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Guardar en Supabase ☁️</button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
-                    <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-rnblue focus:outline-none font-semibold">
+                    <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="2026" selected>2026</option>
                         <option value="2027">2027</option>
                         <option value="2025">2025</option>
@@ -90,19 +90,41 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría Electoral</label>
-                    <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-rnblue focus:outline-none font-semibold">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
+                    <select id="admin-locality" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="Provincial" selected>🌐 Provincia / General</option>
+                        <option value="Viedma">Viedma</option>
+                        <option value="General Roca">General Roca</option>
+                        <option value="Cipolletti">Cipolletti</option>
+                        <option value="San Carlos de Bariloche">San Carlos de Bariloche</option>
+                        <option value="Villa Regina">Villa Regina</option>
+                        <option value="Cervantes">Cervantes</option>
+                        <option value="Allen">Allen</option>
+                        <option value="Cinco Saltos">Cinco Saltos</option>
+                        <option value="Catriel">Catriel</option>
+                        <option value="Choele Choel">Choele Choel</option>
+                        <option value="San Antonio Oeste">San Antonio Oeste</option>
+                        <option value="Sierra Grande">Sierra Grande</option>
+                        <option value="Jacobacci">Ingeniero Jacobacci</option>
+                        <option value="Comisión de Fomento">Comisión de Fomento (Otra)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
+                    <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="GOB" selected>Gobernador / Vice (GOB)</option>
-                        <option value="LEGP">Legislador Rep. Poblacional</option>
-                        <option value="LEGC">Legislador Circuital</option>
+                        <option value="LEGP">Legisladores Poblacionales</option>
+                        <option value="LEGC">Legisladores Circuitales</option>
                         <option value="INT">Intendente Municipal</option>
-                        <option value="CON">Concejal Municipal</option>
+                        <option value="CON">Concejales Municipales</option>
+                        <option value="COF">Comisión de Fomento</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-rnblue focus:outline-none font-semibold">
+                    <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="RN.1">1. Valle Inferior (RN.1)</option>
                         <option value="RN.2" selected>2. Atlántico / Alto Valle Este (RN.2)</option>
                         <option value="RN.3">3. Andino (RN.3)</option>
@@ -128,11 +150,9 @@
                 <div id="admin-parties-container" class="space-y-3"></div>
             </div>
 
-            <div class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-200 gap-3">
-                <div class="w-full sm:w-auto">
-                    <span id="admin-status" class="text-xs font-bold px-3 py-1.5 rounded inline-block"></span>
-                </div>
-                <button id="btn-save-bottom" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded text-sm transition shadow w-full sm:w-auto text-center">Guardar en Supabase ☁️</button>
+            <div class="flex justify-between items-center pt-4 border-t">
+                <span id="admin-status" class="text-xs font-bold"></span>
+                <button onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded text-sm shadow">Guardar en Supabase ☁️</button>
             </div>
         </div>
     </main>
@@ -144,96 +164,43 @@
     <script>
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
-        
-        let supabaseClient = null;
-        try {
-            if (typeof supabase !== 'undefined') {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch(e) { console.error("Error Supabase:", e); }
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function loadAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
+            const localidad = document.getElementById('admin-locality').value;
             const categoria = document.getElementById('admin-election-type').value;
             const circuito = document.getElementById('admin-circuit').value;
-            
-            if (!supabaseClient) return;
 
-            try {
-                let { data, error } = await supabaseClient
-                    .from('resultados_mesas')
-                    .select('*')
-                    .eq('anio', anio)
-                    .eq('circuito_id', circuito)
-                    .eq('categoria', categoria);
+            let { data } = await supabaseClient
+                .from('resultados_mesas')
+                .select('*')
+                .eq('anio', anio)
+                .eq('localidad', localidad)
+                .eq('circuito_id', circuito)
+                .eq('categoria', categoria);
 
-                if (data && data.length > 0) {
-                    let blanco = data[0].votos_blanco || 0;
-                    let nulos = data[0].votos_nulos || 0;
-                    document.getElementById('admin-subvalidos').value = `Blanco: ${blanco} | Nulos: ${nulos}`;
-
-                    let parties = [];
-                    let votos = [];
-                    let colorPalette = ["#C6E265", "#FFEE55", "#88D9E8", "#B4B5E0", "#00AEEF", "#DA251D", "#444444", "#FBB03B"];
-                    
-                    data.sort((a, b) => b.votos - a.votos);
-                    data.forEach((row, idx) => {
-                        parties.push({ 
-                            id: row.lista_id, 
-                            name: row.nombre_lista || `Lista ${row.lista_id}`, 
-                            color: colorPalette[idx % colorPalette.length] 
-                        });
-                        votos.push(row.votos);
-                    });
-                    renderPartiesRows(parties, votos);
-                } else {
-                    renderPartiesRows([], []);
-                    document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                }
-            } catch(e) { console.error(e); }
+            if (data && data.length > 0) {
+                document.getElementById('admin-subvalidos').value = `Blanco: ${data[0].votos_blanco || 0} | Nulos: ${data[0].votos_nulos || 0}`;
+                renderPartiesRows(data);
+            } else {
+                renderPartiesRows([]);
+            }
         }
 
-        function calculateTotalValidos() {
-            let total = 0;
-            document.querySelectorAll('.party-votes').forEach(input => {
-                total += parseInt(input.value) || 0;
-            });
-            return total;
-        }
-
-        function updatePercentages() {
-            let totalValidos = calculateTotalValidos();
-            document.querySelectorAll('.party-row').forEach(row => {
-                let v = parseInt(row.querySelector('.party-votes').value) || 0;
-                let pctSpan = row.querySelector('.party-pct');
-                let pct = totalValidos > 0 ? ((v / totalValidos) * 100).toFixed(2) + "%" : "0.00%";
-                pctSpan.innerText = pct;
-            });
-        }
-
-        function renderPartiesRows(parties, votos) {
+        function renderPartiesRows(data) {
             const container = document.getElementById('admin-parties-container');
             container.innerHTML = "";
-            if (!parties || parties.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 italic">No hay listas cargadas para este año y circuito.</p>`;
-                return;
-            }
-            let totalValidos = votos.reduce((a, b) => a + (parseInt(b) || 0), 0);
-            parties.forEach((p, idx) => {
-                let v = votos[idx] !== undefined ? votos[idx] : 0;
-                let pct = totalValidos > 0 ? ((v / totalValidos) * 100).toFixed(2) + "%" : "0.00%";
+            if (!data.length) { container.innerHTML = `<p class="text-xs text-slate-400 italic">Sin datos cargados para esta selección.</p>`; return; }
+            let colorPalette = ["#C6E265", "#FFEE55", "#88D9E8", "#B4B5E0", "#00AEEF", "#DA251D", "#444444", "#FBB03B"];
+            data.sort((a, b) => b.votos - a.votos).forEach((row, idx) => {
                 container.innerHTML += `
-                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200 gap-2 party-row">
-                        <div class="flex items-center space-x-2 w-7/12">
-                            <input type="color" value="${p.color || '#0072CE'}" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
-                            <input type="text" value="${p.id || (idx+1)}" class="w-12 text-xs font-bold text-center border rounded px-1 py-1 party-id" title="ID Lista">
-                            <input type="text" value="${p.name}" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name" title="Nombre del Partido/Candidato">
-                        </div>
-                        <div class="w-5/12 flex items-center space-x-3 justify-end">
-                            <div class="text-xs font-bold text-slate-600 bg-white border px-3 py-1 rounded w-20 text-center party-pct">${pct}</div>
-                            <input type="number" value="${v}" oninput="updatePercentages()" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
-                            <button onclick="this.closest('.party-row').remove(); updatePercentages();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
-                        </div>
+                    <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
+                        <input type="color" value="${colorPalette[idx % colorPalette.length]}" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                        <input type="text" value="${row.lista_id}" class="w-16 text-xs font-bold text-center border rounded party-id">
+                        <input type="text" value="${row.nombre_lista || 'Lista'}" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
+                        <input type="number" value="${row.votos}" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
+                        <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
                     </div>`;
             });
         }
@@ -242,181 +209,70 @@
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-
             reader.readAsText(file, "UTF-8");
             reader.onload = function(e) {
-                try {
-                    const text = e.target.result;
-                    const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== "");
-                    if (lines.length < 2) { alert("El CSV está vacío."); return; }
-
-                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-                    const idxCargo = headers.indexOf('cargo');
-                    const idxIdUbi = headers.indexOf('id_ubicacion');
-                    const idxClase = headers.indexOf('clase_candidatura');
-                    const idxIdCand = headers.indexOf('id_candidatura');
-                    const idxDescCand = headers.indexOf('descripcion_candidatura');
-                    const idxVotos = headers.indexOf('cant_votos');
-
-                    let cargoVal = "GOB", idUbi = "";
-                    let blancoVotos = 0, nulosVotos = 0;
-                    let rawParties = [];
-
-                    for (let i = 1; i < lines.length; i++) {
-                        let cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
-                        if (cols.length < headers.length) continue;
-
-                        if (!cargoVal && idxCargo !== -1) cargoVal = cols[idxCargo];
-                        if (!idUbi && idxIdUbi !== -1) idUbi = cols[idxIdUbi].toUpperCase();
-
-                        let clase = idxClase !== -1 ? cols[idxClase].toLowerCase() : "";
-                        let idCand = idxIdCand !== -1 ? cols[idxIdCand] : "";
-                        let desc = idxDescCand !== -1 ? cols[idxDescCand] : "";
-                        let votos = idxVotos !== -1 ? (parseInt(cols[idxVotos]) || 0) : 0;
-
-                        if (clase === 'blanco' || desc.toLowerCase().includes('blanco')) {
-                            blancoVotos = votos;
-                        } else if (clase === 'nulos' || desc.toLowerCase().includes('nulos') || desc.toLowerCase().includes('impugnados')) {
-                            nulosVotos += votos;
-                        } else if (clase === 'lista') {
-                            rawParties.push({ id: idCand, name: desc, votos: votos });
-                        }
+                const lines = e.target.result.split(/\r\n|\n/).filter(l => l.trim() !== "");
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                let rawParties = [];
+                for (let i = 1; i < lines.length; i++) {
+                    let cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+                    if (cols.length < headers.length) continue;
+                    let clase = cols[headers.indexOf('clase_candidatura')] || "";
+                    if (clase.toLowerCase() === 'lista') {
+                        rawParties.push({ id: cols[headers.indexOf('id_candidatura')], name: cols[headers.indexOf('descripcion_candidatura')], votos: parseInt(cols[headers.indexOf('cant_votos')]) || 0 });
                     }
-
-                    if (cargoVal) document.getElementById('admin-election-type').value = cargoVal;
-                    if (idUbi) {
-                        let circuitSelect = document.getElementById('admin-circuit');
-                        for (let opt of circuitSelect.options) {
-                            if (opt.value === idUbi) { circuitSelect.value = idUbi; break; }
-                        }
-                    }
-
-                    document.getElementById('admin-subvalidos').value = `Blanco: ${blancoVotos} | Nulos: ${nulosVotos}`;
-
-                    rawParties.sort((a, b) => b.votos - a.votos);
-                    let sortedParties = rawParties.map(p => ({ id: p.id, name: p.name }));
-                    let sortedVotes = rawParties.map(p => p.votos);
-
-                    if (sortedParties.length > 0) {
-                        renderPartiesRows(sortedParties, sortedVotes);
-                    }
-
-                    document.getElementById('admin-status').className = "text-xs font-bold px-3 py-1.5 rounded bg-green-100 text-green-700";
-                    document.getElementById('admin-status').innerText = `✓ CSV procesado con éxito.`;
-                } catch(err) {
-                    alert("Error al parsear el CSV: " + err.message);
                 }
-            };
+                renderPartiesRows(rawParties.map(p => ({ lista_id: p.id, nombre_lista: p.name, votos: p.votos })));
+                document.getElementById('admin-status').innerText = "✓ CSV leído.";
+            }
         }
 
         function addNewPartyRow() {
             const container = document.getElementById('admin-parties-container');
             if(container.querySelector('p')) container.innerHTML = "";
-            const newId = container.children.length + 1;
             container.innerHTML += `
-                <div class="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200 gap-2 party-row">
-                    <div class="flex items-center space-x-2 w-7/12">
-                        <input type="color" value="#18B753" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
-                        <input type="text" value="${newId}" class="w-12 text-xs font-bold text-center border rounded px-1 py-1 party-id" title="ID Lista">
-                        <input type="text" value="Lista de Agrupación" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name" title="Nombre del Partido/Candidato">
-                    </div>
-                    <div class="w-5/12 flex items-center space-x-3 justify-end">
-                        <div class="text-xs font-bold text-slate-600 bg-white border px-3 py-1 rounded w-20 text-center party-pct">0.00%</div>
-                        <input type="number" value="0" oninput="updatePercentages()" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
-                        <button onclick="this.closest('.party-row').remove(); updatePercentages();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
-                    </div>
+                <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
+                    <input type="color" value="#0072CE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                    <input type="text" value="1" class="w-16 text-xs font-bold text-center border rounded party-id">
+                    <input type="text" value="Nombre de Lista" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
+                    <input type="number" value="0" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
+                    <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
                 </div>`;
-            updatePercentages();
         }
 
         async function saveAdminData() {
-            const statusEl = document.getElementById('admin-status');
-            const btnTop = document.getElementById('btn-save-top');
-            const btnBottom = document.getElementById('btn-save-bottom');
+            const anio = parseInt(document.getElementById('admin-year').value);
+            const localidad = document.getElementById('admin-locality').value;
+            const categoria = document.getElementById('admin-election-type').value;
+            const circuito_id = document.getElementById('admin-circuit').value;
+            const subValidosText = document.getElementById('admin-subvalidos').value;
+            let blanco = parseInt((subValidosText.match(/Blanco:\s*(\d+)/i) || [])[1]) || 0;
+            let nulos = parseInt((subValidosText.match(/Nulos:\s*(\d+)/i) || [])[1]) || 0;
 
-            statusEl.className = "text-xs font-bold px-3 py-1.5 rounded bg-blue-100 text-blue-700 animate-pulse";
-            statusEl.innerText = "⏳ Guardando en Supabase...";
-            btnTop.disabled = true;
-            btnBottom.disabled = true;
-
-            try {
-                const anio = parseInt(document.getElementById('admin-year').value);
-                const categoria = document.getElementById('admin-election-type').value;
-                const circuito_id = document.getElementById('admin-circuit').value;
-                const subValidosText = document.getElementById('admin-subvalidos').value;
-
-                let votos_blanco = 0, votos_nulos = 0;
-                let matchBlanco = subValidosText.match(/Blanco:\s*(\d+)/i);
-                let matchNulos = subValidosText.match(/Nulos:\s*(\d+)/i);
-                if (matchBlanco) votos_blanco = parseInt(matchBlanco[1]) || 0;
-                if (matchNulos) votos_nulos = parseInt(matchNulos[1]) || 0;
-
-                if (!supabaseClient) throw new Error("Cliente Supabase no inicializado.");
-
-                await supabaseClient
-                    .from('resultados_mesas')
-                    .delete()
-                    .eq('anio', anio)
-                    .eq('circuito_id', circuito_id)
-                    .eq('categoria', categoria);
-
-                let rowsToInsert = [];
-                document.querySelectorAll('.party-row').forEach(row => {
-                    let lista_id = parseInt(row.querySelector('.party-id').value) || 0;
-                    let nombre_lista = row.querySelector('.party-name').value.trim();
-                    let votos = parseInt(row.querySelector('.party-votes').value) || 0;
-                    
-                    rowsToInsert.push({
-                        anio: anio,
-                        circuito_id: circuito_id,
-                        categoria: categoria,
-                        mesa_numero: 1,
-                        lista_id: lista_id,
-                        nombre_lista: nombre_lista,
-                        votos: votos,
-                        votos_blanco: votos_blanco,
-                        votos_nulos: votos_nulos
-                    });
+            await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).eq('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
+            
+            let rows = [];
+            document.querySelectorAll('.party-row').forEach(row => {
+                rows.push({
+                    anio: anio,
+                    localidad: localidad,
+                    circuito_id: circuito_id,
+                    categoria: categoria,
+                    mesa_numero: 1,
+                    lista_id: parseInt(row.querySelector('.party-id').value) || 0,
+                    nombre_lista: row.querySelector('.party-name').value.trim(),
+                    votos: parseInt(row.querySelector('.party-votes').value) || 0,
+                    votos_blanco: blanco,
+                    votos_nulos: nulos
                 });
+            });
 
-                if (rowsToInsert.length > 0) {
-                    const { error } = await supabaseClient
-                        .from('resultados_mesas')
-                        .insert(rowsToInsert);
-                    if (error) throw error;
-                }
-                
-                statusEl.className = "text-xs font-bold px-3 py-1.5 rounded bg-green-100 text-green-700";
-                statusEl.innerText = "✓ ¡Guardado en Supabase con éxito!";
-                
-                setTimeout(() => { statusEl.innerText = ""; statusEl.className = ""; }, 4000);
-            } catch (err) {
-                statusEl.className = "text-xs font-bold px-3 py-1.5 rounded bg-red-100 text-red-700";
-                statusEl.innerText = "❌ Error: " + err.message;
-            } finally {
-                btnTop.disabled = false;
-                btnBottom.disabled = false;
+            if (rows.length) {
+                await supabaseClient.from('resultados_mesas').insert(rows);
+                document.getElementById('admin-status').innerText = "✓ ¡Guardado en Supabase!";
             }
         }
-
-        async function resetCloudData() {
-            if (confirm("¿Limpiar registros de este año, circuito y categoría en la base de datos?")) {
-                const anio = parseInt(document.getElementById('admin-year').value);
-                const categoria = document.getElementById('admin-election-type').value;
-                const circuito = document.getElementById('admin-circuit').value;
-                if (supabaseClient) {
-                    await supabaseClient
-                        .from('resultados_mesas')
-                        .delete()
-                        .eq('anio', anio)
-                        .eq('circuito_id', circuito)
-                        .eq('categoria', categoria);
-                }
-                loadAdminData();
-            }
-        }
-
-        window.onload = function() { loadAdminData(); };
+        window.onload = loadAdminData;
     </script>
 </body>
 </html>
