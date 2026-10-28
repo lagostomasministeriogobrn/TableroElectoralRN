@@ -69,7 +69,6 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
-                    <!-- Selector dinámico que se alimenta de Supabase -->
                     <select id="public-locality" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <option value="Provincial" selected>🌐 Provincia / General</option>
                     </select>
@@ -107,7 +106,7 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Electores Habilitados</span>
-                <h3 id="stat-electores" class="text-2xl font-black text-slate-800">—</h3>
+                <h3 id="stat-electores" class="text-2xl font-black text-slate-800">0</h3>
             </div>
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Votos Procesados (Votantes)</span>
@@ -115,7 +114,7 @@
             </div>
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">% Participación</span>
-                <h3 id="stat-participacion" class="text-2xl font-black text-rngreen">—</h3>
+                <h3 id="stat-participacion" class="text-2xl font-black text-rngreen">0.00%</h3>
             </div>
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Sub-válidos (Blanco / Nulos)</span>
@@ -155,7 +154,6 @@
                 const selectLoc = document.getElementById('public-locality');
                 let valorActual = selectLoc.value;
                 
-                // Obtenemos localidades únicas
                 let localidadesUnicas = [...new Set(data.map(item => item.localidad))].filter(Boolean);
                 if (!localidadesUnicas.includes("Provincial")) localidadesUnicas.unshift("Provincial");
 
@@ -198,13 +196,14 @@
                 if (!data || data.length === 0) {
                     statusEl.innerText = "Sin datos cargados.";
                     container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} (${circuito}) en el año ${anio}.</p>`;
-                    document.getElementById('stat-electores').innerText = "—";
+                    document.getElementById('stat-electores').innerText = "0";
                     document.getElementById('stat-procesados').innerText = "0";
-                    document.getElementById('stat-participacion').innerText = "—";
+                    document.getElementById('stat-participacion').innerText = "0.00%";
                     document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
                     return;
                 }
 
+                let electoresHabilitados = data[0].electores_habilitados || 0;
                 let blanco = data[0].votos_blanco || 0;
                 let nulos = data[0].votos_nulos || 0;
                 let totalValidos = 0;
@@ -215,8 +214,11 @@
                 });
 
                 let totalVotantes = totalValidos + blanco + nulos;
+                let porcentajeParticipacion = electoresHabilitados > 0 ? ((totalVotantes / electoresHabilitados) * 100).toFixed(2) : "0.00";
 
+                document.getElementById('stat-electores').innerText = electoresHabilitados.toLocaleString();
                 document.getElementById('stat-procesados').innerText = totalVotantes.toLocaleString();
+                document.getElementById('stat-participacion').innerText = `${porcentajeParticipacion}%`;
                 document.getElementById('stat-subvalidos').innerText = `Blanco: ${blanco.toLocaleString()} | Nulos: ${nulos.toLocaleString()}`;
 
                 container.innerHTML = "";
