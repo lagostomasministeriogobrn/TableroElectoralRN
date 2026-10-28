@@ -69,22 +69,9 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
+                    <!-- Selector dinámico que se alimenta de Supabase -->
                     <select id="public-locality" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <option value="Provincial" selected>🌐 Provincia / General</option>
-                        <option value="Viedma">Viedma</option>
-                        <option value="General Roca">General Roca</option>
-                        <option value="Cipolletti">Cipolletti</option>
-                        <option value="San Carlos de Bariloche">San Carlos de Bariloche</option>
-                        <option value="Villa Regina">Villa Regina</option>
-                        <option value="Cervantes">Cervantes</option>
-                        <option value="Allen">Allen</option>
-                        <option value="Cinco Saltos">Cinco Saltos</option>
-                        <option value="Catriel">Catriel</option>
-                        <option value="Choele Choel">Choele Choel</option>
-                        <option value="San Antonio Oeste">San Antonio Oeste</option>
-                        <option value="Sierra Grande">Sierra Grande</option>
-                        <option value="Jacobacci">Ingeniero Jacobacci</option>
-                        <option value="Comisión de Fomento">Comisión de Fomento (Otra)</option>
                     </select>
                 </div>
                 <div>
@@ -159,7 +146,33 @@
             }
         } catch(e) { console.error("Error Supabase:", e); }
 
+        async function cargarLocalidadesDinamicas() {
+            if (!supabaseClient) return;
+            try {
+                let { data, error } = await supabaseClient.from('resultados_mesas').select('localidad');
+                if (error) throw error;
+
+                const selectLoc = document.getElementById('public-locality');
+                let valorActual = selectLoc.value;
+                
+                // Obtenemos localidades únicas
+                let localidadesUnicas = [...new Set(data.map(item => item.localidad))].filter(Boolean);
+                if (!localidadesUnicas.includes("Provincial")) localidadesUnicas.unshift("Provincial");
+
+                selectLoc.innerHTML = "";
+                localidadesUnicas.forEach(loc => {
+                    let opt = document.createElement('option');
+                    opt.value = loc;
+                    opt.innerText = loc === "Provincial" ? "🌐 Provincia / General" : loc;
+                    if (loc === valorActual) opt.selected = true;
+                    selectLoc.appendChild(opt);
+                });
+            } catch(e) { console.error("Error cargando localidades:", e); }
+        }
+
         async function loadPublicData() {
+            await cargarLocalidadesDinamicas();
+
             const anio = parseInt(document.getElementById('public-year').value);
             const localidad = document.getElementById('public-locality').value;
             const categoria = document.getElementById('public-election-type').value;
