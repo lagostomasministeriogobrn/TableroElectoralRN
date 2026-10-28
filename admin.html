@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librerías de generación automática de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script>
@@ -225,7 +226,6 @@
                 const idxVotos = headers.indexOf('cant_votos');
                 const idxCargo = headers.indexOf('cargo');
                 
-                // Detecta dinámicamente columnas de participación y mesas procesadas en el CSV
                 const idxPart = headers.findIndex(h => h.includes('participacion') || h.includes('part'));
                 const idxMesas = headers.findIndex(h => h.includes('mesa') || h.includes('escrutad') || h.includes('procesad'));
 
