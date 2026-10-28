@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librerías para exportar a PDF automáticamente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -49,7 +52,8 @@
                     <h1 class="text-lg md:text-xl font-semibold tracking-tight">Panel Administrativo Oficial</h1>
                 </div>
             </div>
-            <div class="flex items-center space-x-4 text-sm">
+            <div class="flex items-center space-x-3 text-sm">
+                <button onclick="descargarPDFAutomatico()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs transition shadow flex items-center gap-1">📥 Descargar PDF Automático</button>
                 <a href="index.html" target="_blank" class="bg-white text-rngreen font-bold px-3 py-1.5 rounded text-xs hover:bg-green-50 transition shadow">Ver Tablero Público ↗</a>
             </div>
         </div>
@@ -60,7 +64,7 @@
         <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV Oficial</h3>
-                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para mapear el circuito, los partidos y los votos.</p>
+                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para mapear el circuito, los partidos, blancos, nulos y votos.</p>
             </div>
             <div>
                 <input type="file" id="file-uploader" accept=".csv, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
@@ -125,14 +129,14 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
                     <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="RN.1">1. Valle Inferior (RN.1)</option>
-                        <option value="RN.2" selected>2. Atlántico / Alto Valle Este (RN.2)</option>
-                        <option value="RN.3">3. Andino (RN.3)</option>
-                        <option value="RN.4">4. Atlántico (RN.4)</option>
-                        <option value="RN.5">5. Alto Valle Centro (RN.5)</option>
-                        <option value="RN.6">6. Alto Valle Oeste (RN.6)</option>
-                        <option value="RN.7">7. Valle Medio (RN.7)</option>
-                        <option value="RN.8">8. Región Sur (RN.8)</option>
+                        <option value="Alto Valle Centro">Alto Valle Centro</option>
+                        <option value="Alto Valle Este" selected>Alto Valle Este</option>
+                        <option value="Alto Valle Oeste">Alto Valle Oeste</option>
+                        <option value="Circuito Andino">Circuito Andino</option>
+                        <option value="Circuito Atlántico">Circuito Atlántico</option>
+                        <option value="Línea Sur">Línea Sur</option>
+                        <option value="Valle Medio">Valle Medio</option>
+                        <option value="Valle Inferior">Valle Inferior</option>
                     </select>
                 </div>
             </div>
@@ -185,6 +189,7 @@
                 renderPartiesRows(data);
             } else {
                 renderPartiesRows([]);
+                document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
             }
         }
 
@@ -212,18 +217,51 @@
             reader.readAsText(file, "UTF-8");
             reader.onload = function(e) {
                 const lines = e.target.result.split(/\r\n|\n/).filter(l => l.trim() !== "");
+                if (lines.length < 2) { alert("El CSV está vacío."); return; }
+
                 const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                const idxClase = headers.indexOf('clase_candidatura');
+                const idxIdCand = headers.indexOf('id_candidatura');
+                const idxDescCand = headers.indexOf('descripcion_candidatura');
+                const idxVotos = headers.indexOf('cant_votos');
+                const idxCargo = headers.indexOf('cargo');
+                const idxIdUbi = headers.indexOf('id_ubicacion');
+
                 let rawParties = [];
+                let blancoVotos = 0;
+                let nulosVotos = 0;
+                let cargoVal = "";
+                let idUbi = "";
+
                 for (let i = 1; i < lines.length; i++) {
                     let cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
                     if (cols.length < headers.length) continue;
-                    let clase = cols[headers.indexOf('clase_candidatura')] || "";
-                    if (clase.toLowerCase() === 'lista') {
-                        rawParties.push({ id: cols[headers.indexOf('id_candidatura')], name: cols[headers.indexOf('descripcion_candidatura')], votos: parseInt(cols[headers.indexOf('cant_votos')]) || 0 });
+
+                    if (!cargoVal && idxCargo !== -1) cargoVal = cols[idxCargo];
+                    if (!idUbi && idxIdUbi !== -1) idUbi = cols[idxIdUbi];
+
+                    let clase = idxClase !== -1 ? cols[idxClase].toLowerCase() : "";
+                    let desc = idxDescCand !== -1 ? cols[idxDescCand].toLowerCase() : "";
+                    let votos = idxVotos !== -1 ? (parseInt(cols[idxVotos]) || 0) : 0;
+
+                    if (clase === 'blanco' || desc.includes('blanco')) {
+                        blancoVotos += votos;
+                    } else if (clase === 'nulo' || clase === 'nulos' || desc.includes('nulo') || desc.includes('impugnado')) {
+                        nulosVotos += votos;
+                    } else if (clase === 'lista' || clase === 'candidatura' || !clase) {
+                        let idC = idxIdCand !== -1 ? cols[idxIdCand] : i;
+                        let dC = idxDescCand !== -1 ? cols[idxDescCand] : "Lista " + i;
+                        if (!dC.toLowerCase().includes('blanco') && !dC.toLowerCase().includes('nulo')) {
+                            rawParties.push({ id: idC, name: dC, votos: votos });
+                        }
                     }
                 }
+
+                if (cargoVal) document.getElementById('admin-election-type').value = cargoVal;
+                document.getElementById('admin-subvalidos').value = `Blanco: ${blancoVotos} | Nulos: ${nulosVotos}`;
+
                 renderPartiesRows(rawParties.map(p => ({ lista_id: p.id, nombre_lista: p.name, votos: p.votos })));
-                document.getElementById('admin-status').innerText = "✓ CSV leído.";
+                document.getElementById('admin-status').innerText = "✓ CSV leído correctamente (Blancos y Nulos detectados).";
             }
         }
 
@@ -272,6 +310,112 @@
                 document.getElementById('admin-status').innerText = "✓ ¡Guardado en Supabase!";
             }
         }
+
+        async function descargarPDFAutomatico() {
+            try {
+                let { data, error } = await supabaseClient.from('resultados_mesas').select('*');
+                if (error) throw error;
+                if (!data || data.length === 0) { alert("No hay datos en la base de datos para generar el PDF."); return; }
+
+                let agrupados = {};
+                data.forEach(row => {
+                    let key = `AÑO: ${row.anio} | LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | CIRCUITO: ${row.circuito_id}`;
+                    if (!agrupados[key]) {
+                        agrupados[key] = {
+                            blanco: row.votos_blanco || 0,
+                            nulos: row.votos_nulos || 0,
+                            listas: []
+                        };
+                    }
+                    agrupados[key].listas.push({
+                        lista_id: row.lista_id,
+                        nombre_lista: row.nombre_lista || 'Sin Nombre',
+                        votos: row.votos || 0
+                    });
+                });
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                let yPos = 20;
+
+                doc.setFillColor(24, 183, 83);
+                doc.rect(0, 0, 210, 15, "F");
+                doc.setFillColor(0, 114, 206);
+                doc.rect(0, 15, 210, 3, "F");
+
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "bold");
+                doc.text("DIRECCIÓN DE ASUNTOS ELECTORALES - PROVINCIA DE RÍO NEGRO", 14, 10);
+
+                yPos = 28;
+                doc.setTextColor(15, 23, 42);
+                doc.setFontSize(16);
+                doc.text("Reporte Institucional de Resultados Electorales", 14, yPos);
+
+                yPos += 6;
+                doc.setFontSize(9);
+                doc.setTextColor(100, 116, 139);
+                doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, 14, yPos);
+                yPos += 10;
+
+                for (let [seccion, info] of Object.entries(agrupados)) {
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+
+                    doc.setFontSize(11);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(0, 114, 206);
+                    doc.text(seccion, 14, yPos);
+                    yPos += 4;
+
+                    info.listas.sort((a, b) => b.votos - a.votos);
+                    let totalValidos = info.listas.reduce((sum, l) => sum + l.votos, 0);
+                    let totalVotantes = totalValidos + info.blanco + info.nulos;
+
+                    let tableRows = [];
+                    info.listas.forEach(l => {
+                        let pct = totalValidos > 0 ? ((l.votos / totalValidos) * 100).toFixed(2) : "0.00";
+                        tableRows.push([
+                            `${l.nombre_lista} (Lista ${l.lista_id})`,
+                            l.votos.toLocaleString(),
+                            `${pct}%`
+                        ]);
+                    });
+
+                    doc.autoTable({
+                        startY: yPos,
+                        head: [['Fuerza Política / Lista', 'Votos', 'Porcentaje']],
+                        body: tableRows,
+                        theme: 'grid',
+                        headStyles: { fillColor: [0, 114, 206], textColor: 255, fontStyle: 'bold' },
+                        styles: { fontSize: 9, cellPadding: 3 },
+                        columnStyles: { 
+                            1: { halign: 'right' }, 
+                            2: { halign: 'right' } 
+                        }
+                    });
+
+                    yPos = doc.lastAutoTable.finalY + 6;
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(51, 65, 85);
+                    doc.text(`Válidos: ${totalValidos.toLocaleString()}   |   Blanco: ${info.blanco.toLocaleString()}   |   Nulos: ${info.nulos.toLocaleString()}   |   Total Votantes: ${totalVotantes.toLocaleString()}`, 14, yPos);
+                    
+                    yPos += 12;
+                }
+
+                const fechaActual = new Date().toISOString().slice(0, 10);
+                doc.save(`Reporte_Electoral_RioNegro_${fechaActual}.pdf`);
+                
+            } catch (err) {
+                alert("Error al generar el PDF automático: " + err.message);
+            }
+        }
+
         window.onload = loadAdminData;
     </script>
 </body>

@@ -99,16 +99,16 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito / Distrito</label>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
                     <select id="public-circuit" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <option value="RN.1">1. Valle Inferior (RN.1)</option>
-                        <option value="RN.2" selected>2. Atlántico / Alto Valle Este (RN.2)</option>
-                        <option value="RN.3">3. Andino (RN.3)</option>
-                        <option value="RN.4">4. Atlántico (RN.4)</option>
-                        <option value="RN.5">5. Alto Valle Centro (RN.5)</option>
-                        <option value="RN.6">6. Alto Valle Oeste (RN.6)</option>
-                        <option value="RN.7">7. Valle Medio (RN.7)</option>
-                        <option value="RN.8">8. Región Sur (RN.8)</option>
+                        <option value="Alto Valle Centro">Alto Valle Centro</option>
+                        <option value="Alto Valle Este" selected>Alto Valle Este</option>
+                        <option value="Alto Valle Oeste">Alto Valle Oeste</option>
+                        <option value="Circuito Andino">Circuito Andino</option>
+                        <option value="Circuito Atlántico">Circuito Atlántico</option>
+                        <option value="Línea Sur">Línea Sur</option>
+                        <option value="Valle Medio">Valle Medio</option>
+                        <option value="Valle Inferior">Valle Inferior</option>
                     </select>
                 </div>
             </div>
@@ -184,7 +184,7 @@
 
                 if (!data || data.length === 0) {
                     statusEl.innerText = "Sin datos cargados.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en el año ${anio}.</p>`;
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} (${circuito}) en el año ${anio}.</p>`;
                     document.getElementById('stat-electores').innerText = "—";
                     document.getElementById('stat-procesados').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "—";
