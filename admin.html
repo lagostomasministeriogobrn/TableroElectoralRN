@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Río Negro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rnblue: '#0072CE',
+                        rngreen: '#18B753',
+                        rnlight: '#F8FAFC',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+    </style>
+</head>
+<body class="bg-rnlight text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-rngreen text-white shadow-md border-b-4 border-rnblue">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-4 mb-2 md:mb-0">
+                <div class="flex h-11 w-24 rounded overflow-hidden shadow border border-white/20 flex-shrink-0 bg-black">
+                    <div class="w-1/2 bg-black flex items-center justify-center relative">
+                        <svg class="w-full h-full" viewBox="0 0 100 100">
+                            <g fill="white">
+                                <circle cx="28" cy="22" r="2.2"/><circle cx="38" cy="16" r="2.2"/><circle cx="50" cy="14" r="2.2"/><circle cx="62" cy="16" r="2.2"/><circle cx="72" cy="22" r="2.2"/>
+                                <circle cx="78" cy="32" r="2.2"/><circle cx="80" cy="45" r="2.2"/><circle cx="78" cy="58" r="2.2"/><circle cx="72" cy="68" r="2.2"/>
+                                <circle cx="62" cy="74" r="2.2"/><circle cx="50" cy="76" r="2.2"/><circle cx="38" cy="74" r="2.2"/><circle cx="28" cy="68" r="2.2"/>
+                                <circle cx="22" cy="58" r="2.2"/><circle cx="20" cy="45" r="2.2"/><circle cx="22" cy="32" r="2.2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="w-1/2 bg-rngreen flex items-center justify-center">
+                        <span class="text-white font-black text-sm tracking-wider">RN</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-green-100 block">Dirección de Asuntos Electorales</span>
+                    <h1 class="text-lg md:text-xl font-semibold tracking-tight">Panel Administrativo Oficial</h1>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4 text-sm">
+                <a href="index.html" target="_blank" class="bg-white text-rngreen font-bold px-3 py-1.5 rounded text-xs hover:bg-green-50 transition shadow">Ver Tablero Público ↗</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
+        
+        <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV Oficial</h3>
+                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para mapear el circuito, los partidos y los votos.</p>
+            </div>
+            <div>
+                <input type="file" id="file-uploader" accept=".csv, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-4 gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">Editor por Circuito y Categoría</h2>
+                </div>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button onclick="resetCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded text-xs transition">Limpiar Circuito</button>
+                    <button id="btn-save-top" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Guardar en Supabase ☁️</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría Electoral</label>
+                    <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-rnblue focus:outline-none font-semibold">
+                        <option value="GOB" selected>Gobernador / Vice (GOB)</option>
+                        <option value="LEGP">Legislador Rep. Poblacional</option>
+                        <option value="LEGC">Legislador Circuital</option>
+                        <option value="INT">Intendente Municipal</option>
+                        <option value="CON">Concejal Municipal</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
+                    <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-rnblue focus:outline-none font-semibold">
+                        <option value="RN.1">1. Valle Inferior (RN.1)</option>
+                        <option value="RN.2" selected>2. Atlántico / Alto Valle Este (RN.2)</option>
+                        <option value="RN.3">3. Andino (RN.3)</option>
+                        <option value="RN.4">4. Atlántico (RN.4)</option>
+                        <option value="RN.5">5. Alto Valle Centro (RN.5)</option>
+                        <option value="RN.6">6. Alto Valle Oeste (RN.6)</option>
+                        <option value="RN.7">7. Valle Medio (RN.7)</option>
+                        <option value="RN.8">8. Región Sur (RN.8)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción / Ubicación (CSV)</label>
+                    <input type="text" id="admin-locality" placeholder="Ej: Alto Valle Este..." class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-rnblue focus:outline-none font-semibold">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded border border-slate-200">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Electores Habilitados</label>
+                    <input type="number" id="admin-electores" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Votos Procesados (Votantes)</label>
+                    <input type="number" id="admin-procesados" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-blue-600 mb-1">% Participación</label>
+                    <input type="text" id="admin-participacion" class="w-full border border-blue-300 rounded px-3 py-1.5 text-sm bg-blue-50 font-bold text-rnblue">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Sub-válidos (Blanco / Nulos)</label>
+                    <input type="text" id="admin-subvalidos" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="Blanco: 0 | Nulos: 0">
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Listas Oficiales, Votos y Porcentajes</h3>
+                    <button onclick="addNewPartyRow()" class="bg-rnblue hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded text-xs transition">+ Agregar Fila Manual</button>
+                </div>
+                <div id="admin-parties-container" class="space-y-3"></div>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Log de Extracción:</label>
+                <textarea id="file-raw-preview" rows="2" readonly class="w-full bg-slate-100 border border-slate-200 rounded p-2 text-xs text-slate-600 font-mono"></textarea>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-slate-200 gap-3">
+                <div class="w-full sm:w-auto">
+                    <span id="admin-status" class="text-xs font-bold px-3 py-1.5 rounded inline-block"></span>
+                </div>
+                <button id="btn-save-bottom" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded text-sm transition shadow w-full sm:w-auto text-center">Guardar en Supabase ☁️</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-rngreen text-white py-4 text-center text-xs border-t-4 border-rnblue mt-auto">
+        <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Panel Administrativo</p>
+    </footer>
+
+    <script>
+        const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
+        
+        let supabaseClient = null;
+        try {
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch(e) { console.error("Error Supabase:", e); }
+
+        async function loadAdminData() {
+            const categoria = document.getElementById('admin-election-type').value;
+            const circuito = document.getElementById('admin-circuit').value;
+            
+            if (!supabaseClient) return;
+
+            try {
+                let { data, error } = await supabaseClient
+                    .from('resultados_mesas')
+                    .select('*')
+                    .eq('circuito_id', circuito)
+                    .eq('categoria', categoria);
+
+                if (data && data.length > 0) {
+                    let blanco = data[0].votos_blanco || 0;
+                    let nulos = data[0].votos_nulos || 0;
+                    document.getElementById('admin-subvalidos').value = `Blanco: ${blanco} | Nulos: ${nulos}`;
+
+                    let parties = [];
+                    let votos = [];
+                    let colorPalette = ["#C6E265", "#FFEE55", "#88D9E8", "#B4B5E0", "#00AEEF", "#DA251D", "#444444", "#FBB03B"];
+                    
+                    data.sort((a, b) => b.votos - a.votos);
+                    data.forEach((row, idx) => {
+                        parties.push({ 
+                            id: row.lista_id, 
+                            name: row.nombre_lista || `Lista ${row.lista_id}`, 
+                            color: colorPalette[idx % colorPalette.length] 
+                        });
+                        votos.push(row.votos);
+                    });
+                    renderPartiesRows(parties, votos);
+                } else {
+                    renderPartiesRows([], []);
+                    document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function calculateTotalValidos() {
+            let total = 0;
+            document.querySelectorAll('.party-votes').forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            return total;
+        }
+
+        function updatePercentages() {
+            let totalValidos = calculateTotalValidos();
+            document.querySelectorAll('.party-row').forEach(row => {
+                let v = parseInt(row.querySelector('.party-votes').value) || 0;
+                let pctSpan = row.querySelector('.party-pct');
+                let pct = totalValidos > 0 ? ((v / totalValidos) * 100).toFixed(2) + "%" : "0.00%";
+                pctSpan.innerText = pct;
+            });
+        }
+
+        function renderPartiesRows(parties, votos) {
+            const container = document.getElementById('admin-parties-container');
+            container.innerHTML = "";
+            if (!parties || parties.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic">No hay listas cargadas para este circuito.</p>`;
+                return;
+            }
+            let totalValidos = votos.reduce((a, b) => a + (parseInt(b) || 0), 0);
+            parties.forEach((p, idx) => {
+                let v = votos[idx] !== undefined ? votos[idx] : 0;
+                let pct = totalValidos > 0 ? ((v / totalValidos) * 100).toFixed(2) + "%" : "0.00%";
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200 gap-2 party-row">
+                        <div class="flex items-center space-x-2 w-7/12">
+                            <input type="color" value="${p.color || '#0072CE'}" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                            <input type="text" value="${p.id || (idx+1)}" class="w-12 text-xs font-bold text-center border rounded px-1 py-1 party-id" title="ID Lista">
+                            <input type="text" value="${p.name}" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name" title="Nombre del Partido/Candidato">
+                        </div>
+                        <div class="w-5/12 flex items-center space-x-3 justify-end">
+                            <div class="text-xs font-bold text-slate-600 bg-white border px-3 py-1 rounded w-20 text-center party-pct">${pct}</div>
+                            <input type="number" value="${v}" oninput="updatePercentages()" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
+                            <button onclick="this.closest('.party-row').remove(); updatePercentages();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        async function handleSmartUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+
+            reader.readAsText(file, "UTF-8");
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== "");
+                    if (lines.length < 2) { alert("El CSV está vacío."); return; }
+
+                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                    const idxCargo = headers.indexOf('cargo');
+                    const idxIdUbi = headers.indexOf('id_ubicacion');
+                    const idxUbicacion = headers.indexOf('descripcion_ubicacion');
+                    const idxPart = headers.indexOf('porcentaje_participacion');
+                    const idxVotantes = headers.indexOf('cant_votantes');
+                    const idxClase = headers.indexOf('clase_candidatura');
+                    const idxIdCand = headers.indexOf('id_candidatura');
+                    const idxDescCand = headers.indexOf('descripcion_candidatura');
+                    const idxVotos = headers.indexOf('cant_votos');
+
+                    let cargoVal = "GOB", idUbi = "", locality = "", cantVotantes = 0, porcPartNum = 0, porcPartStr = "";
+                    let blancoVotos = 0, nulosVotos = 0;
+                    let rawParties = [];
+
+                    for (let i = 1; i < lines.length; i++) {
+                        let cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+                        if (cols.length < headers.length) continue;
+
+                        if (!cargoVal && idxCargo !== -1) cargoVal = cols[idxCargo];
+                        if (!idUbi && idxIdUbi !== -1) idUbi = cols[idxIdUbi].toUpperCase();
+                        if (!locality && idxUbicacion !== -1) locality = cols[idxUbicacion];
+                        if (cantVotantes === 0 && idxVotantes !== -1) cantVotantes = parseInt(cols[idxVotantes]) || 0;
+                        if (porcPartNum === 0 && idxPart !== -1) {
+                            porcPartNum = parseFloat(cols[idxPart]) || 0;
+                            porcPartStr = porcPartNum.toFixed(2) + "%";
+                        }
+
+                        let clase = idxClase !== -1 ? cols[idxClase].toLowerCase() : "";
+                        let idCand = idxIdCand !== -1 ? cols[idxIdCand] : "";
+                        let desc = idxDescCand !== -1 ? cols[idxDescCand] : "";
+                        let votos = idxVotos !== -1 ? (parseInt(cols[idxVotos]) || 0) : 0;
+
+                        if (clase === 'blanco' || desc.toLowerCase().includes('blanco')) {
+                            blancoVotos = votos;
+                        } else if (clase === 'nulos' || desc.toLowerCase().includes('nulos') || desc.toLowerCase().includes('impugnados')) {
+                            nulosVotos += votos;
+                        } else if (clase === 'lista') {
+                            rawParties.push({ id: idCand, name: desc, votos: votos });
+                        }
+                    }
+
+                    if (cargoVal) document.getElementById('admin-election-type').value = cargoVal;
+                    if (idUbi) {
+                        let circuitSelect = document.getElementById('admin-circuit');
+                        for (let opt of circuitSelect.options) {
+                            if (opt.value === idUbi) { circuitSelect.value = idUbi; break; }
+                        }
+                    }
+
+                    let electoresCalculados = 0;
+                    if (cantVotantes > 0 && porcPartNum > 0) {
+                        electoresCalculados = Math.round(cantVotantes / (porcPartNum / 100));
+                    }
+
+                    if (locality) document.getElementById('admin-locality').value = locality;
+                    if (electoresCalculados > 0) document.getElementById('admin-electores').value = electoresCalculados;
+                    if (cantVotantes > 0) document.getElementById('admin-procesados').value = cantVotantes;
+                    if (porcPartStr) document.getElementById('admin-participacion').value = porcPartStr;
+                    document.getElementById('admin-subvalidos').value = `Blanco: ${blancoVotos} | Nulos: ${nulosVotos}`;
+
+                    rawParties.sort((a, b) => b.votos - a.votos);
+                    let sortedParties = rawParties.map(p => ({ id: p.id, name: p.name }));
+                    let sortedVotes = rawParties.map(p => p.votos);
+
+                    if (sortedParties.length > 0) {
+                        renderPartiesRows(sortedParties, sortedVotes);
+                    }
+
+                    document.getElementById('file-raw-preview').value = `CSV Leído -> Circuito: ${idUbi} | Votantes: ${cantVotantes} | Listas: ${rawParties.length}`;
+                    document.getElementById('admin-status').className = "text-xs font-bold px-3 py-1.5 rounded bg-green-100 text-green-700";
+                    document.getElementById('admin-status').innerText = `✓ CSV procesado con éxito.`;
+                } catch(err) {
+                    alert("Error al parsear el CSV: " + err.message);
+                }
+            };
+        }
+
+        function addNewPartyRow() {
+            const container = document.getElementById('admin-parties-container');
+            if(container.querySelector('p')) container.innerHTML = "";
+            const newId = container.children.length + 1;
+            container.innerHTML += `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded border border-slate-200 gap-2 party-row">
+                    <div class="flex items-center space-x-2 w-7/12">
+                        <input type="color" value="#18B753" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                        <input type="text" value="${newId}" class="w-12 text-xs font-bold text-center border rounded px-1 py-1 party-id" title="ID Lista">
+                        <input type="text" value="Lista de Agrupación" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name" title="Nombre del Partido/Candidato">
+                    </div>
+                    <div class="w-5/12 flex items-center space-x-3 justify-end">
+                        <div class="text-xs font-bold text-slate-600 bg-white border px-3 py-1 rounded w-20 text-center party-pct">0.00%</div>
+                        <input type="number" value="0" oninput="updatePercentages()" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
+                        <button onclick="this.closest('.party-row').remove(); updatePercentages();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
+                    </div>
+                </div>`;
+            updatePercentages();
+        }
+
+        async function saveAdminData() {
+            const statusEl = document.getElementById('admin-status');
+            const btnTop = document.getElementById('btn-save-top');
+            const btnBottom = document.getElementById('btn-save-bottom');
+
+            statusEl.className = "text-xs font-bold px-3 py-1.5 rounded bg-blue-100 text-blue-700 animate-pulse";
+            statusEl.innerText = "⏳ Guardando en Supabase...";
+            btnTop.disabled = true;
+            btnBottom.disabled = true;
+
+            try {
+                const categoria = document.getElementById('admin-election-type').value;
+                const circuito_id = document.getElementById('admin-circuit').value;
+                const subValidosText = document.getElementById('admin-subvalidos').value;
+
+                let votos_blanco = 0, votos_nulos = 0;
+                let matchBlanco = subValidosText.match(/Blanco:\s*(\d+)/i);
+                let matchNulos = subValidosText.match(/Nulos:\s*(\d+)/i);
+                if (matchBlanco) votos_blanco = parseInt(matchBlanco[1]) || 0;
+                if (matchNulos) votos_nulos = parseInt(matchNulos[1]) || 0;
+
+                if (!supabaseClient) throw new Error("Cliente Supabase no inicializado.");
+
+                await supabaseClient
+                    .from('resultados_mesas')
+                    .delete()
+                    .eq('circuito_id', circuito_id)
+                    .eq('categoria', categoria);
+
+                let rowsToInsert = [];
+                document.querySelectorAll('.party-row').forEach(row => {
+                    let lista_id = parseInt(row.querySelector('.party-id').value) || 0;
+                    let nombre_lista = row.querySelector('.party-name').value.trim();
+                    let votos = parseInt(row.querySelector('.party-votes').value) || 0;
+                    
+                    rowsToInsert.push({
+                        circuito_id: circuito_id,
+                        categoria: categoria,
+                        mesa_numero: 1,
+                        lista_id: lista_id,
+                        nombre_lista: nombre_lista,
+                        votos: votos,
+                        votos_blanco: votos_blanco,
+                        votos_nulos: votos_nulos
+                    });
+                });
+
+                if (rowsToInsert.length > 0) {
+                    const { error } = await supabaseClient
+                        .from('resultados_mesas')
+                        .insert(rowsToInsert);
+                    if (error) throw error;
+                }
+                
+                statusEl.className = "text-xs font-bold px-3 py-1.5 rounded bg-green-100 text-green-700";
+                statusEl.innerText = "✓ ¡Guardado en Supabase con éxito!";
+                
+                setTimeout(() => { statusEl.innerText = ""; statusEl.className = ""; }, 4000);
+            } catch (err) {
+                statusEl.className = "text-xs font-bold px-3 py-1.5 rounded bg-red-100 text-red-700";
+                statusEl.innerText = "❌ Error: " + err.message;
+            } finally {
+                btnTop.disabled = false;
+                btnBottom.disabled = false;
+            }
+        }
+
+        async function resetCloudData() {
+            if (confirm("¿Limpiar registros de este circuito en la base de datos?")) {
+                const categoria = document.getElementById('admin-election-type').value;
+                const circuito = document.getElementById('admin-circuit').value;
+                if (supabaseClient) {
+                    await supabaseClient
+                        .from('resultados_mesas')
+                        .delete()
+                        .eq('circuito_id', circuito)
+                        .eq('categoria', categoria);
+                }
+                loadAdminData();
+            }
+        }
+
+        window.onload = function() { loadAdminData(); };
+    </script>
+</body>
+</html>
