@@ -89,7 +89,7 @@
                         <option value="Circuito Atlántico">Circuito Atlántico</option>
                         <option value="Línea Sur">Línea Sur</option>
                         <option value="Valle Medio">Valle Medio</option>
-                        <option value="Valle Inferior" selected>Valle Inferior</option>
+                        <option value="Valle Inferior">Valle Inferior</option>
                     </select>
                 </div>
             </div>
@@ -170,14 +170,16 @@
             if (!selectLoc || !selectCircuito) return;
 
             if (selectLoc.value === "Provincial") {
-                selectCircuito.value = "Provincial General"; // O el valor que utilices para general
                 selectCircuito.disabled = true;
-                selectCircuito.classList.add("bg-slate-200", "text-slate-500", "cursor-not-allowed");
+                selectCircuito.style.backgroundColor = "#e2e8f0";
+                selectCircuito.style.color = "#64748b";
+                selectCircuito.style.cursor = "not-allowed";
             } else {
                 selectCircuito.disabled = false;
-                selectCircuito.classList.remove("bg-slate-200", "text-slate-500", "cursor-not-allowed");
-                
-                // Autocompleta según el mapa institucional si es municipio
+                selectCircuito.style.backgroundColor = "#f8fafc";
+                selectCircuito.style.color = "#1e293b";
+                selectCircuito.style.cursor = "pointer";
+
                 let locNombre = selectLoc.value.toLowerCase().trim();
                 if (mapaCircuitos[locNombre]) {
                     selectCircuito.value = mapaCircuitos[locNombre];
@@ -241,7 +243,7 @@
                 });
 
                 if (!categoriasUnicas.includes(selectCat.value)) {
-                    selectCat.value = categoriasUnicas[0];
+                    selectCat.value = categoriasUnicas.length > 0 ? categoriasUnicas[0] : "";
                 }
             } catch (e) {
                 console.error("Error filtrando categorías:", e);
@@ -274,7 +276,6 @@
                     .eq('localidad', localidad)
                     .eq('categoria', categoria);
 
-                // Si no es provincial, filtramos también por el circuito específico
                 if (localidad !== "Provincial") {
                     query = query.eq('circuito_id', circuito);
                 }
