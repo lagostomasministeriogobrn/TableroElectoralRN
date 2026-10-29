@@ -76,7 +76,7 @@
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
                     <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <!-- Las categorías se cargan de forma inteligente según la localidad -->
+                        <!-- Se llena dinámicamente -->
                     </select>
                 </div>
                 <div>
@@ -140,7 +140,6 @@
             }
         } catch(e) { console.error("Error Supabase:", e); }
 
-        // Diccionario oficial de nombres legibles para cada código de categoría
         const nombresCategorias = {
             "GOB": "Gobernador / Vice",
             "LEGP": "Legislador por Representación Poblacional",
@@ -165,14 +164,24 @@
             "san carlos de bariloche": "Circuito Andino", "el bolsón": "Circuito Andino", "dina huapi": "Circuito Andino", "el manso": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino"
         };
 
-        function autocompletarCircuito() {
+        function gestionarBloqueoCircuito() {
             const selectLoc = document.getElementById('public-locality');
             const selectCircuito = document.getElementById('public-circuit');
             if (!selectLoc || !selectCircuito) return;
 
-            let locNombre = selectLoc.value.toLowerCase().trim();
-            if (mapaCircuitos[locNombre]) {
-                selectCircuito.value = mapaCircuitos[locNombre];
+            if (selectLoc.value === "Provincial") {
+                selectCircuito.value = "Provincial General"; // O el valor que utilices para general
+                selectCircuito.disabled = true;
+                selectCircuito.classList.add("bg-slate-200", "text-slate-500", "cursor-not-allowed");
+            } else {
+                selectCircuito.disabled = false;
+                selectCircuito.classList.remove("bg-slate-200", "text-slate-500", "cursor-not-allowed");
+                
+                // Autocompleta según el mapa institucional si es municipio
+                let locNombre = selectLoc.value.toLowerCase().trim();
+                if (mapaCircuitos[locNombre]) {
+                    selectCircuito.value = mapaCircuitos[locNombre];
+                }
             }
         }
 
@@ -199,7 +208,6 @@
             } catch(e) { console.error("Error cargando localidades:", e); }
         }
 
-        // Carga dinámicamente solo las categorías que existen en Supabase para la localidad elegida
         async function actualizarCategoriasDisponibles() {
             if (!supabaseClient) return;
             const selectLoc = document.getElementById('public-locality');
@@ -219,7 +227,6 @@
 
                 let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
 
-                // Si por alguna razón no hay datos para esa localidad, mostramos por defecto GOB
                 if (categoriasUnicas.length === 0) {
                     categoriasUnicas = ["GOB", "LEGP", "LEGC"];
                 }
@@ -242,7 +249,7 @@
         }
 
         async function onLocalityChange() {
-            autocompletarCircuito();
+            gestionarBloqueoCircuito();
             await actualizarCategoriasDisponibles();
             await loadPublicData();
         }
@@ -251,7 +258,7 @@
             const anio = parseInt(document.getElementById('public-year').value);
             const localidad = document.getElementById('public-locality').value;
             const categoria = document.getElementById('public-election-type').value;
-            const circuito = document.getElementById('public-circuit').value;
+            const circuito = localidad === "Provincial" ? "Provincial General" : document.getElementById('public-circuit').value;
             const statusEl = document.getElementById('public-status');
             const container = document.getElementById('public-results-container');
 
@@ -260,19 +267,25 @@
             try {
                 if (!supabaseClient) throw new Error("Supabase no disponible");
 
-                let { data, error } = await supabaseClient
+                let query = supabaseClient
                     .from('resultados_mesas')
                     .select('*')
                     .eq('anio', anio)
                     .eq('localidad', localidad)
-                    .eq('circuito_id', circuito)
                     .eq('categoria', categoria);
+
+                // Si no es provincial, filtramos también por el circuito específico
+                if (localidad !== "Provincial") {
+                    query = query.eq('circuito_id', circuito);
+                }
+
+                let { data, error } = await query;
 
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
                     statusEl.innerText = "Sin datos cargados.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} (${circuito}) en esta categoría para el año ${anio}.</p>`;
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en esta categoría para el año ${anio}.</p>`;
                     document.getElementById('stat-mesas').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "0.00%";
                     document.getElementById('stat-procesados').innerText = "0";
@@ -327,7 +340,7 @@
 
         window.onload = async function() { 
             await cargarLocalidadesDinamicas();
-            autocompletarCircuito();
+            gestionarBloqueoCircuito();
             await actualizarCategoriasDisponibles();
             loadPublicData(); 
         };
