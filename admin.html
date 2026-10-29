@@ -63,7 +63,7 @@
         <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV Oficial</h3>
-                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para extraer mesas procesadas, participación, votos, blancos y nulos (respetando tus filtros).</p>
+                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para extraer mesas procesadas, participación, votos, blancos y nulos.</p>
             </div>
             <div>
                 <input type="file" id="file-uploader" accept=".csv, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
@@ -100,7 +100,16 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <!-- Se llena dinámicamente -->
+                        <option value="GOB" selected>Gobernador / Vice</option>
+                        <option value="LEGP">Legislador por Representación Poblacional</option>
+                        <option value="LEGC">Legislador Circuital</option>
+                        <option value="INT">Intendente Municipal</option>
+                        <option value="CON">Concejal Municipal</option>
+                        <option value="COF">Comisión de Fomento</option>
+                        <option value="VCF">Vocal de Comisión de Fomento</option>
+                        <option value="MCM">Miembro de la Contraloría Municipal</option>
+                        <option value="MTC">Miembro del Tribunal de Cuentas</option>
+                        <option value="END">Representantes del Endecom</option>
                     </select>
                 </div>
 
@@ -158,19 +167,6 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const nombresCategorias = {
-            "GOB": "Gobernador / Vice",
-            "LEGP": "Legislador por Representación Poblacional",
-            "LEGC": "Legislador Circuital",
-            "INT": "Intendente Municipal",
-            "CON": "Concejal Municipal",
-            "COF": "Comisión de Fomento",
-            "VCF": "Vocal de Comisión de Fomento",
-            "MCM": "Miembro de la Contraloría Municipal",
-            "MTC": "Miembro del Tribunal de Cuentas",
-            "END": "Representantes del Endecom"
-        };
-
         const mapaCircuitos = {
             "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
             "general roca": "Alto Valle Centro", "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "mencué": "Alto Valle Centro", "cerro policía": "Alto Valle Centro",
@@ -193,49 +189,8 @@
             }
         }
 
-        async function actualizarCategoriasAdmin() {
-            const inputLoc = document.getElementById('admin-locality');
-            const selectCat = document.getElementById('admin-election-type');
-            if (!inputLoc || !selectCat) return;
-
-            const locActual = inputLoc.value.trim() || "Provincial";
-            const catActualSeleccionada = selectCat.value;
-
-            try {
-                let { data, error } = await supabaseClient
-                    .from('resultados_mesas')
-                    .select('categoria')
-                    .ilike('localidad', locActual);
-
-                if (error) throw error;
-
-                let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
-
-                // Si no hay registros previos, mostramos todas las categorías maestras para poder crear los primeros registros
-                if (categoriasUnicas.length === 0) {
-                    categoriasUnicas = Object.keys(nombresCategorias);
-                }
-
-                selectCat.innerHTML = "";
-                categoriasUnicas.forEach(catCode => {
-                    let opt = document.createElement('option');
-                    opt.value = catCode;
-                    opt.innerText = nombresCategorias[catCode] || catCode;
-                    if (catCode === catActualSeleccionada) opt.selected = true;
-                    selectCat.appendChild(opt);
-                });
-
-                if (!categoriasUnicas.includes(selectCat.value)) {
-                    selectCat.value = categoriasUnicas[0];
-                }
-            } catch (e) {
-                console.error("Error cargando categorías en admin:", e);
-            }
-        }
-
-        async function onAdminLocalityChange() {
+        function onAdminLocalityChange() {
             autocompletarCircuitoAdmin();
-            await actualizarCategoriasAdmin();
             loadAdminData();
         }
 
@@ -394,7 +349,6 @@
                 let { error } = await supabaseClient.from('resultados_mesas').insert(rows);
                 if (error) { alert("Error al guardar: " + error.message); return; }
                 document.getElementById('admin-status').innerText = "✓ ¡Guardado con éxito en Supabase!";
-                await actualizarCategoriasAdmin();
             } else {
                 document.getElementById('admin-status').innerText = "⚠️ No hay filas para guardar.";
             }
@@ -497,9 +451,8 @@
             }
         }
 
-        window.onload = async function() {
+        window.onload = function() {
             autocompletarCircuitoAdmin();
-            await actualizarCategoriasAdmin();
             loadAdminData();
         };
     </script>
