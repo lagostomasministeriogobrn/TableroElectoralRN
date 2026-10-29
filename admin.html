@@ -94,7 +94,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Provincial" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, General Roca...">
+                    <input type="text" id="admin-locality" value="Provincial" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, Provincial...">
                 </div>
 
                 <div>
@@ -116,8 +116,9 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
                     <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="Provincial General" selected>🌐 Provincial General</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
-                        <option value="Alto Valle Este" selected>Alto Valle Este</option>
+                        <option value="Alto Valle Este">Alto Valle Este</option>
                         <option value="Alto Valle Oeste">Alto Valle Oeste</option>
                         <option value="Circuito Andino">Circuito Andino</option>
                         <option value="Circuito Atlántico">Circuito Atlántico</option>
@@ -184,8 +185,22 @@
             if (!inputLoc || !selectCircuito) return;
 
             let locNombre = inputLoc.value.toLowerCase().trim();
-            if (mapaCircuitos[locNombre]) {
-                selectCircuito.value = mapaCircuitos[locNombre];
+
+            if (locNombre === "provincial" || locNombre === "") {
+                selectCircuito.value = "Provincial General";
+                selectCircuito.disabled = true;
+                selectCircuito.style.backgroundColor = "#e2e8f0";
+                selectCircuito.style.color = "#64748b";
+                selectCircuito.style.cursor = "not-allowed";
+            } else {
+                selectCircuito.disabled = false;
+                selectCircuito.style.backgroundColor = "#f8fafc";
+                selectCircuito.style.color = "#1e293b";
+                selectCircuito.style.cursor = "pointer";
+
+                if (mapaCircuitos[locNombre]) {
+                    selectCircuito.value = mapaCircuitos[locNombre];
+                }
             }
         }
 
