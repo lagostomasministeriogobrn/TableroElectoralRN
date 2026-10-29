@@ -69,32 +69,27 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
-                    <select id="public-locality" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                    <select id="public-locality" onchange="onLocalityChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <option value="Provincial" selected>🌐 Provincia / General</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
                     <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="LEGP">Legislador Rep. Poblacional</option>
-                        <option value="LEGC">Legislador Circuital</option>
-                        <option value="INT">Intendente Municipal</option>
-                        <option value="CON">Concejal Municipal</option>
-                        <option value="COF">Comisión de Fomento</option>
+                        <!-- Las categorías se cargan de forma inteligente según la localidad -->
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
                     <select id="public-circuit" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
-                        <option value="Alto Valle Este" selected>Alto Valle Este</option>
+                        <option value="Alto Valle Este">Alto Valle Este</option>
                         <option value="Alto Valle Oeste">Alto Valle Oeste</option>
                         <option value="Circuito Andino">Circuito Andino</option>
                         <option value="Circuito Atlántico">Circuito Atlántico</option>
                         <option value="Línea Sur">Línea Sur</option>
                         <option value="Valle Medio">Valle Medio</option>
-                        <option value="Valle Inferior">Valle Inferior</option>
+                        <option value="Valle Inferior" selected>Valle Inferior</option>
                     </select>
                 </div>
             </div>
@@ -145,6 +140,42 @@
             }
         } catch(e) { console.error("Error Supabase:", e); }
 
+        // Diccionario oficial de nombres legibles para cada código de categoría
+        const nombresCategorias = {
+            "GOB": "Gobernador / Vice",
+            "LEGP": "Legislador por Representación Poblacional",
+            "LEGC": "Legislador Circuital",
+            "INT": "Intendente Municipal",
+            "CON": "Concejal Municipal",
+            "COF": "Comisión de Fomento",
+            "VCF": "Vocal de Comisión de Fomento",
+            "MCM": "Miembro de la Contraloría Municipal",
+            "MTC": "Miembro del Tribunal de Cuentas",
+            "END": "Representantes del Endecom"
+        };
+
+        const mapaCircuitos = {
+            "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
+            "general roca": "Alto Valle Centro", "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "mencué": "Alto Valle Centro", "cerro policía": "Alto Valle Centro",
+            "villa regina": "Alto Valle Este", "chichinales": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "mainqué": "Alto Valle Este", "valle azul": "Alto Valle Este",
+            "choele choel": "Valle Medio", "lamarque": "Valle Medio", "pomona": "Valle Medio", "río colorado": "Valle Medio", "luis beltrán": "Valle Medio", "coronel belisle": "Valle Medio", "chimpay": "Valle Medio",
+            "viedma": "Valle Inferior", "general conesa": "Valle Inferior",
+            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico",
+            "maquinchao": "Línea Sur", "los menucos": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ramos mexía": "Línea Sur",
+            "san carlos de bariloche": "Circuito Andino", "el bolsón": "Circuito Andino", "dina huapi": "Circuito Andino", "el manso": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino"
+        };
+
+        function autocompletarCircuito() {
+            const selectLoc = document.getElementById('public-locality');
+            const selectCircuito = document.getElementById('public-circuit');
+            if (!selectLoc || !selectCircuito) return;
+
+            let locNombre = selectLoc.value.toLowerCase().trim();
+            if (mapaCircuitos[locNombre]) {
+                selectCircuito.value = mapaCircuitos[locNombre];
+            }
+        }
+
         async function cargarLocalidadesDinamicas() {
             if (!supabaseClient) return;
             try {
@@ -168,9 +199,55 @@
             } catch(e) { console.error("Error cargando localidades:", e); }
         }
 
-        async function loadPublicData() {
-            await cargarLocalidadesDinamicas();
+        // Carga dinámicamente solo las categorías que existen en Supabase para la localidad elegida
+        async function actualizarCategoriasDisponibles() {
+            if (!supabaseClient) return;
+            const selectLoc = document.getElementById('public-locality');
+            const selectCat = document.getElementById('public-election-type');
+            if (!selectLoc || !selectCat) return;
 
+            const locActual = selectLoc.value;
+            const catActualSeleccionada = selectCat.value;
+
+            try {
+                let { data, error } = await supabaseClient
+                    .from('resultados_mesas')
+                    .select('categoria')
+                    .eq('localidad', locActual);
+
+                if (error) throw error;
+
+                let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
+
+                // Si por alguna razón no hay datos para esa localidad, mostramos por defecto GOB
+                if (categoriasUnicas.length === 0) {
+                    categoriasUnicas = ["GOB", "LEGP", "LEGC"];
+                }
+
+                selectCat.innerHTML = "";
+                categoriasUnicas.forEach(catCode => {
+                    let opt = document.createElement('option');
+                    opt.value = catCode;
+                    opt.innerText = nombresCategorias[catCode] || catCode;
+                    if (catCode === catActualSeleccionada) opt.selected = true;
+                    selectCat.appendChild(opt);
+                });
+
+                if (!categoriasUnicas.includes(selectCat.value)) {
+                    selectCat.value = categoriasUnicas[0];
+                }
+            } catch (e) {
+                console.error("Error filtrando categorías:", e);
+            }
+        }
+
+        async function onLocalityChange() {
+            autocompletarCircuito();
+            await actualizarCategoriasDisponibles();
+            await loadPublicData();
+        }
+
+        async function loadPublicData() {
             const anio = parseInt(document.getElementById('public-year').value);
             const localidad = document.getElementById('public-locality').value;
             const categoria = document.getElementById('public-election-type').value;
@@ -195,7 +272,7 @@
 
                 if (!data || data.length === 0) {
                     statusEl.innerText = "Sin datos cargados.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} (${circuito}) en el año ${anio}.</p>`;
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} (${circuito}) en esta categoría para el año ${anio}.</p>`;
                     document.getElementById('stat-mesas').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "0.00%";
                     document.getElementById('stat-procesados').innerText = "0";
@@ -248,7 +325,12 @@
             }
         }
 
-        window.onload = function() { loadPublicData(); };
+        window.onload = async function() { 
+            await cargarLocalidadesDinamicas();
+            autocompletarCircuito();
+            await actualizarCategoriasDisponibles();
+            loadPublicData(); 
+        };
     </script>
 </body>
 </html>

@@ -63,7 +63,7 @@
         <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV Oficial</h3>
-                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para extraer mesas procesadas, participación, votos, blancos y nulos (respetando tus filtros de categoría y localidad).</p>
+                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para extraer mesas procesadas, participación, votos, blancos y nulos (respetando tus filtros).</p>
             </div>
             <div>
                 <input type="file" id="file-uploader" accept=".csv, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
@@ -94,18 +94,13 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Provincial" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, General Roca...">
+                    <input type="text" id="admin-locality" value="Provincial" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, General Roca...">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="LEGP">Legislador por Representación Poblacional</option>
-                        <option value="LEGC">Legislador Circuital</option>
-                        <option value="INT">Intendente Municipal</option>
-                        <option value="CON">Concejal Municipal</option>
-                        <option value="COF">Comisión de Fomento</option>
+                        <!-- Se llena dinámicamente -->
                     </select>
                 </div>
 
@@ -162,6 +157,87 @@
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const nombresCategorias = {
+            "GOB": "Gobernador / Vice",
+            "LEGP": "Legislador por Representación Poblacional",
+            "LEGC": "Legislador Circuital",
+            "INT": "Intendente Municipal",
+            "CON": "Concejal Municipal",
+            "COF": "Comisión de Fomento",
+            "VCF": "Vocal de Comisión de Fomento",
+            "MCM": "Miembro de la Contraloría Municipal",
+            "MTC": "Miembro del Tribunal de Cuentas",
+            "END": "Representantes del Endecom"
+        };
+
+        const mapaCircuitos = {
+            "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
+            "general roca": "Alto Valle Centro", "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "mencué": "Alto Valle Centro", "cerro policía": "Alto Valle Centro",
+            "villa regina": "Alto Valle Este", "chichinales": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "mainqué": "Alto Valle Este", "valle azul": "Alto Valle Este",
+            "choele choel": "Valle Medio", "lamarque": "Valle Medio", "pomona": "Valle Medio", "río colorado": "Valle Medio", "luis beltrán": "Valle Medio", "coronel belisle": "Valle Medio", "chimpay": "Valle Medio",
+            "viedma": "Valle Inferior", "general conesa": "Valle Inferior",
+            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico",
+            "maquinchao": "Línea Sur", "los menucos": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ramos mexía": "Línea Sur",
+            "san carlos de bariloche": "Circuito Andino", "el bolsón": "Circuito Andino", "dina huapi": "Circuito Andino", "el manso": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino"
+        };
+
+        function autocompletarCircuitoAdmin() {
+            const inputLoc = document.getElementById('admin-locality');
+            const selectCircuito = document.getElementById('admin-circuit');
+            if (!inputLoc || !selectCircuito) return;
+
+            let locNombre = inputLoc.value.toLowerCase().trim();
+            if (mapaCircuitos[locNombre]) {
+                selectCircuito.value = mapaCircuitos[locNombre];
+            }
+        }
+
+        async function actualizarCategoriasAdmin() {
+            const inputLoc = document.getElementById('admin-locality');
+            const selectCat = document.getElementById('admin-election-type');
+            if (!inputLoc || !selectCat) return;
+
+            const locActual = inputLoc.value.trim() || "Provincial";
+            const catActualSeleccionada = selectCat.value;
+
+            try {
+                let { data, error } = await supabaseClient
+                    .from('resultados_mesas')
+                    .select('categoria')
+                    .ilike('localidad', locActual);
+
+                if (error) throw error;
+
+                let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
+
+                // Si no hay registros previos, mostramos todas las categorías maestras para poder crear los primeros registros
+                if (categoriasUnicas.length === 0) {
+                    categoriasUnicas = Object.keys(nombresCategorias);
+                }
+
+                selectCat.innerHTML = "";
+                categoriasUnicas.forEach(catCode => {
+                    let opt = document.createElement('option');
+                    opt.value = catCode;
+                    opt.innerText = nombresCategorias[catCode] || catCode;
+                    if (catCode === catActualSeleccionada) opt.selected = true;
+                    selectCat.appendChild(opt);
+                });
+
+                if (!categoriasUnicas.includes(selectCat.value)) {
+                    selectCat.value = categoriasUnicas[0];
+                }
+            } catch (e) {
+                console.error("Error cargando categorías en admin:", e);
+            }
+        }
+
+        async function onAdminLocalityChange() {
+            autocompletarCircuitoAdmin();
+            await actualizarCategoriasAdmin();
+            loadAdminData();
+        }
 
         async function loadAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
@@ -259,7 +335,6 @@
                     }
                 }
 
-                // NOTA: Respetamos enteramente tu categoría y localidad seleccionadas manualmente.
                 document.getElementById('admin-mesas').value = mesasCSV;
                 document.getElementById('admin-participacion').value = porcentajePartCSV;
                 document.getElementById('admin-subvalidos').value = `Blanco: ${blancoVotos} | Nulos: ${nulosVotos}`;
@@ -319,6 +394,7 @@
                 let { error } = await supabaseClient.from('resultados_mesas').insert(rows);
                 if (error) { alert("Error al guardar: " + error.message); return; }
                 document.getElementById('admin-status').innerText = "✓ ¡Guardado con éxito en Supabase!";
+                await actualizarCategoriasAdmin();
             } else {
                 document.getElementById('admin-status').innerText = "⚠️ No hay filas para guardar.";
             }
@@ -421,7 +497,11 @@
             }
         }
 
-        window.onload = loadAdminData;
+        window.onload = async function() {
+            autocompletarCircuitoAdmin();
+            await actualizarCategoriasAdmin();
+            loadAdminData();
+        };
     </script>
 </body>
 </html>
