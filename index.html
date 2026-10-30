@@ -74,9 +74,9 @@
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
                         <option value="Alto Valle Este">Alto Valle Este</option>
                         <option value="Alto Valle Oeste">Alto Valle Oeste</option>
-                        <option value="Andino">Andino</option>
-                        <option value="Atlántico">Atlántico</option>
-                        <option value="Línea Sur" selected>Línea Sur</option>
+                        <option value="Circuito Andino">Circuito Andino</option>
+                        <option value="Circuito Atlántico" selected>Circuito Atlántico</option>
+                        <option value="Línea Sur">Línea Sur</option>
                         <option value="Valle Inferior">Valle Inferior</option>
                         <option value="Valle Medio">Valle Medio</option>
                     </select>
@@ -154,7 +154,6 @@
             "END": "Representantes del Endecom"
         };
 
-        // Estructura oficial con separación estricta de Municipios y Comisionados de Fomento
         const jerarquiaCircuitos = {
             "Provincial": {
                 municipios: ["Provincial General"],
@@ -176,11 +175,11 @@
                 municipios: ["Los Menucos", "Maquinchao", "Sierra Colorada", "Ing. Jacobacci", "Mtro. Ramos Mexía"],
                 fomentos: ["Mtro. Ramos Mexía Rural/Comicó", "Prahuaniyeu", "Rincón Treneta", "Quetrequile", "Pilquiniyeu", "El Caín", "Maquinchao Rural/Colán Conhue", "Yaminué", "Laguna Blanca", "Aguada de Guerra", "Clemente Onelli"]
             },
-            "Andino": {
+            "Circuito Andino": {
                 municipios: ["El Bolsón", "San Carlos de Bariloche", "Ñorquinco", "Pilcaniyeu", "Comallo", "Dina Huapi"],
                 fomentos: ["El Foyel/El Manso", "Las Bayas", "Mamuel Choique", "Ojos de Agua", "Río Chico", "Paso Flores", "Pilquiniyeu del Limay", "Villa Llanquín", "Villa Mascardi", "Arroyo Las Minas", "Chacay Huarruca", "Mallín Ahogado"]
             },
-            "Atlántico": {
+            "Circuito Atlántico": {
                 municipios: ["San Antonio Oeste", "Anexo San Antonio Oeste: Las Grutas", "Anexo San Antonio Oeste: Puerto SAE", "Valcheta"],
                 fomentos: ["Cona Niyeu", "Aguada Cecilio", "Arroyo Los Berros", "Arroyo Ventana", "Nahuel Niyeu", "Sierra Paileman", "Chipauquil"]
             },
@@ -204,7 +203,6 @@
 
             let datosCircuito = jerarquiaCircuitos[circuitoSeleccionado] || { municipios: [], fomentos: [] };
             
-            // Si es provincial, no lleva grupos complejos
             if (circuitoSeleccionado === "Provincial") {
                 let opt = document.createElement('option');
                 opt.value = "Provincial General";
@@ -213,7 +211,6 @@
                 return;
             }
 
-            // Grupo de Municipios
             if (datosCircuito.municipios.length > 0) {
                 let groupMun = document.createElement('optgroup');
                 groupMun.label = "--- MUNICIPIOS ---";
@@ -226,7 +223,6 @@
                 selectLoc.appendChild(groupMun);
             }
 
-            // Grupo de Comisionados de Fomento
             if (datosCircuito.fomentos.length > 0) {
                 let groupFom = document.createElement('optgroup');
                 groupFom.label = "--- COMISIONADOS DE FOMENTO ---";
