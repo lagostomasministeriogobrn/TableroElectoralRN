@@ -75,22 +75,22 @@
                         <option value="Alto Valle Este">Alto Valle Este</option>
                         <option value="Alto Valle Oeste">Alto Valle Oeste</option>
                         <option value="Circuito Andino">Circuito Andino</option>
-                        <option value="Circuito Atlántico" selected>Circuito Atlántico</option>
+                        <option value="Circuito Atlántico">Circuito Atlántico</option>
                         <option value="Línea Sur">Línea Sur</option>
                         <option value="Valle Inferior">Valle Inferior</option>
-                        <option value="Valle Medio">Valle Medio</option>
+                        <option value="Valle Medio" selected>Valle Medio</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio / Fomento</label>
-                    <select id="public-locality" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                    <select id="public-locality" onchange="onLocalityChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <!-- Se llena dinámicamente con grupos -->
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
                     <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <!-- Se llena dinámicamente -->
+                        <!-- Se llena estrictamente con lo que existe en Supabase -->
                     </select>
                 </div>
             </div>
@@ -246,20 +246,29 @@
             const catActualSeleccionada = selectCat.value;
 
             try {
+                // Consultamos exclusivamente qué categorías existen en Supabase para esta localidad
                 let { data, error } = await supabaseClient
                     .from('resultados_mesas')
                     .select('categoria')
-                    .eq('localidad', locActual);
+                    .ilike('localidad', locActual);
 
                 if (error) throw error;
 
+                // Filtramos únicas
                 let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
 
+                selectCat.innerHTML = "";
+
                 if (categoriasUnicas.length === 0) {
-                    categoriasUnicas = ["GOB", "LEGP", "LEGC", "INT", "CON", "COF"];
+                    let opt = document.createElement('option');
+                    opt.value = "";
+                    opt.innerText = "Sin datos cargados";
+                    selectCat.appendChild(opt);
+                    loadPublicData();
+                    return;
                 }
 
-                selectCat.innerHTML = "";
+                // Agregamos únicamente las que tienen registros reales cargados
                 categoriasUnicas.forEach(catCode => {
                     let opt = document.createElement('option');
                     opt.value = catCode;
@@ -269,8 +278,10 @@
                 });
 
                 if (!categoriasUnicas.includes(selectCat.value)) {
-                    selectCat.value = categoriasUnicas.length > 0 ? categoriasUnicas[0] : "";
+                    selectCat.value = categoriasUnicas[0];
                 }
+
+                await loadPublicData();
             } catch (e) {
                 console.error("Error filtrando categorías:", e);
             }
@@ -279,7 +290,10 @@
         async function onCircuitChange() {
             actualizarSelectLocalidades();
             await actualizarCategoriasDisponibles();
-            await loadPublicData();
+        }
+
+        async function onLocalityChange() {
+            await actualizarCategoriasDisponibles();
         }
 
         async function loadPublicData() {
@@ -290,6 +304,12 @@
             const statusEl = document.getElementById('public-status');
             const container = document.getElementById('public-results-container');
 
+            if (!categoria) {
+                statusEl.innerText = "Sin categoría disponible.";
+                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay datos cargados para ${localidad}.</p>`;
+                return;
+            }
+
             statusEl.innerText = "Actualizando datos...";
 
             try {
@@ -299,7 +319,7 @@
                     .from('resultados_mesas')
                     .select('*')
                     .eq('anio', anio)
-                    .eq('localidad', localidad)
+                    .ilike('localidad', localidad)
                     .eq('categoria', categoria);
 
                 if (circuito !== "Provincial") {
@@ -368,7 +388,6 @@
         window.onload = async function() { 
             actualizarSelectLocalidades();
             await actualizarCategoriasDisponibles();
-            loadPublicData(); 
         };
     </script>
 </body>
