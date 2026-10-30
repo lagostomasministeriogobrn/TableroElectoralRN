@@ -68,28 +68,29 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
-                    <select id="public-locality" onchange="onLocalityChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <option value="Provincial" selected>🌐 Provincia / General</option>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
+                    <select id="public-circuit" onchange="onCircuitChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                        <option value="Provincial">🌐 Provincia / General</option>
+                        <option value="Alto Valle Centro">Alto Valle Centro</option>
+                        <option value="Alto Valle Este">Alto Valle Este</option>
+                        <option value="Alto Valle Oeste">Alto Valle Oeste</option>
+                        <option value="Andino">Andino</option>
+                        <option value="Atlántico">Atlántico</option>
+                        <option value="Línea Sur" selected>Línea Sur</option>
+                        <option value="Valle Inferior">Valle Inferior</option>
+                        <option value="Valle Medio">Valle Medio</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio / Fomento</label>
+                    <select id="public-locality" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                        <!-- Se llena dinámicamente con grupos -->
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
                     <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
                         <!-- Se llena dinámicamente -->
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
-                    <select id="public-circuit" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <option value="Alto Valle Centro">Alto Valle Centro</option>
-                        <option value="Alto Valle Este">Alto Valle Este</option>
-                        <option value="Alto Valle Oeste">Alto Valle Oeste</option>
-                        <option value="Circuito Andino">Circuito Andino</option>
-                        <option value="Circuito Atlántico">Circuito Atlántico</option>
-                        <option value="Línea Sur">Línea Sur</option>
-                        <option value="Valle Medio">Valle Medio</option>
-                        <option value="Valle Inferior">Valle Inferior</option>
                     </select>
                 </div>
             </div>
@@ -120,13 +121,13 @@
         <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
             <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 border-b pb-2">Resultados por Fuerza Política / Lista</h2>
             <div id="public-results-container" class="space-y-4">
-                <p class="text-xs text-slate-400 italic text-center py-6">Seleccioná una localidad, categoría y circuito para ver los resultados.</p>
+                <p class="text-xs text-slate-400 italic text-center py-6">Seleccioná un circuito, localidad y categoría para ver los resultados.</p>
             </div>
         </div>
     </main>
 
     <footer class="bg-rngreen text-white py-4 text-center text-xs border-t-4 border-rnblue mt-auto">
-        <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Tablero Público Oficial</p>
+        <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Tablero Público Oficial[cite: 1]</p>
     </footer>
 
     <script>
@@ -153,61 +154,90 @@
             "END": "Representantes del Endecom"
         };
 
-        const mapaCircuitos = {
-            "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
-            "general roca": "Alto Valle Centro", "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "mencué": "Alto Valle Centro", "cerro policía": "Alto Valle Centro",
-            "villa regina": "Alto Valle Este", "chichinales": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "mainqué": "Alto Valle Este", "valle azul": "Alto Valle Este",
-            "choele choel": "Valle Medio", "lamarque": "Valle Medio", "pomona": "Valle Medio", "río colorado": "Valle Medio", "luis beltrán": "Valle Medio", "coronel belisle": "Valle Medio", "chimpay": "Valle Medio",
-            "viedma": "Valle Inferior", "general conesa": "Valle Inferior",
-            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico",
-            "maquinchao": "Línea Sur", "los menucos": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ramos mexía": "Línea Sur",
-            "san carlos de bariloche": "Circuito Andino", "el bolsón": "Circuito Andino", "dina huapi": "Circuito Andino", "el manso": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino"
+        // Estructura oficial con separación estricta de Municipios y Comisionados de Fomento
+        const jerarquiaCircuitos = {
+            "Provincial": {
+                municipios: ["Provincial General"],
+                fomentos: []
+            },
+            "Alto Valle Centro": {
+                municipios: ["Allen", "Cervantes", "General Roca"],
+                fomentos: ["Cerro Policía", "El Cuy", "Mencué", "Bajada Colorada/Naupa Huen", "Lonco Vaca/Aguada Guzmán"]
+            },
+            "Alto Valle Este": {
+                municipios: ["Chichinales", "Villa Regina", "Gral. E Godoy", "Mainqué", "Ing. Huergo"],
+                fomentos: ["Valle Azul"]
+            },
+            "Alto Valle Oeste": {
+                municipios: ["Barda del Medio", "Catriel", "Cinco Saltos", "Cipolletti", "Balsa Las Perlas (Anexo Cipolletti)", "Contralmirante Cordero", "Gral. Fernandez Oro", "Campo Grande"],
+                fomentos: ["Catriel Rural/Peñas Blancas"]
+            },
+            "Línea Sur": {
+                municipios: ["Los Menucos", "Maquinchao", "Sierra Colorada", "Ing. Jacobacci", "Mtro. Ramos Mexía"],
+                fomentos: ["Mtro. Ramos Mexía Rural/Comicó", "Prahuaniyeu", "Rincón Treneta", "Quetrequile", "Pilquiniyeu", "El Caín", "Maquinchao Rural/Colán Conhue", "Yaminué", "Laguna Blanca", "Aguada de Guerra", "Clemente Onelli"]
+            },
+            "Andino": {
+                municipios: ["El Bolsón", "San Carlos de Bariloche", "Ñorquinco", "Pilcaniyeu", "Comallo", "Dina Huapi"],
+                fomentos: ["El Foyel/El Manso", "Las Bayas", "Mamuel Choique", "Ojos de Agua", "Río Chico", "Paso Flores", "Pilquiniyeu del Limay", "Villa Llanquín", "Villa Mascardi", "Arroyo Las Minas", "Chacay Huarruca", "Mallín Ahogado"]
+            },
+            "Atlántico": {
+                municipios: ["San Antonio Oeste", "Anexo San Antonio Oeste: Las Grutas", "Anexo San Antonio Oeste: Puerto SAE", "Valcheta"],
+                fomentos: ["Cona Niyeu", "Aguada Cecilio", "Arroyo Los Berros", "Arroyo Ventana", "Nahuel Niyeu", "Sierra Paileman", "Chipauquil"]
+            },
+            "Valle Inferior": {
+                municipios: ["Viedma", "Gral. Conesa", "Guardia Mitre"],
+                fomentos: ["San Javier", "Cubanea", "Gral. E Frías", "Vicealmirante O'Connor", "Gral. Conesa Rural"]
+            },
+            "Valle Medio": {
+                municipios: ["Río Colorado", "Pomona", "Luis Beltrán", "Lamarque", "Darwin", "Coronel Belisle", "Choele Choel", "Chimpay"],
+                fomentos: ["Chelforó", "Pichi Mahuida", "Benjamín Zorrilla"]
+            }
         };
 
-        function gestionarBloqueoCircuito() {
-            const selectLoc = document.getElementById('public-locality');
+        function actualizarSelectLocalidades() {
             const selectCircuito = document.getElementById('public-circuit');
-            if (!selectLoc || !selectCircuito) return;
+            const selectLoc = document.getElementById('public-locality');
+            if (!selectCircuito || !selectLoc) return;
 
-            if (selectLoc.value === "Provincial") {
-                selectCircuito.disabled = true;
-                selectCircuito.style.backgroundColor = "#e2e8f0";
-                selectCircuito.style.color = "#64748b";
-                selectCircuito.style.cursor = "not-allowed";
-            } else {
-                selectCircuito.disabled = false;
-                selectCircuito.style.backgroundColor = "#f8fafc";
-                selectCircuito.style.color = "#1e293b";
-                selectCircuito.style.cursor = "pointer";
+            const circuitoSeleccionado = selectCircuito.value;
+            selectLoc.innerHTML = "";
 
-                let locNombre = selectLoc.value.toLowerCase().trim();
-                if (mapaCircuitos[locNombre]) {
-                    selectCircuito.value = mapaCircuitos[locNombre];
-                }
+            let datosCircuito = jerarquiaCircuitos[circuitoSeleccionado] || { municipios: [], fomentos: [] };
+            
+            // Si es provincial, no lleva grupos complejos
+            if (circuitoSeleccionado === "Provincial") {
+                let opt = document.createElement('option');
+                opt.value = "Provincial General";
+                opt.innerText = "🌐 Provincia / General";
+                selectLoc.appendChild(opt);
+                return;
             }
-        }
 
-        async function cargarLocalidadesDinamicas() {
-            if (!supabaseClient) return;
-            try {
-                let { data, error } = await supabaseClient.from('resultados_mesas').select('localidad');
-                if (error) throw error;
-
-                const selectLoc = document.getElementById('public-locality');
-                let valorActual = selectLoc.value;
-                
-                let localidadesUnicas = [...new Set(data.map(item => item.localidad))].filter(Boolean);
-                if (!localidadesUnicas.includes("Provincial")) localidadesUnicas.unshift("Provincial");
-
-                selectLoc.innerHTML = "";
-                localidadesUnicas.forEach(loc => {
+            // Grupo de Municipios
+            if (datosCircuito.municipios.length > 0) {
+                let groupMun = document.createElement('optgroup');
+                groupMun.label = "--- MUNICIPIOS ---";
+                datosCircuito.municipios.forEach(m => {
                     let opt = document.createElement('option');
-                    opt.value = loc;
-                    opt.innerText = loc === "Provincial" ? "🌐 Provincia / General" : loc;
-                    if (loc === valorActual) opt.selected = true;
-                    selectLoc.appendChild(opt);
+                    opt.value = m;
+                    opt.innerText = m;
+                    groupMun.appendChild(opt);
                 });
-            } catch(e) { console.error("Error cargando localidades:", e); }
+                selectLoc.appendChild(groupMun);
+            }
+
+            // Grupo de Comisionados de Fomento
+            if (datosCircuito.fomentos.length > 0) {
+                let groupFom = document.createElement('optgroup');
+                groupFom.label = "--- COMISIONADOS DE FOMENTO ---";
+                datosCircuito.fomentos.forEach(f => {
+                    let opt = document.createElement('option');
+                    opt.value = f;
+                    opt.innerText = f;
+                    groupFom.appendChild(opt);
+                });
+                selectLoc.appendChild(groupFom);
+            }
         }
 
         async function actualizarCategoriasDisponibles() {
@@ -230,7 +260,7 @@
                 let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
 
                 if (categoriasUnicas.length === 0) {
-                    categoriasUnicas = ["GOB", "LEGP", "LEGC"];
+                    categoriasUnicas = ["GOB", "LEGP", "LEGC", "INT", "CON", "COF"];
                 }
 
                 selectCat.innerHTML = "";
@@ -250,17 +280,17 @@
             }
         }
 
-        async function onLocalityChange() {
-            gestionarBloqueoCircuito();
+        async function onCircuitChange() {
+            actualizarSelectLocalidades();
             await actualizarCategoriasDisponibles();
             await loadPublicData();
         }
 
         async function loadPublicData() {
             const anio = parseInt(document.getElementById('public-year').value);
+            const circuito = document.getElementById('public-circuit').value;
             const localidad = document.getElementById('public-locality').value;
             const categoria = document.getElementById('public-election-type').value;
-            const circuito = localidad === "Provincial" ? "Provincial General" : document.getElementById('public-circuit').value;
             const statusEl = document.getElementById('public-status');
             const container = document.getElementById('public-results-container');
 
@@ -276,7 +306,7 @@
                     .eq('localidad', localidad)
                     .eq('categoria', categoria);
 
-                if (localidad !== "Provincial") {
+                if (circuito !== "Provincial") {
                     query = query.eq('circuito_id', circuito);
                 }
 
@@ -286,7 +316,7 @@
 
                 if (!data || data.length === 0) {
                     statusEl.innerText = "Sin datos cargados.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en esta categoría para el año ${anio}.</p>`;
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} (${circuito}) en esta categoría para el año ${anio}.</p>`;
                     document.getElementById('stat-mesas').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "0.00%";
                     document.getElementById('stat-procesados').innerText = "0";
@@ -340,8 +370,7 @@
         }
 
         window.onload = async function() { 
-            await cargarLocalidadesDinamicas();
-            gestionarBloqueoCircuito();
+            actualizarSelectLocalidades();
             await actualizarCategoriasDisponibles();
             loadPublicData(); 
         };
