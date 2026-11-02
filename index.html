@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase)</title>
+    <title>Tablero Electoral - Río Negro (Supabase + IA Lateral)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -54,76 +54,98 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
+    <!-- CONTENEDOR PRINCIPAL EN DOS COLUMNAS (IZQ: Tablero / DER: Chat Lateral) -->
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        <div class="bg-white p-4 rounded border border-slate-200 custom-shadow flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Año</label>
-                    <select id="public-year" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <option value="2026" selected>2026</option>
-                        <option value="2027">2027</option>
-                        <option value="2025">2025</option>
-                        <option value="2023">2023</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
-                    <select id="public-circuit" onchange="onCircuitChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <option value="Provincial">🌐 Provincia / General</option>
-                        <option value="Alto Valle Centro">Alto Valle Centro</option>
-                        <option value="Alto Valle Este">Alto Valle Este</option>
-                        <option value="Alto Valle Oeste">Alto Valle Oeste</option>
-                        <option value="Circuito Andino">Circuito Andino</option>
-                        <option value="Circuito Atlántico">Circuito Atlántico</option>
-                        <option value="Línea Sur">Línea Sur</option>
-                        <option value="Valle Inferior">Valle Inferior</option>
-                        <option value="Valle Medio" selected>Valle Medio</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio / Fomento</label>
-                    <select id="public-locality" onchange="onLocalityChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <!-- Se llena dinámicamente con grupos -->
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
-                    <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        <!-- Se llena estrictamente con lo que existe en Supabase -->
-                    </select>
+        <!-- COLUMNA IZQUIERDA Y CENTRAL (TABLERO ELECTORAL - Ocupa 2 espacios) -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white p-4 rounded border border-slate-200 custom-shadow flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Año</label>
+                        <select id="public-year" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                            <option value="2026" selected>2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2025">2025</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
+                        <select id="public-circuit" onchange="onCircuitChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                            <option value="Provincial">🌐 Provincia / General</option>
+                            <option value="Alto Valle Centro">Alto Valle Centro</option>
+                            <option value="Alto Valle Este">Alto Valle Este</option>
+                            <option value="Alto Valle Oeste">Alto Valle Oeste</option>
+                            <option value="Circuito Andino">Circuito Andino</option>
+                            <option value="Circuito Atlántico">Circuito Atlántico</option>
+                            <option value="Línea Sur">Línea Sur</option>
+                            <option value="Valle Inferior">Valle Inferior</option>
+                            <option value="Valle Medio" selected>Valle Medio</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
+                        <select id="public-locality" onchange="onLocalityChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
+                        <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div id="public-status" class="text-xs font-semibold text-slate-500">
+
+            <div id="public-status" class="text-xs font-semibold text-slate-500 px-1">
                 Cargando datos desde Supabase...
             </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Mesas Procesadas</span>
+                    <h3 id="stat-mesas" class="text-xl font-black text-slate-800">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Participación Electoral</span>
+                    <h3 id="stat-participacion" class="text-xl font-black text-rngreen">0.00%</h3>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Votos Procesados</span>
+                    <h3 id="stat-procesados" class="text-xl font-black text-rnblue">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Sub-válidos</span>
+                    <h3 id="stat-subvalidos" class="text-xs font-bold text-slate-600 mt-2">Blanco: 0 | Nulos: 0</h3>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 border-b pb-2">Resultados por Fuerza Política / Lista</h2>
+                <div id="public-results-container" class="space-y-4">
+                    <p class="text-xs text-slate-400 italic text-center py-6">Seleccioná un circuito, localidad y categoría para ver los resultados.</p>
+                </div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Mesas Procesadas</span>
-                <h3 id="stat-mesas" class="text-2xl font-black text-slate-800">0</h3>
+        <!-- COLUMNA DERECHA (CHAT LATERAL DE IA - Ocupa 1 espacio fijo) -->
+        <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
+            <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🤖 Asistente IA (Gemini)</h2>
             </div>
-            <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Participación Electoral</span>
-                <h3 id="stat-participacion" class="text-2xl font-black text-rngreen">0.00%</h3>
+            <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
+                <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
+                    ¡Hola! Preguntame sobre los votos, tendencias o circuitos de Río Negro.
+                </div>
             </div>
-            <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Votos Procesados (Votantes)</span>
-                <h3 id="stat-procesados" class="text-2xl font-black text-rnblue">0</h3>
-            </div>
-            <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Sub-válidos (Blanco / Nulos)</span>
-                <h3 id="stat-subvalidos" class="text-sm font-bold text-slate-600 mt-2">Blanco: 0 | Nulos: 0</h3>
+            <div class="flex flex-col gap-2">
+                <input type="text" id="chat-input" placeholder="Ej: ¿Cómo va Valle Medio?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') enviarMensajeIAIndex()">
+                <button onclick="enviarMensajeIAIndex()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Consultar con IA</button>
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
-            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 border-b pb-2">Resultados por Fuerza Política / Lista</h2>
-            <div id="public-results-container" class="space-y-4">
-                <p class="text-xs text-slate-400 italic text-center py-6">Seleccioná un circuito, localidad y categoría para ver los resultados.</p>
-            </div>
-        </div>
     </main>
 
     <footer class="bg-rngreen text-white py-4 text-center text-xs border-t-4 border-rnblue mt-auto">
@@ -155,10 +177,7 @@
         };
 
         const jerarquiaCircuitos = {
-            "Provincial": {
-                municipios: ["Provincial General"],
-                fomentos: []
-            },
+            "Provincial": { municipios: ["Provincial General"], fomentos: [] },
             "Alto Valle Centro": {
                 municipios: ["Allen", "Cervantes", "General Roca"],
                 fomentos: ["Cerro Policía", "El Cuy", "Mencué", "Bajada Colorada/Naupa Huen", "Lonco Vaca/Aguada Guzmán"]
@@ -225,7 +244,7 @@
 
             if (datosCircuito.fomentos.length > 0) {
                 let groupFom = document.createElement('optgroup');
-                groupFom.label = "--- COMISIONADOS DE FOMENTO ---";
+                groupFom.label = "--- COMISIONados ---";
                 datosCircuito.fomentos.forEach(f => {
                     let opt = document.createElement('option');
                     opt.value = f;
@@ -246,7 +265,6 @@
             const catActualSeleccionada = selectCat.value;
 
             try {
-                // Consultamos exclusivamente qué categorías existen en Supabase para esta localidad
                 let { data, error } = await supabaseClient
                     .from('resultados_mesas')
                     .select('categoria')
@@ -254,9 +272,7 @@
 
                 if (error) throw error;
 
-                // Filtramos únicas
                 let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
-
                 selectCat.innerHTML = "";
 
                 if (categoriasUnicas.length === 0) {
@@ -268,7 +284,6 @@
                     return;
                 }
 
-                // Agregamos únicamente las que tienen registros reales cargados
                 categoriasUnicas.forEach(catCode => {
                     let opt = document.createElement('option');
                     opt.value = catCode;
@@ -327,7 +342,6 @@
                 }
 
                 let { data, error } = await query;
-
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
@@ -347,9 +361,7 @@
                 let totalValidos = 0;
                 
                 data.sort((a, b) => b.votos - a.votos);
-                data.forEach(row => {
-                    totalValidos += row.votos || 0;
-                });
+                data.forEach(row => { totalValidos += row.votos || 0; });
 
                 let totalVotantes = totalValidos + blanco + nulos;
 
@@ -383,6 +395,59 @@
                 console.error(err);
                 statusEl.innerText = "Error al conectar con la base de datos.";
             }
+        }
+
+        // FUNCIÓN DEL CHAT LATERAL CON GEMINI
+        async function enviarMensajeIAIndex() {
+            const input = document.getElementById('chat-input');
+            const mensajesContainer = document.getElementById('chat-messages');
+            const textoPregunta = input.value.trim();
+
+            if (!textoPregunta) return;
+
+            mensagensContainer.innerHTML += `
+                <div class="bg-slate-200 text-slate-900 p-2.5 rounded-lg self-end max-w-[90%] shadow-sm">
+                    <b>Tú:</b> ${textoPregunta}
+                </div>`;
+            input.value = "";
+            mensagensContainer.scrollTop = mensajesContainer.scrollHeight;
+
+            const idCarga = 'carga-' + Date.now();
+            mensagensContainer.innerHTML += `
+                <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
+                    Consultando a Gemini...
+                </div>`;
+            mensagensContainer.scrollTop = mensajesContainer.scrollHeight;
+
+            try {
+                let { data: mesasData } = await supabaseClient.from('resultados_mesas').select('*');
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=VARS_VERCEL_GEMINI`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Eres un analista electoral oficial de Río Negro. Responde brevemente basándote en estos datos de Supabase: ${JSON.stringify(mesasData)}. Consulta: ${textoPregunta}`
+                            }]
+                        }]
+                    })
+                });
+
+                const resultado = await response.json();
+                const respuestaTexto = resultado.candidates?.[0]?.content?.parts?.[0]?.text || "No se obtuvo respuesta.";
+
+                document.getElementById(idCarga).outerHTML = `
+                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
+                        <b>IA:</b> ${respuestaTexto.replace(/\n/g, '<br>')}
+                    </div>`;
+            } catch (err) {
+                document.getElementById(idCarga).outerHTML = `
+                    <div class="bg-red-50 text-red-800 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
+                        <b>Error:</b> No se pudo procesar.
+                    </div>`;
+            }
+            mensagensContainer.scrollTop = mensajesContainer.scrollHeight;
         }
 
         window.onload = async function() { 
