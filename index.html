@@ -54,10 +54,10 @@
         </div>
     </header>
 
-    <!-- CONTENEDOR PRINCIPAL EN DOS COLUMNAS (IZQ: Tablero / DER: Chat Lateral) -->
+    <!-- CONTENEDOR EN DOS COLUMNAS (IZQ: Tablero / DER: Chat de IA) -->
     <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        <!-- COLUMNA IZQUIERDA Y CENTRAL (TABLERO ELECTORAL - Ocupa 2 espacios) -->
+        <!-- COLUMNA IZQUIERDA (TABLERO ELECTORAL - Ocupa 2 espacios) -->
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -87,13 +87,13 @@
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
                         <select id="public-locality" onchange="onLocalityChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                            <!-- Se llena dinámicamente -->
+                            <!-- Dinámico -->
                         </select>
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
                         <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                            <!-- Se llena dinámicamente -->
+                            <!-- Dinámico -->
                         </select>
                     </div>
                 </div>
@@ -130,7 +130,7 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (CHAT LATERAL DE IA - Ocupa 1 espacio fijo) -->
+        <!-- COLUMNA DERECHA (CHAT DE IA LATERAL - Ocupa 1 espacio fijo) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🤖 Asistente IA (Gemini)</h2>
@@ -244,7 +244,7 @@
 
             if (datosCircuito.fomentos.length > 0) {
                 let groupFom = document.createElement('optgroup');
-                groupFom.label = "--- COMISIONados ---";
+                groupFom.label = "--- COMISIONES DE FOMENTO ---";
                 datosCircuito.fomentos.forEach(f => {
                     let opt = document.createElement('option');
                     opt.value = f;
@@ -397,7 +397,7 @@
             }
         }
 
-        // FUNCIÓN DEL CHAT LATERAL CON GEMINI
+        // FUNCIÓN DE CONSULTA AL CHAT DE IA (CORREGIDA)
         async function enviarMensajeIAIndex() {
             const input = document.getElementById('chat-input');
             const mensajesContainer = document.getElementById('chat-messages');
@@ -405,19 +405,20 @@
 
             if (!textoPregunta) return;
 
-            mensagensContainer.innerHTML += `
+            mensajesContainer.innerHTML += `
                 <div class="bg-slate-200 text-slate-900 p-2.5 rounded-lg self-end max-w-[90%] shadow-sm">
                     <b>Tú:</b> ${textoPregunta}
                 </div>`;
             input.value = "";
-            mensagensContainer.scrollTop = mensajesContainer.scrollHeight;
+            mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
             const idCarga = 'carga-' + Date.now();
-            mensagensContainer.innerHTML += `
+            mensagensContainer = document.getElementById('chat-messages'); // Asegurando referencia
+            mensajesContainer.innerHTML += `
                 <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
                     Consultando a Gemini...
                 </div>`;
-            mensagensContainer.scrollTop = mensajesContainer.scrollHeight;
+            mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
             try {
                 let { data: mesasData } = await supabaseClient.from('resultados_mesas').select('*');
@@ -447,7 +448,7 @@
                         <b>Error:</b> No se pudo procesar.
                     </div>`;
             }
-            mensagensContainer.scrollTop = mensajesContainer.scrollHeight;
+            mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
         }
 
         window.onload = async function() { 
