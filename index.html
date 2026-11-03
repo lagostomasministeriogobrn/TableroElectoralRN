@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase + IA Agrupada)</title>
+    <title>Tablero Electoral - Río Negro (Supabase)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -56,7 +56,7 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        <!-- COLUMNA IZQUIERDA (TABLERO PRINCIPAL DE RESULTADOS) -->
+        <!-- COLUMNA IZQUIERDA (TABLERO ELECTORAL) -->
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -135,7 +135,7 @@
             </div>
             <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
                 <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Preguntame lo que quieras sobre tendencias, fuerzas políticas, diferencias de votos o estado del escrutinio en Río Negro.
+                    ¡Hola! Preguntame lo que quieras sobre tendencias, fuerzas políticas o datos escrutados en Río Negro.
                 </div>
             </div>
             <div class="flex flex-col gap-2">
@@ -274,8 +274,8 @@
 
                 if (categoriasUnicas.length === 0) {
                     let opt = document.createElement('option');
-                    opt.value = "GOB";
-                    opt.innerText = "Gobernador / Vice";
+                    opt.value = "";
+                    opt.innerText = "Sin datos cargados";
                     selectCat.appendChild(opt);
                     loadPublicData();
                     return;
@@ -308,37 +308,38 @@
             const anio = parseInt(document.getElementById('public-year').value);
             const circuito = document.getElementById('public-circuit').value;
             const localidad = document.getElementById('public-locality').value || "Provincial General";
-            const categoria = document.getElementById('public-election-type').value || "GOB";
+            const categoria = document.getElementById('public-election-type').value;
             const statusEl = document.getElementById('public-status');
             const container = document.getElementById('public-results-container');
+
+            if (!categoria) {
+                statusEl.innerText = "Sin datos cargados.";
+                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en el año ${anio}.</p>`;
+                document.getElementById('stat-mesas').innerText = "0";
+                document.getElementById('stat-participacion').innerText = "0.00%";
+                document.getElementById('stat-procesados').innerText = "0";
+                document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
+                return;
+            }
 
             statusEl.innerText = "Cargando datos...";
 
             try {
                 if (!supabaseClient) throw new Error("Supabase no disponible");
 
-                let query = supabaseClient
+                // Filtro estricto: consulta ÚNICAMENTE por lo cargado exactamente para esa localidad y categoría
+                let { data, error } = await supabaseClient
                     .from('resultados_mesas')
                     .select('*')
-                    .eq('anio', anio);
+                    .eq('anio', anio)
+                    .ilike('localidad', localidad)
+                    .eq('categoria', categoria);
 
-                if (circuito !== "Provincial") {
-                    query = query.ilike('localidad', localidad);
-                    if (categoria) {
-                        query = query.eq('categoria', categoria);
-                    }
-                } else {
-                    if (categoria) {
-                        query = query.eq('categoria', categoria);
-                    }
-                }
-
-                let { data, error } = await query;
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
                     statusEl.innerText = "Sin datos cargados.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para la selección actual.</p>`;
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en la categoría seleccionada.</p>`;
                     document.getElementById('stat-mesas').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "0.00%";
                     document.getElementById('stat-procesados').innerText = "0";
@@ -346,47 +347,34 @@
                     return;
                 }
 
-                // AGRUPAMIENTO AUTOMÁTICO DE LISTAS
-                let agrupado = {};
-                let blancoTotal = 0;
-                let nulosTotal = 0;
+                let mesasCSV = data[0].mesas_procesadas || "0";
+                let participacionCSV = data[0].porcentaje_participacion || "0.00%";
+                let blanco = data[0].votos_blanco || 0;
+                let nulos = data[0].votos_nulos || 0;
                 let totalValidos = 0;
 
-                data.forEach(row => {
-                    let key = row.nombre_lista || `Lista ${row.lista_id}`;
-                    if (!agrupado[key]) {
-                        agrupado[key] = {
-                            nombre: key,
-                            votos: 0,
-                            lista_id: row.lista_id
-                        };
-                    }
-                    agrupado[key].votos += (row.votos || 0);
-                    totalValidos += (row.votos || 0);
+                data.sort((a, b) => b.votos - a.votos);
+                data.forEach(row => { totalValidos += (row.votos || 0); });
 
-                    blancoTotal = Math.max(blancoTotal, row.votos_blanco || 0);
-                    nulosTotal = Math.max(nulosTotal, row.votos_nulos || 0);
-                });
+                let totalVotantes = totalValidos + blanco + nulos;
 
-                let listasFinales = Object.values(agrupado).sort((a, b) => b.votos - a.votos);
-                let totalVotantes = totalValidos + blancoTotal + nulosTotal;
-
-                document.getElementById('stat-mesas').innerText = data[0].mesas_procesadas || "0";
-                document.getElementById('stat-participacion').innerText = data[0].porcentaje_participacion || "0.00%";
+                document.getElementById('stat-mesas').innerText = mesasCSV;
+                document.getElementById('stat-participacion').innerText = participacionCSV;
                 document.getElementById('stat-procesados').innerText = totalVotantes.toLocaleString();
-                document.getElementById('stat-subvalidos').innerText = `Blanco: ${blancoTotal.toLocaleString()} | Nulos: ${nulosTotal.toLocaleString()}`;
+                document.getElementById('stat-subvalidos').innerText = `Blanco: ${blanco.toLocaleString()} | Nulos: ${nulos.toLocaleString()}`;
 
                 container.innerHTML = "";
                 let colorPalette = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#88D9E8", "#B4B5E0", "#FFEE55", "#444444"];
 
-                listasFinales.forEach((row, idx) => {
+                data.forEach((row, idx) => {
                     let porcentaje = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
                     let color = colorPalette[idx % colorPalette.length];
+                    let nombrePartido = row.nombre_lista || `Lista ${row.lista_id}`;
 
                     container.innerHTML += `
                         <div class="space-y-1">
                             <div class="flex justify-between text-xs font-semibold">
-                                <span class="text-slate-700">${row.nombre}</span>
+                                <span class="text-slate-700">${nombrePartido}</span>
                                 <span class="text-slate-900 font-bold">${row.votos.toLocaleString()} votos (${porcentaje}%)</span>
                             </div>
                             <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
@@ -445,8 +433,6 @@
                 if (qLower.includes('valle medio')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle medio'));
                 else if (qLower.includes('andino')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('andino'));
 
-                if (datosFiltrados.length === 0) datosFiltrados = datosElectorales;
-
                 let totalesPorLista = {};
                 let totalVotosValidos = 0;
 
@@ -473,7 +459,7 @@
                         respuestaGenerada += `La lista <b>${ganador[0]}</b> cuenta con ${ganador[1].toLocaleString()} votos (${pctGanador}%).`;
                     }
                 } else {
-                    respuestaGenerada = "No se encontraron votos para la categoría o circuito consultado.";
+                    respuestaGenerada = "No se encontraron datos guardados para esa consulta.";
                 }
 
                 document.getElementById(idCarga).outerHTML = `
