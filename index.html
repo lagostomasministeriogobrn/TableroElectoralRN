@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase + IA Autónoma)</title>
+    <title>Tablero Electoral - Río Negro (Supabase + IA Lateral)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -54,10 +54,9 @@
         </div>
     </header>
 
-    <!-- ESTRUCTURA PRINCIPAL (IZQUIERDA: TABLERO / DERECHA: CHAT CON IA) -->
     <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        <!-- COLUMNA IZQUIERDA (TABLERO ELECTORAL) -->
+        <!-- COLUMNA IZQUIERDA (TABLERO PRINCIPAL) -->
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -73,7 +72,7 @@
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
                         <select id="public-circuit" onchange="onCircuitChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                            <option value="Provincial">🌐 Provincia / General</option>
+                            <option value="Provincial" selected>🌐 Provincia / General</option>
                             <option value="Alto Valle Centro">Alto Valle Centro</option>
                             <option value="Alto Valle Este">Alto Valle Este</option>
                             <option value="Alto Valle Oeste">Alto Valle Oeste</option>
@@ -81,7 +80,7 @@
                             <option value="Circuito Atlántico">Circuito Atlántico</option>
                             <option value="Línea Sur">Línea Sur</option>
                             <option value="Valle Inferior">Valle Inferior</option>
-                            <option value="Valle Medio" selected>Valle Medio</option>
+                            <option value="Valle Medio">Valle Medio</option>
                         </select>
                     </div>
                     <div>
@@ -98,7 +97,7 @@
             </div>
 
             <div id="public-status" class="text-xs font-semibold text-slate-500 px-1">
-                Cargando datos desde Supabase...
+                Conectando con Supabase...
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -128,19 +127,19 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (CHAT DE IA INTERACTIVO EN LA BARRA LATERAL) -->
+        <!-- COLUMNA DERECHA (CHAT DE IA LATERAL) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🧠 Asistente Electoral Inteligente (IA)</h2>
-                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Motor activo"></span>
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             </div>
             <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
                 <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Soy tu consultor de inteligencia artificial. Haceme cualquier pregunta sobre tendencias, fuerzas políticas, diferencias de votos o estado del escrutinio en Río Negro.
+                    ¡Hola! Preguntame lo que quieras sobre tendencias, fuerzas políticas, diferencias de votos o estado del escrutinio en Río Negro.
                 </div>
             </div>
             <div class="flex flex-col gap-2">
-                <input type="text" id="chat-input" placeholder="Ej: ¿Cómo va Valle Medio o quién lidera en 2026?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
+                <input type="text" id="chat-input" placeholder="Ej: ¿Cómo va Valle Medio o quién lidera?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
                 <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a la IA</button>
             </div>
         </div>
@@ -261,7 +260,6 @@
             if (!selectLoc || !selectCat) return;
 
             const locActual = selectLoc.value;
-            const catActualSeleccionada = selectCat.value;
 
             try {
                 let { data, error } = await supabaseClient
@@ -276,8 +274,8 @@
 
                 if (categoriasUnicas.length === 0) {
                     let opt = document.createElement('option');
-                    opt.value = "";
-                    opt.innerText = "Sin datos cargados";
+                    opt.value = "GOB";
+                    opt.innerText = "Gobernador / Vice";
                     selectCat.appendChild(opt);
                     loadPublicData();
                     return;
@@ -287,17 +285,13 @@
                     let opt = document.createElement('option');
                     opt.value = catCode;
                     opt.innerText = nombresCategorias[catCode] || catCode;
-                    if (catCode === catActualSeleccionada) opt.selected = true;
                     selectCat.appendChild(opt);
                 });
-
-                if (!categoriasUnicas.includes(selectCat.value)) {
-                    selectCat.value = categoriasUnicas[0];
-                }
 
                 await loadPublicData();
             } catch (e) {
                 console.error("Error filtrando categorías:", e);
+                loadPublicData();
             }
         }
 
@@ -313,18 +307,12 @@
         async function loadPublicData() {
             const anio = parseInt(document.getElementById('public-year').value);
             const circuito = document.getElementById('public-circuit').value;
-            const localidad = document.getElementById('public-locality').value;
-            const categoria = document.getElementById('public-election-type').value;
+            const localidad = document.getElementById('public-locality').value || "Provincial General";
+            const categoria = document.getElementById('public-election-type').value || "GOB";
             const statusEl = document.getElementById('public-status');
             const container = document.getElementById('public-results-container');
 
-            if (!categoria) {
-                statusEl.innerText = "Sin categoría disponible.";
-                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay datos cargados para ${localidad}.</p>`;
-                return;
-            }
-
-            statusEl.innerText = "Actualizando datos...";
+            statusEl.innerText = "Buscando en Supabase...";
 
             try {
                 if (!supabaseClient) throw new Error("Supabase no disponible");
@@ -332,20 +320,18 @@
                 let query = supabaseClient
                     .from('resultados_mesas')
                     .select('*')
-                    .eq('anio', anio)
-                    .ilike('localidad', localidad)
-                    .eq('categoria', categoria);
+                    .eq('anio', anio);
 
                 if (circuito !== "Provincial") {
-                    query = query.eq('circuito_id', circuito);
+                    query = query.ilike('localidad', localidad).eq('categoria', categoria);
                 }
 
                 let { data, error } = await query;
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
-                    statusEl.innerText = "Sin datos cargados.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} (${circuito}) en esta categoría para el año ${anio}.</p>`;
+                    statusEl.innerText = "Sin datos cargados para esta selección.";
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en el año ${anio}.</p>`;
                     document.getElementById('stat-mesas').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "0.00%";
                     document.getElementById('stat-procesados').innerText = "0";
@@ -392,11 +378,10 @@
                 statusEl.innerText = "✓ Sincronizado con Supabase";
             } catch (err) {
                 console.error(err);
-                statusEl.innerText = "Error al conectar con la base de datos.";
+                statusEl.innerText = "Error de conexión con la base de datos.";
             }
         }
 
-        // MOTOR AUTÓNOMO DE INTELIGENCIA ARTÍFICIAL CON RAZONAMIENTO Y CONEXIÓN
         async function procesarConsultaIA() {
             const input = document.getElementById('chat-input');
             const mensajesContainer = document.getElementById('chat-messages');
@@ -404,7 +389,6 @@
 
             if (!textoPregunta) return;
 
-            // Mostrar pregunta del usuario
             mensajesContainer.innerHTML += `
                 <div class="bg-slate-200 text-slate-900 p-2.5 rounded-lg self-end max-w-[90%] shadow-sm">
                     <b>Tú:</b> ${textoPregunta}
@@ -415,44 +399,37 @@
             const idCarga = 'carga-' + Date.now();
             mensajesContainer.innerHTML += `
                 <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
-                    Analizando datos en tiempo real...
+                    Consultando datos...
                 </div>`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
             try {
-                // Obtener datos frescos directamente desde Supabase
                 let { data: datosElectorales, error } = await supabaseClient.from('resultados_mesas').select('*');
 
                 if (error || !datosElectorales || datosElectorales.length === 0) {
                     document.getElementById(idCarga).outerHTML = `
                         <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>IA:</b> Aún no hay actas o datos cargados en Supabase para realizar este análisis. Te sugiero cargar actas desde el panel de administración.
+                            <b>IA:</b> No hay datos cargados en Supabase aún para analizar. Carga actas en la base de datos desde la sección Admin.
                         </div>`;
                     mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
                     return;
                 }
 
-                // Filtrado inteligente por palabras clave de la pregunta
                 const qLower = textoPregunta.toLowerCase();
                 let datosFiltrados = datosElectorales;
 
                 if (qLower.includes('2023')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2023);
                 else if (qLower.includes('2025')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2025);
                 else if (qLower.includes('2026')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2026);
-                else if (qLower.includes('2027')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2027);
 
                 if (qLower.includes('valle medio')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle medio'));
-                else if (qLower.includes('andino') || qLower.includes('bariloche')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('andino'));
-                else if (qLower.includes('atlantico') || qLower.includes('atlántico') || qLower.includes('viedma')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('atlántico') || (d.localidad || '').toLowerCase().includes('viedma'));
-                else if (qLower.includes('linea sur') || qLower.includes me => qLower.includes('línea sur')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('línea sur'));
+                else if (qLower.includes('andino')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('andino'));
+                else if (qLower.includes('atlantico') || qLower.includes('atlántico')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('atlántico'));
 
                 if (datosFiltrados.length === 0) datosFiltrados = datosElectorales;
 
-                // Agrupamiento y análisis probabilístico/estadístico propio del cliente
                 let totalesPorLista = {};
                 let totalVotosValidos = 0;
-                let mesasProcesadasStr = datosFiltrados[0]?.mesas_procesadas || "N/D";
-                let participacionStr = datosFiltrados[0]?.porcentaje_participacion || "N/D";
 
                 datosFiltrados.forEach(d => {
                     let nombre = d.nombre_lista || `Lista ${d.lista_id}`;
@@ -460,43 +437,24 @@
                     totalVotosValidos += (d.votos || 0);
                 });
 
-                // Ordenamos posiciones
                 let ranking = Object.entries(totalesPorLista).sort((a, b) => b[1] - a[1]);
-
                 let respuestaGenerada = "";
 
                 if (ranking.length > 0) {
                     let ganador = ranking[0];
                     let pctGanador = totalVotosValidos > 0 ? ((ganador[1] / totalVotosValidos) * 100).toFixed(2) : "0";
 
-                    respuestaGenerada = `📊 <b>Análisis Electoral en Tiempo Real:</b><br>`;
+                    respuestaGenerada = `📊 <b>Análisis de la IA:</b><br>`;
                     if (ranking.length > 1) {
                         let segundo = ranking[1];
                         let pctSegundo = totalVotosValidos > 0 ? ((segundo[1] / totalVotosValidos) * 100).toFixed(2) : "0";
                         let dif = (ganador[1] - segundo[1]).toLocaleString();
-                        respuestaGenerada += `En los datos consultados, encabeza <b>${ganador[0]}</b> con ${ganador[1].toLocaleString()} votos (${pctGanador}%), seguido por <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctSegundo}%). Diferencia: ${dif} votos.<br>`;
+                        respuestaGenerada += `El espacio <b>${ganador[0]}</b> lidera con ${ganador[1].toLocaleString()} votos (${pctGanador}%), sobre <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctSegundo}%). Margen: ${dif} votos.`;
                     } else {
-                        respuestaGenerada += `La fuerza <b>${ganador[0]}</b> registra ${ganador[1].toLocaleString()} votos (${pctGanador}% del total contabilizado).<br>`;
+                        respuestaGenerada += `La lista <b>${ganador[0]}</b> cuenta con ${ganador[1].toLocaleString()} votos (${pctGanador}%).`;
                     }
-                    respuestaGenerada += `<br>📈 <i>Mesas procesadas: ${mesasProcesadasStr} | Participación estimada: ${participacionStr}</i>`;
                 } else {
-                    respuestaGenerada = "Se encontraron registros en la base de datos pero aún no contienen cómputos válidos para esa búsqueda.";
-                }
-
-                // Intento opcional de llamada directa al modelo Gemini de Google
-                try {
-                    const prompt = `Analiza brevemente esta consulta: '${textoPregunta}' en base a estos datos de Rio Negro: ${JSON.stringify(ranking)}`;
-                    const resAPI = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyDummyKeyNotRequired`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                    });
-                    const dataAPI = await resAPI.json();
-                    if (dataAPI.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        respuestaGenerada = dataAPI.candidates[0].content.parts[0].text;
-                    }
-                } catch(e) {
-                    // Si falla la API externa, la IA responde perfectamente con su motor analítico interno sin mostrar error
+                    respuestaGenerada = "No se encontraron votos para la categoría o circuito consultado.";
                 }
 
                 document.getElementById(idCarga).outerHTML = `
@@ -507,7 +465,7 @@
             } catch (err) {
                 document.getElementById(idCarga).outerHTML = `
                     <div class="bg-red-50 text-red-800 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                        <b>IA:</b> No se pudo completar la consulta. Verifica tu conexión a la base de datos de Supabase.
+                        <b>IA:</b> Ocurrió un error al consultar Supabase.
                     </div>`;
             }
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
