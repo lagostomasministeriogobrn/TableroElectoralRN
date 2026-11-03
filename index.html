@@ -468,6 +468,7 @@ ${JSON.stringify(datosElectorales)}`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
         }
 
+        // INICIALIZACIÓN CORRECTA AL CARGAR LA PÁGINA
         window.onload = async function() { 
             actualizarSelectLocalidades();
             await actualizarCategoriasDisponibles();
