@@ -154,8 +154,8 @@
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         
-        // Colocá tu clave de API de Gemini aquí abajo si querés usar IA real vía fetch
-        const GEMINI_API_KEY = AQ.Ab8RN6ISU-nw_XgYgTrCn8qqi7PFPoQnarTUf1FJNNPxbCDvlA; 
+        // Colocá tu clave de API de Gemini aquí abajo
+        const GEMINI_API_KEY = "AQ.Ab8RN6ISU-nw_XgYgTrCn8qqi7PFPoQnarTUf1FJNNPxbCDvlA"; 
 
         let supabaseClient = null;
         try {
@@ -257,7 +257,10 @@
         }
 
         async function actualizarCategoriasDisponibles() {
-            if (!supabaseClient) return;
+            if (!supabaseClient) {
+                document.getElementById('public-status').innerText = "Error: Cliente de Supabase no disponible.";
+                return;
+            }
             const selectLoc = document.getElementById('public-locality');
             const selectCat = document.getElementById('public-election-type');
             if (!selectLoc || !selectCat) return;
@@ -294,6 +297,7 @@
                 await loadPublicData();
             } catch (e) {
                 console.error("Error filtrando categorías:", e);
+                document.getElementById('public-status').innerText = "Error conectando con Supabase.";
                 loadPublicData();
             }
         }
@@ -468,11 +472,11 @@ ${JSON.stringify(datosElectorales)}`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
         }
 
-        // INICIALIZACIÓN CORRECTA AL CARGAR LA PÁGINA
-        window.onload = async function() { 
+        // INICIALIZACIÓN LIMPIA Y SEGURA AL CARGAR LA PÁGINA
+        window.addEventListener('DOMContentLoaded', async () => {
             actualizarSelectLocalidades();
             await actualizarCategoriasDisponibles();
-        };
+        });
     </script>
 </body>
 </html>
