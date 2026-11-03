@@ -135,11 +135,11 @@
             </div>
             <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
                 <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Preguntame lo que quieras sobre tendencias, fuerzas políticas o datos escrutados en Río Negro.
+                    ¡Hola! Preguntame sobre cualquier localidad, circuito o partido político de Río Negro.
                 </div>
             </div>
             <div class="flex flex-col gap-2">
-                <input type="text" id="chat-input" placeholder="Ej: ¿Cómo va Valle Medio o quién lidera?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
+                <input type="text" id="chat-input" placeholder="Ej: ¿Cómo salió Lonco Vaca o Bariloche?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
                 <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a la IA</button>
             </div>
         </div>
@@ -174,7 +174,6 @@
             "END": "Representantes del Endecom"
         };
 
-        // JERARQUÍA COMPLETA RESTITUIDA CON TODAS LAS COMISIONES DE FOMENTO
         const jerarquiaCircuitos = {
             "Provincial": { 
                 municipios: ["Provincial General"], 
@@ -393,6 +392,7 @@
             }
         }
 
+        // MOTOR DE CONSULTA INTELIGENTE DE LA IA CON RECONOCIMIENTO DE LOCALIDADES Y COMISIONES DE FOMENTO
         async function procesarConsultaIA() {
             const input = document.getElementById('chat-input');
             const mensajesContainer = document.getElementById('chat-messages');
@@ -410,7 +410,7 @@
             const idCarga = 'carga-' + Date.now();
             mensajesContainer.innerHTML += `
                 <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
-                    Consultando datos...
+                    Analizando cómputos...
                 </div>`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
@@ -429,15 +429,54 @@
                 const qLower = textoPregunta.toLowerCase();
                 let datosFiltrados = datosElectorales;
 
+                // 1. Filtrado por Año si el usuario lo menciona
                 if (qLower.includes('2023')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2023);
                 else if (qLower.includes('2025')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2025);
                 else if (qLower.includes('2026')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2026);
+                else if (qLower.includes('2027')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2027);
 
-                if (qLower.includes('valle medio')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle medio'));
-                else if (qLower.includes('andino')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('andino'));
+                // 2. Búsqueda inteligente por Localidad o Comisión de Fomento
+                let localidadesExistentes = [...new Set(datosElectorales.map(d => d.localidad))].filter(Boolean);
+                let localidadEncontrada = null;
 
+                for (let loc of localidadesExistentes) {
+                    let locClean = loc.toLowerCase();
+                    // Permite coincidencia incluso si busca solo "Lonco Vaca" en "Lonco Vaca/Aguada Guzmán"
+                    let partes = locClean.split(/[\/\-\(]/).map(p => p.trim());
+                    if (qLower.includes(locClean) || partes.some(p => p.length > 3 && qLower.includes(p))) {
+                        localidadEncontrada = loc;
+                        break;
+                    }
+                }
+
+                if (localidadEncontrada) {
+                    datosFiltrados = datosFiltrados.filter(d => d.localidad === localidadEncontrada);
+                } else {
+                    // 3. Si no es localidad, buscamos por Circuito Electoral
+                    if (qLower.includes('valle medio')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle medio'));
+                    else if (qLower.includes('valle centro') || qLower.includes('alto valle centro')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('alto valle centro'));
+                    else if (qLower.includes('valle este') || qLower.includes('alto valle este')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('alto valle este'));
+                    else if (qLower.includes('valle oeste') || qLower.includes('alto valle oeste')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('alto valle oeste'));
+                    else if (qLower.includes('andino')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('andino'));
+                    else if (qLower.includes('atlántico') || qLower.includes('atlantico')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('atlántico'));
+                    else if (qLower.includes('línea sur') || qLower.includes('linea sur')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('línea sur'));
+                    else if (qLower.includes('valle inferior')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle inferior'));
+                }
+
+                // 4. Si se buscó una localidad específica pero no tenía datos cargados
+                if (localidadEncontrada && datosFiltrados.length === 0) {
+                    document.getElementById(idCarga).outerHTML = `
+                        <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
+                            <b>IA:</b> No se encontraron datos cargados en la base de datos para la localidad <b>${localidadEncontrada}</b>.
+                        </div>`;
+                    mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
+                    return;
+                }
+
+                // 5. Agrupamiento y cálculo de votos
                 let totalesPorLista = {};
                 let totalVotosValidos = 0;
+                let lugarTexto = localidadEncontrada ? `Localidad: <b>${localidadEncontrada}</b>` : "Cómputos consultados";
 
                 datosFiltrados.forEach(d => {
                     let nombre = d.nombre_lista || `Lista ${d.lista_id}`;
@@ -452,17 +491,17 @@
                     let ganador = ranking[0];
                     let pctGanador = totalVotosValidos > 0 ? ((ganador[1] / totalVotosValidos) * 100).toFixed(2) : "0";
 
-                    respuestaGenerada = `📊 <b>Análisis de la IA:</b><br>`;
+                    respuestaGenerada = `📍 <b>${lugarTexto}</b><br>`;
                     if (ranking.length > 1) {
                         let segundo = ranking[1];
                         let pctSegundo = totalVotosValidos > 0 ? ((segundo[1] / totalVotosValidos) * 100).toFixed(2) : "0";
                         let dif = (ganador[1] - segundo[1]).toLocaleString();
-                        respuestaGenerada += `El espacio <b>${ganador[0]}</b> lidera con ${ganador[1].toLocaleString()} votos (${pctGanador}%), sobre <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctSegundo}%). Margen: ${dif} votos.`;
+                        respuestaGenerada += `El espacio <b>${ganador[0]}</b> lidera con ${ganador[1].toLocaleString()} votos (${pctGanador}%), seguido por <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctSegundo}%). Margen: ${dif} votos.`;
                     } else {
-                        respuestaGenerada += `La lista <b>${ganador[0]}</b> cuenta con ${ganador[1].toLocaleString()} votos (${pctGanador}%).`;
+                        respuestaGenerada += `La fuerza <b>${ganador[0]}</b> registra ${ganador[1].toLocaleString()} votos (${pctGanador}%).`;
                     }
                 } else {
-                    respuestaGenerada = "No se encontraron datos guardados para esa consulta.";
+                    respuestaGenerada = "No se encontraron cómputos guardados para esa consulta.";
                 }
 
                 document.getElementById(idCarga).outerHTML = `
@@ -473,7 +512,7 @@
             } catch (err) {
                 document.getElementById(idCarga).outerHTML = `
                     <div class="bg-red-50 text-red-800 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                        <b>IA:</b> Ocurrió un error al consultar Supabase.
+                        <b>IA:</b> Ocurrió un error al procesar la consulta en Supabase.
                     </div>`;
             }
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
