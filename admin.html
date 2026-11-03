@@ -168,16 +168,33 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // MAPA COMPLETO DE CIRCUITOS CON MUNICIPIOS Y COMISIONES DE FOMENTO RESTITUIDOS
         const mapaCircuitos = {
             "provincial": "Provincial", "provincial general": "Provincial",
-            "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
-            "general roca": "Alto Valle Centro", "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "mencué": "Alto Valle Centro", "cerro policía": "Alto Valle Centro",
-            "villa regina": "Alto Valle Este", "chichinales": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "mainqué": "Alto Valle Este", "valle azul": "Alto Valle Este",
-            "choele choel": "Valle Medio", "lamarque": "Valle Medio", "pomona": "Valle Medio", "río colorado": "Valle Medio", "luis beltrán": "Valle Medio", "coronel belisle": "Valle Medio", "chimpay": "Valle Medio",
-            "viedma": "Valle Inferior", "general conesa": "Valle Inferior",
-            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico",
-            "maquinchao": "Línea Sur", "los menucos": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ramos mexía": "Línea Sur",
-            "san carlos de bariloche": "Circuito Andino", "el bolsón": "Circuito Andino", "dina huapi": "Circuito Andino", "el manso": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino"
+            // Alto Valle Centro
+            "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "general roca": "Alto Valle Centro",
+            "cerro policía": "Alto Valle Centro", "el cuy": "Alto Valle Centro", "mencué": "Alto Valle Centro", "bajada colorada": "Alto Valle Centro", "naupa huen": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "aguada guzmán": "Alto Valle Centro",
+            // Alto Valle Este
+            "chichinales": "Alto Valle Este", "villa regina": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "general e godoy": "Alto Valle Este", "mainqué": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "ing. huergo": "Alto Valle Este",
+            "valle azul": "Alto Valle Este",
+            // Alto Valle Oeste
+            "barda del medio": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "gral. fernandez oro": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste",
+            "peñas blancas": "Alto Valle Oeste",
+            // Línea Sur
+            "los menucos": "Línea Sur", "maquinchao": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ing. jacobacci": "Línea Sur", "ramos mexía": "Línea Sur", "mtro. ramos mexía": "Línea Sur",
+            "comicó": "Línea Sur", "prahuaniyeu": "Línea Sur", "rincón treneta": "Línea Sur", "quetrequile": "Línea Sur", "pilquiniyeu": "Línea Sur", "el caín": "Línea Sur", "colán conhue": "Línea Sur", "yaminué": "Línea Sur", "laguna blanca": "Línea Sur", "aguada de guerra": "Línea Sur", "clemente onelli": "Línea Sur",
+            // Circuito Andino
+            "el bolsón": "Circuito Andino", "san carlos de bariloche": "Circuito Andino", "bariloche": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino", "comallo": "Circuito Andino", "dina huapi": "Circuito Andino",
+            "el foyel": "Circuito Andino", "el manso": "Circuito Andino", "las bayas": "Circuito Andino", "mamuel choique": "Circuito Andino", "ojos de agua": "Circuito Andino", "río chico": "Circuito Andino", "paso flores": "Circuito Andino", "pilquiniyeu del limay": "Circuito Andino", "villa llanquín": "Circuito Andino", "villa mascardi": "Circuito Andino", "arroyo las minas": "Circuito Andino", "chacay huarruca": "Circuito Andino", "mallín ahogado": "Circuito Andino",
+            // Circuito Atlántico
+            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico",
+            "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
+            // Valle Inferior
+            "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior",
+            "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
+            // Valle Medio
+            "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio",
+            "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
         };
 
         function autocompletarCircuitoAdmin() {
@@ -327,7 +344,6 @@
 
             if (!localidad) { alert("Por favor ingresa una localidad."); return; }
 
-            // Normalización para consistencia con Supabase en carga Provincial
             if (localidad.toLowerCase() === "provincial" || localidad.toLowerCase() === "provincia") {
                 localidad = "Provincial General";
             }
