@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase + DAEBot Definitivo)</title>
+    <title>Tablero Electoral - Río Negro (Supabase + Gemini IA)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SDK oficial de Google Gen AI para la superinteligencia de DAEBot -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/genai": "https://esm.run/@google/genai"
+        }
+      }
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -127,15 +135,15 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT DAEBot) -->
+        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT DAEBot CON GEMINI API) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🤖 DAEBot - Asistente Electoral</h2>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🤖 DAEBot (Powered by Gemini)</h2>
                 <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             </div>
             <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
                 <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Soy <b>DAEBot</b>. Pedime comparaciones de localidades, partidos o categorías.
+                    ¡Hola! Soy <b>DAEBot</b> con inteligencia real de Gemini. Preguntame lo que quieras sobre comparaciones entre localidades, partidos o categorías.
                 </div>
             </div>
             <div class="flex flex-col gap-2">
@@ -150,7 +158,13 @@
         <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Tablero Público Oficial</p>
     </footer>
 
-    <script>
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        // Instancia de Gemini API (Usamos la clave de entorno del navegador o inyectada de forma segura)
+        // Reemplazá 'TU_GEMINI_API_KEY' con tu clave real de la API de Google AI Studio si es necesario
+        const ai = new GoogleGenAI({ apiKey: "TU_GEMINI_API_KEY" });
+
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         
@@ -295,16 +309,16 @@
             }
         }
 
-        async function onCircuitChange() {
+        window.onCircuitChange = async function() {
             actualizarSelectLocalidades();
             await actualizarCategoriasDisponibles();
         }
 
-        async function onLocalityChange() {
+        window.onLocalityChange = async function() {
             await actualizarCategoriasDisponibles();
         }
 
-        async function loadPublicData() {
+        window.loadPublicData = async function() {
             const anio = parseInt(document.getElementById('public-year').value);
             const circuito = document.getElementById('public-circuit').value;
             const localidad = document.getElementById('public-locality').value || "Provincial General";
@@ -389,28 +403,8 @@
             }
         }
 
-        // MOTOR DAEBot BLINDADO Y DINÁMICO
-        let ultimoContextoIA = {
-            localidades: [],
-            circuito: null,
-            categoria: 'GOB',
-            anio: 2026
-        };
-
-        const mapaCategoriasIA = {
-            "intendente": "INT", "intendencia": "INT",
-            "gobernador": "GOB", "gobernación": "GOB", "vice": "GOB",
-            "concejal": "CON", "concejales": "CON", "concejo": "CON",
-            "legislador circuital": "LEGC", "circuital": "LEGC",
-            "legislador poblacional": "LEGP", "poblacional": "LEGP",
-            "comision de fomento": "COF", "fomento": "COF", "comisionado": "COF",
-            "vocal": "VCF",
-            "contraloría": "MCM", "contralor": "MCM",
-            "tribunal de cuentas": "MTC", "cuentas": "MTC",
-            "endecom": "END"
-        };
-
-        async function procesarConsultaIA() {
+        // MOTOR DAEBot REAL CONECTADO A GEMINI Y SUPABASE
+        window.procesarConsultaIA = async function() {
             const input = document.getElementById('chat-input');
             const mensajesContainer = document.getElementById('chat-messages');
             const textoPregunta = input.value.trim();
@@ -427,11 +421,12 @@
             const idCarga = 'carga-' + Date.now();
             mensajesContainer.innerHTML += `
                 <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
-                    DAEBot procesando comparación en Supabase...
+                    🤖 DAEBot procesando con Gemini...
                 </div>`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
             try {
+                // 1. Extraemos todos los datos de Supabase para dárselos como contexto a Gemini
                 let { data: datosElectorales, error } = await supabaseClient.from('resultados_mesas').select('*');
 
                 if (error || !datosElectorales || datosElectorales.length === 0) {
@@ -443,164 +438,40 @@
                     return;
                 }
 
-                const qLower = textoPregunta.toLowerCase();
+                // 2. Preparamos el contexto completo de los datos electorales en formato JSON plano para la IA
+                const contextoDatos = JSON.stringify(datosElectorales);
 
-                // 1. AÑO
-                if (qLower.includes('2023')) ultimoContextoIA.anio = 2023;
-                else if (qLower.includes('2025')) ultimoContextoIA.anio = 2025;
-                else if (qLower.includes('2026')) ultimoContextoIA.anio = 2026;
-                else if (qLower.includes('2027')) ultimoContextoIA.anio = 2027;
-
-                // 2. CATEGORÍA
-                let categoriaDetectada = null;
-                for (let [clave, codigo] of Object.entries(mapaCategoriasIA)) {
-                    if (qLower.includes(clave)) {
-                        categoriaDetectada = codigo;
-                        break;
-                    }
-                }
-                if (categoriaDetectada) {
-                    ultimoContextoIA.categoria = categoriaDetectada;
-                }
-
-                // 3. DETECCIÓN EXHAUSTIVA DE TODAS LAS LOCALIDADES MENCIONADAS
-                let localidadesExistentes = [...new Set(datosElectorales.map(d => d.localidad))].filter(Boolean);
-                let localidadesDetectadas = [];
-
-                for (let loc of localidadesExistentes) {
-                    let locClean = loc.toLowerCase();
-                    let partes = locClean.split(/[\/\-\(]/).map(p => p.trim());
+                // 3. Prompt de sistema especializado para que Gemini actúe como DAEBot
+                const promptSistema = `
+                    Sos DAEBot, el Asistente Oficial e Inteligente de la Dirección de Asuntos Electorales de la Provincia de Río Negro.
+                    Tenés acceso a la base de datos completa de resultados electorales en formato JSON proporcionada abajo.
+                    Categorías oficiales: GOB (Gobernador), INT (Intendente), CON (Concejal), LEGP, LEGC, COF, VCF, MCM, MTC, END.
+                    Tu tarea es responder con absoluta precisión matemática, realizar comparaciones cruzadas entre localidades, circuitos, partidos políticos y categorías cuando el usuario te lo pida. Respondé siempre de forma clara, profesional, usando negritas y formato estructurado (con porcentajes, diferencias de votos y totales). Si te preguntan algo que no está en los datos, decilo con amabilidad.
                     
-                    if (qLower.includes(locClean) || partes.some(p => p.length > 2 && qLower.includes(p))) {
-                        if (!localidadesDetectadas.includes(loc)) {
-                            localidadesDetectadas.push(loc);
-                        }
-                    }
-                }
+                    DATOS DE SUPABASE:
+                    ${contextoDatos}
+                `;
 
-                if (localidadesDetectadas.length > 0) {
-                    if (qLower.includes('compar') || qLower.includes(' con ') || qLower.includes(' y ') || localidadesDetectadas.length > 1) {
-                        localidadesDetectadas.forEach(l => {
-                            if (!ultimoContextoIA.localidades.includes(l)) ultimoContextoIA.localidades.push(l);
-                        });
-                    } else {
-                        ultimoContextoIA.localidades = [localidadesDetectadas[0]];
-                    }
-                }
-
-                // --- MODALIDAD A: SI HAY 2 O MÁS LOCALIDADES EN CONTEXTO (COMPARACIÓN MÚLTIPLE) ---
-                if (ultimoContextoIA.localidades.length > 1) {
-                    let catNombre = nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria;
-                    let htmlRespuesta = `📊 <b>Comparación Electoral (${catNombre} - ${ultimoContextoIA.anio}):</b><br><br>`;
-
-                    for (let loc of ultimoContextoIA.localidades) {
-                        let subDatos = datosElectorales.filter(d => 
-                            (d.localidad || '').toLowerCase() === loc.toLowerCase() &&
-                            d.anio === ultimoContextoIA.anio &&
-                            d.categoria === ultimoContextoIA.categoria
-                        );
-
-                        if (subDatos.length === 0) {
-                            subDatos = datosElectorales.filter(d => 
-                                (d.localidad || '').toLowerCase() === loc.toLowerCase() &&
-                                d.categoria === ultimoContextoIA.categoria
-                            );
-                        }
-
-                        if (subDatos.length === 0) {
-                            htmlRespuesta += `📍 <b>${loc}:</b> Sin registros para la categoría ${catNombre}.<br><br>`;
-                            continue;
-                        }
-
-                        let totalVal = subDatos.reduce((acc, r) => acc + (r.votos || 0), 0);
-                        subDatos.sort((a, b) => b.votos - a.votos);
-
-                        let ganador = subDatos[0];
-                        let pctG = totalVal > 0 ? ((ganador.votos / totalVal) * 100).toFixed(2) : "0";
-                        let nombreG = ganador.nombre_lista || `Lista ${ganador.lista_id}`;
-
-                        htmlRespuesta += `📍 <b>${loc}:</b><br>`;
-                        htmlRespuesta += `• Lidera: <b>${nombreG}</b> con ${ganador.votos.toLocaleString()} votos (${pctG}%)`;
-
-                        if (subDatos.length > 1) {
-                            let segundo = subDatos[1];
-                            let pctS = totalVal > 0 ? ((segundo.votos / totalVal) * 100).toFixed(2) : "0";
-                            let nombreS = segundo.nombre_lista || `Lista ${segundo.lista_id}`;
-                            htmlRespuesta += `<br>• 2° Lugar: <b>${nombreS}</b> con ${segundo.votos.toLocaleString()} votos (${pctS}%)`;
-                        }
-                        htmlRespuesta += `<br><br>`;
-                    }
-
-                    document.getElementById(idCarga).outerHTML = `
-                        <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            ${htmlRespuesta}
-                        </div>`;
-                    mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
-                    return;
-                }
-
-                // --- MODALIDAD B: ANÁLISIS DE 1 SOLA LOCALIDAD ---
-                let localidadActiva = ultimoContextoIA.localidades.length === 1 ? ultimoContextoIA.localidades[0] : "Viedma";
-                let datosFiltrados = datosElectorales.filter(d => (d.localidad || '').toLowerCase() === localidadActiva.toLowerCase());
-
-                let datosPorAnio = datosFiltrados.filter(d => d.anio === ultimoContextoIA.anio);
-                if (datosPorAnio.length > 0) datosFiltrados = datosPorAnio;
-
-                let catsEnLugar = [...new Set(datosFiltrados.map(d => d.categoria))];
-                if (catsEnLugar.length > 0 && !catsEnLugar.includes(ultimoContextoIA.categoria)) {
-                    ultimoContextoIA.categoria = catsEnLugar[0];
-                }
-
-                datosFiltrados = datosFiltrados.filter(d => d.categoria === ultimoContextoIA.categoria);
-
-                if (datosFiltrados.length === 0) {
-                    document.getElementById(idCarga).outerHTML = `
-                        <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>DAEBot:</b> No encontré registros para <b>${localidadActiva}</b> en la categoría ${nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria}.
-                        </div>`;
-                    mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
-                    return;
-                }
-
-                let totalesPorLista = {};
-                let totalVotosValidos = 0;
-
-                datosFiltrados.forEach(d => {
-                    let nombre = d.nombre_lista || `Lista ${d.lista_id}`;
-                    totalesPorLista[nombre] = (totalesPorLista[nombre] || 0) + (d.votos || 0);
-                    totalVotosValidos += (d.votos || 0);
+                // 4. Llamada al modelo real de Gemini (gemini-2.5-flash)
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: [
+                        { role: 'user', parts: [{ text: promptSistema }, { text: `Pregunta del usuario: ${textoPregunta}` }] }
+                    ]
                 });
 
-                let ranking = Object.entries(totalesPorLista).sort((a, b) => b[1] - a[1]);
-                let respuestaGenerada = "";
-                let textoCat = ` (${nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria})`;
-
-                if (ranking.length > 0) {
-                    let ganador = ranking[0];
-                    let pctGanador = totalVotosValidos > 0 ? ((ganador[1] / totalVotosValidos) * 100).toFixed(2) : "0";
-
-                    respuestaGenerada = `📍 Localidad: <b>${localidadActiva}</b>${textoCat}<br>`;
-                    if (ranking.length > 1) {
-                        let segundo = ranking[1];
-                        let pctSegundo = totalVotosValidos > 0 ? ((segundo[1] / totalVotosValidos) * 100).toFixed(2) : "0";
-                        let dif = (ganador[1] - segundo[1]).toLocaleString();
-                        respuestaGenerada += `El espacio <b>${ganador[0]}</b> lidera con ${ganador[1].toLocaleString()} votos (${pctGanador}%), sobre <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctSegundo}%). Margen: ${dif} votos.`;
-                    } else {
-                        respuestaGenerada += `La fuerza <b>${ganador[0]}</b> cuenta con ${ganador[1].toLocaleString()} votos (${pctGanador}%).`;
-                    }
-                } else {
-                    respuestaGenerada = "No se encontraron cómputos guardados para esa consulta.";
-                }
+                const respuestaGemini = response.text || "No se pudo generar una respuesta.";
 
                 document.getElementById(idCarga).outerHTML = `
-                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                        ${respuestaGenerada}
+                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm leading-relaxed">
+                        ${respuestaGemini.replace(/\n/g, '<br>')}
                     </div>`;
 
             } catch (err) {
+                console.error(err);
                 document.getElementById(idCarga).outerHTML = `
                     <div class="bg-red-50 text-red-800 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                        <b>DAEBot:</b> Ocurrió un error al procesar la consulta en Supabase.
+                        <b>DAEBot:</b> Ocurrió un error al conectar con el motor de Gemini. Verificá tu API Key.
                     </div>`;
             }
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
