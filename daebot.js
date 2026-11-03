@@ -1,5 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
@@ -11,26 +9,37 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Faltan datos o pregunta' });
   }
 
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Falta configurar la GEMINI_API_KEY en Vercel' });
+  }
+
   try {
-    // Inicializamos Gemini de forma segura en el servidor de Vercel
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-    const promptSistema = `Sos DAEBot, el Asistente Oficial e Inteligente de la Dirección de Asuntos Electorales de la Provincia de Río Negro. 
-    Tenés acceso a la base de datos completa de resultados electorales en formato JSON provista abajo. 
-    Respondé con absoluta precisión matemática, realizá comparaciones cruzadas avanzadas entre localidades, circuitos, partidos y categorías cuando te lo pidan. 
-    Usá formato claro, profesional y estructurado con negritas.
+    const promptSistema = `Sos DAEBot, el Asistente Oficial e Inteligente de la Dirección de Asuntos Electorales de la Provincia de Río Negro. Tenés acceso a la base de datos completa de resultados electorales en formato JSON provista abajo. Respondé con absoluta precisión matemática, realizá comparaciones cruzadas avanzadas entre localidades, circuitos, partidos y categorías cuando te lo pidan. Usá formato claro y estructurado con negritas.
     
-    DATOS DE SUPABASE:
-    ${JSON.stringify(datosElectorales)}
-    
-    Pregunta del usuario: ${pregunta}`;
+DATOS DE SUPABASE:
+${JSON.stringify(datosElectorales)}
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: promptSistema }] }]
+Pregunta del usuario: ${pregunta}`;
+
+    // Llamada directa y segura vía fetch desde el servidor de Vercel usando la clave AQ... o AIza...
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: promptSistema }]
+        }]
+      })
     });
 
-    const respuestaTexto = response.text || "No se pudo procesar la respuesta.";
+    const resultadoJson = await geminiRes.json();
+
+    if (resultadoJson.error) {
+      throw new Error(resultadoJson.error.message || "Error en la API de Gemini");
+    }
+
+    const respuestaTexto = resultadoJson.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo procesar la respuesta.";
 
     return res.status(200).json({ respuesta: respuestaTexto });
 
