@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase + IA Lateral)</title>
+    <title>Tablero Electoral - Río Negro (Supabase + IA Agrupada)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -56,7 +56,7 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        <!-- COLUMNA IZQUIERDA (TABLERO PRINCIPAL) -->
+        <!-- COLUMNA IZQUIERDA (TABLERO PRINCIPAL DE RESULTADOS) -->
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-4 rounded border border-slate-200 custom-shadow flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -127,7 +127,7 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (CHAT DE IA LATERAL) -->
+        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT IA) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🧠 Asistente Electoral Inteligente (IA)</h2>
@@ -312,7 +312,7 @@
             const statusEl = document.getElementById('public-status');
             const container = document.getElementById('public-results-container');
 
-            statusEl.innerText = "Buscando en Supabase...";
+            statusEl.innerText = "Cargando datos...";
 
             try {
                 if (!supabaseClient) throw new Error("Supabase no disponible");
@@ -323,15 +323,22 @@
                     .eq('anio', anio);
 
                 if (circuito !== "Provincial") {
-                    query = query.ilike('localidad', localidad).eq('categoria', categoria);
+                    query = query.ilike('localidad', localidad);
+                    if (categoria) {
+                        query = query.eq('categoria', categoria);
+                    }
+                } else {
+                    if (categoria) {
+                        query = query.eq('categoria', categoria);
+                    }
                 }
 
                 let { data, error } = await query;
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
-                    statusEl.innerText = "Sin datos cargados para esta selección.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en el año ${anio}.</p>`;
+                    statusEl.innerText = "Sin datos cargados.";
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para la selección actual.</p>`;
                     document.getElementById('stat-mesas').innerText = "0";
                     document.getElementById('stat-participacion').innerText = "0.00%";
                     document.getElementById('stat-procesados').innerText = "0";
@@ -339,34 +346,47 @@
                     return;
                 }
 
-                let mesasCSV = data[0].mesas_procesadas || "0";
-                let participacionCSV = data[0].porcentaje_participacion || "0.00%";
-                let blanco = data[0].votos_blanco || 0;
-                let nulos = data[0].votos_nulos || 0;
+                // AGRUPAMIENTO AUTOMÁTICO DE LISTAS
+                let agrupado = {};
+                let blancoTotal = 0;
+                let nulosTotal = 0;
                 let totalValidos = 0;
-                
-                data.sort((a, b) => b.votos - a.votos);
-                data.forEach(row => { totalValidos += row.votos || 0; });
 
-                let totalVotantes = totalValidos + blanco + nulos;
+                data.forEach(row => {
+                    let key = row.nombre_lista || `Lista ${row.lista_id}`;
+                    if (!agrupado[key]) {
+                        agrupado[key] = {
+                            nombre: key,
+                            votos: 0,
+                            lista_id: row.lista_id
+                        };
+                    }
+                    agrupado[key].votos += (row.votos || 0);
+                    totalValidos += (row.votos || 0);
 
-                document.getElementById('stat-mesas').innerText = mesasCSV;
-                document.getElementById('stat-participacion').innerText = participacionCSV;
+                    blancoTotal = Math.max(blancoTotal, row.votos_blanco || 0);
+                    nulosTotal = Math.max(nulosTotal, row.votos_nulos || 0);
+                });
+
+                let listasFinales = Object.values(agrupado).sort((a, b) => b.votos - a.votos);
+                let totalVotantes = totalValidos + blancoTotal + nulosTotal;
+
+                document.getElementById('stat-mesas').innerText = data[0].mesas_procesadas || "0";
+                document.getElementById('stat-participacion').innerText = data[0].porcentaje_participacion || "0.00%";
                 document.getElementById('stat-procesados').innerText = totalVotantes.toLocaleString();
-                document.getElementById('stat-subvalidos').innerText = `Blanco: ${blanco.toLocaleString()} | Nulos: ${nulos.toLocaleString()}`;
+                document.getElementById('stat-subvalidos').innerText = `Blanco: ${blancoTotal.toLocaleString()} | Nulos: ${nulosTotal.toLocaleString()}`;
 
                 container.innerHTML = "";
                 let colorPalette = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#88D9E8", "#B4B5E0", "#FFEE55", "#444444"];
 
-                data.forEach((row, idx) => {
+                listasFinales.forEach((row, idx) => {
                     let porcentaje = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
                     let color = colorPalette[idx % colorPalette.length];
-                    let nombrePartido = row.nombre_lista || `Lista ${row.lista_id}`;
 
                     container.innerHTML += `
                         <div class="space-y-1">
                             <div class="flex justify-between text-xs font-semibold">
-                                <span class="text-slate-700">${nombrePartido}</span>
+                                <span class="text-slate-700">${row.nombre}</span>
                                 <span class="text-slate-900 font-bold">${row.votos.toLocaleString()} votos (${porcentaje}%)</span>
                             </div>
                             <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
@@ -378,7 +398,7 @@
                 statusEl.innerText = "✓ Sincronizado con Supabase";
             } catch (err) {
                 console.error(err);
-                statusEl.innerText = "Error de conexión con la base de datos.";
+                statusEl.innerText = "Error al procesar la información.";
             }
         }
 
@@ -409,7 +429,7 @@
                 if (error || !datosElectorales || datosElectorales.length === 0) {
                     document.getElementById(idCarga).outerHTML = `
                         <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>IA:</b> No hay datos cargados en Supabase aún para analizar. Carga actas en la base de datos desde la sección Admin.
+                            <b>IA:</b> No hay datos cargados en Supabase aún para analizar.
                         </div>`;
                     mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
                     return;
@@ -424,7 +444,6 @@
 
                 if (qLower.includes('valle medio')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle medio'));
                 else if (qLower.includes('andino')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('andino'));
-                else if (qLower.includes('atlantico') || qLower.includes('atlántico')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('atlántico'));
 
                 if (datosFiltrados.length === 0) datosFiltrados = datosElectorales;
 
