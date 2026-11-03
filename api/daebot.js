@@ -5,19 +5,23 @@ export default async function handler(req, res) {
 
   const { pregunta, datosElectorales } = req.body;
 
-  if (!pregunta || !datosElectorales) {
-    return res.status(400).json({ error: 'Faltan datos o pregunta' });
+  if (!pregunta || !datosElectorales || datosElectorales.length === 0) {
+    return res.status(400).json({ error: 'Faltan datos o la base está vacía' });
   }
 
   try {
     const qLower = pregunta.toLowerCase();
     
-    // 1. Detección de año
-    let anioConsulta = 2026;
-    if (qLower.includes('2023')) anioConsulta = 2023;
-    else if (qLower.includes('2025')) anioConsulta = 2025;
-    else if (qLower.includes('2026')) anioConsulta = 2026;
-    else if (qLower.includes('2027')) anioConsulta = 2027;
+    // 1. Detectar años mencionados en la pregunta o buscar el año más reciente con datos
+    const aniosDisponibles = [...new Set(datosElectorales.map(d => d.anio))].filter(Boolean).sort((a,b) => b - a);
+    let anioConsulta = aniosDisponibles[0] || 2026; // Toma el año con datos por defecto
+
+    for (let anio of aniosDisponibles) {
+      if (qLower.includes(anio.toString())) {
+        anioConsulta = anio;
+        break;
+      }
+    }
 
     // 2. Detección de categoría
     const mapaCategorias = {
@@ -37,7 +41,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. Detección de localidades mencionadas (ej: Viedma, Bariloche)
+    // 3. Detección inteligente de localidades en la base
     const localidadesDisponibles = [...new Set(datosElectorales.map(d => d.localidad))].filter(Boolean);
     let localidadesDetectadas = [];
 
@@ -49,18 +53,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // Si pide comparar y no detectó explícitamente dos, tomamos las principales o por defecto Viedma y Bariloche si nombra ambas
-    if (localidadesDetectadas.length === 0) {
-      localidadesDetectadas = ["Viedma"];
-    }
-
     let respuestaTexto = "";
 
-    // CASO A: Comparación cruzada de 2 o más localidades
+    // Si pide comparar o detecta varias localidades
     if (localidadesDetectadas.length >= 2 || qLower.includes('comparar') || qLower.includes(' y ')) {
-      let localesAComparar = localidadesDetectadas.length >= 2 ? localidadesDetectadas.slice(-2) : ["Viedma", "San Carlos de Bariloche"];
+      let localesAComparar = localidadesDetectadas.length >= 2 ? localidadesDetectadas : ["Viedma", "San Carlos de Bariloche"];
       
-      respuestaTexto = `📊 <b>Análisis Comparativo Electoral (Categoría: ${categoriaConsulta} - Año ${anioConsulta}):</b><br><br>`;
+      respuestaTexto = `📊 <b>Comparativa Electoral (${categoriaConsulta} - Año ${anioConsulta}):</b><br><br>`;
 
       for (let loc of localesAComparar) {
         let subDatos = datosElectorales.filter(d => 
@@ -70,12 +69,11 @@ export default async function handler(req, res) {
         );
 
         if (subDatos.length === 0) {
-          // Búsqueda flexible sin año estricto
           subDatos = datosElectorales.filter(d => (d.localidad || '').toLowerCase().includes(loc.toLowerCase()));
         }
 
         if (subDatos.length === 0) {
-          respuestaTexto += `📍 <b>${loc}:</b> Sin registros computados en este filtro.<br><br>`;
+          respuestaTexto += `📍 <b>${loc}:</b> Sin registros cargados.<br><br>`;
           continue;
         }
 
@@ -87,23 +85,23 @@ export default async function handler(req, res) {
         let nombreG = ganador.nombre_lista || `Lista ${ganador.lista_id}`;
 
         respuestaTexto += `📍 <b>${loc}:</b><br>`;
-        respuestaTexto += `• Fuerza Líder: <b>${nombreG}</b> con <b>${ganador.votos.toLocaleString()} votos</b> (${pctG}%).<br>`;
+        respuestaTexto += `• 1° Puesto: <b>${nombreG}</b> con <b>${ganador.votos.toLocaleString()} votos</b> (${pctG}%).<br>`;
 
         if (subDatos.length > 1) {
           let segundo = subDatos[1];
           let pctS = totalValidos > 0 ? ((segundo.votos / totalValidos) * 100).toFixed(2) : "0";
           let nombreS = segundo.nombre_lista || `Lista ${segundo.lista_id}`;
           let diferencia = (ganador.votos - segundo.votos).toLocaleString();
-          respuestaTexto += `• 2° Lugar: <b>${nombreS}</b> (${segundo.votos.toLocaleString()} votos - ${pctS}%). Margen: ${diferencia} votos.<br>`;
+          respuestaTexto += `• 2° Puesto: <b>${nombreS}</b> (${segundo.votos.toLocaleString()} votos - ${pctS}%). Margen: ${diferencia} votos.<br>`;
         }
         respuestaTexto += `<br>`;
       }
 
     } else {
-      // CASO B: Análisis detallado de una localidad
-      let localidadActiva = localidadesDetectadas[0];
+      // Análisis de una sola localidad
+      let localidadActiva = localidadesDetectadas.length > 0 ? localidadesDetectadas[0] : "Viedma";
       let subDatos = datosElectorales.filter(d => 
-        (d.localidad || '').toLowerCase() === localidadActiva.toLowerCase() &&
+        (d.localidad || '').toLowerCase().includes(localidadActiva.toLowerCase()) &&
         d.categoria === categoriaConsulta
       );
 
@@ -111,7 +109,7 @@ export default async function handler(req, res) {
       if (subAnio.length > 0) subDatos = subAnio;
 
       if (subDatos.length === 0) {
-        respuestaTexto = `🤖 <b>DAEBot:</b> No encontré registros cargados en Supabase para <b>${localidadActiva}</b> en la categoría seleccionada.`;
+        respuestaTexto = `🤖 <b>DAEBot:</b> No encontré registros para <b>${localidadActiva}</b> en la categoría y año analizados.`;
       } else {
         let totalValidos = 0;
         let totalesLista = {};
@@ -127,12 +125,12 @@ export default async function handler(req, res) {
         let pctG = totalValidos > 0 ? ((ganador[1] / totalValidos) * 100).toFixed(2) : "0";
 
         respuestaTexto = `📍 Cómputos para <b>${localidadActiva}</b> (Año ${anioConsulta}):<br>`;
-        respuestaTexto += `• El espacio <b>${ganador[0]}</b> lidera con <b>${ganador[1].toLocaleString()} votos</b> (${pctG}% del total válido).<br>`;
+        respuestaTexto += `• Lidera <b>${ganador[0]}</b> con <b>${ganador[1].toLocaleString()} votos</b> (${pctG}%).<br>`;
         
         if (ranking.length > 1) {
           let segundo = ranking[1];
           let pctS = totalValidos > 0 ? ((segundo[1] / totalValidos) * 100).toFixed(2) : "0";
-          respuestaTexto += `• En segundo lugar se ubica <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctS}%).`;
+          respuestaTexto += `• 2° Lugar: <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctS}%).`;
         }
       }
     }
@@ -140,7 +138,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ respuesta: respuestaTexto });
 
   } catch (error) {
-    console.error("Error analizando datos:", error);
-    return res.status(500).json({ error: 'Error interno en el servidor analítico.' });
+    console.error("Error en motor analítico:", error);
+    return res.status(500).json({ error: 'Error procesando la consulta en el servidor.' });
   }
 }
