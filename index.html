@@ -139,7 +139,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-2">
-                <input type="text" id="chat-input" placeholder="Ej: Compará Viedma con Huergo" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
+                <input type="text" id="chat-input" placeholder="Ej: Compará Viedma con Bariloche" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
                 <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a DAEBot</button>
             </div>
         </div>
@@ -427,7 +427,7 @@
             const idCarga = 'carga-' + Date.now();
             mensajesContainer.innerHTML += `
                 <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
-                    DAEBot consultando Supabase...
+                    DAEBot procesando comparación en Supabase...
                 </div>`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
@@ -445,11 +445,13 @@
 
                 const qLower = textoPregunta.toLowerCase();
 
+                // 1. AÑO
                 if (qLower.includes('2023')) ultimoContextoIA.anio = 2023;
                 else if (qLower.includes('2025')) ultimoContextoIA.anio = 2025;
                 else if (qLower.includes('2026')) ultimoContextoIA.anio = 2026;
                 else if (qLower.includes('2027')) ultimoContextoIA.anio = 2027;
 
+                // 2. CATEGORÍA
                 let categoriaDetectada = null;
                 for (let [clave, codigo] of Object.entries(mapaCategoriasIA)) {
                     if (qLower.includes(clave)) {
@@ -461,53 +463,70 @@
                     ultimoContextoIA.categoria = categoriaDetectada;
                 }
 
-                // Detección flexible de localidades presentes en la pregunta
+                // 3. DETECCIÓN EXHAUSTIVA DE TODAS LAS LOCALIDADES MENCIONADAS
                 let localidadesExistentes = [...new Set(datosElectorales.map(d => d.localidad))].filter(Boolean);
                 let localidadesDetectadas = [];
 
                 for (let loc of localidadesExistentes) {
                     let locClean = loc.toLowerCase();
                     let partes = locClean.split(/[\/\-\(]/).map(p => p.trim());
+                    
                     if (qLower.includes(locClean) || partes.some(p => p.length > 2 && qLower.includes(p))) {
-                        if (!localidadesDetectadas.includes(loc)) localidadesDetectadas.push(loc);
+                        if (!localidadesDetectadas.includes(loc)) {
+                            localidadesDetectadas.push(loc);
+                        }
                     }
                 }
 
                 if (localidadesDetectadas.length > 0) {
-                    ultimoContextoIA.localidades = localidadesDetectadas;
+                    if (qLower.includes('compar') || qLower.includes(' con ') || qLower.includes(' y ') || localidadesDetectadas.length > 1) {
+                        localidadesDetectadas.forEach(l => {
+                            if (!ultimoContextoIA.localidades.includes(l)) ultimoContextoIA.localidades.push(l);
+                        });
+                    } else {
+                        ultimoContextoIA.localidades = [localidadesDetectadas[0]];
+                    }
                 }
 
-                // --- MODALIDAD A: COMPARACIÓN DE MÚLTIPLES LOCALIDADES ---
+                // --- MODALIDAD A: SI HAY 2 O MÁS LOCALIDADES EN CONTEXTO (COMPARACIÓN MÚLTIPLE) ---
                 if (ultimoContextoIA.localidades.length > 1) {
-                    let htmlRespuesta = `📊 <b>Comparación Electoral:</b><br><br>`;
+                    let catNombre = nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria;
+                    let htmlRespuesta = `📊 <b>Comparación Electoral (${catNombre} - ${ultimoContextoIA.anio}):</b><br><br>`;
 
                     for (let loc of ultimoContextoIA.localidades) {
-                        let subDatos = datosElectorales.filter(d => (d.localidad || '').toLowerCase() === loc.toLowerCase());
+                        let subDatos = datosElectorales.filter(d => 
+                            (d.localidad || '').toLowerCase() === loc.toLowerCase() &&
+                            d.anio === ultimoContextoIA.anio &&
+                            d.categoria === ultimoContextoIA.categoria
+                        );
 
                         if (subDatos.length === 0) {
-                            htmlRespuesta += `📍 <b>${loc}:</b> Sin registros cargados.<br><br>`;
+                            subDatos = datosElectorales.filter(d => 
+                                (d.localidad || '').toLowerCase() === loc.toLowerCase() &&
+                                d.categoria === ultimoContextoIA.categoria
+                            );
+                        }
+
+                        if (subDatos.length === 0) {
+                            htmlRespuesta += `📍 <b>${loc}:</b> Sin registros para la categoría ${catNombre}.<br><br>`;
                             continue;
                         }
 
-                        let catsDisponibles = [...new Set(subDatos.map(d => d.categoria))];
-                        let catAUsar = catsDisponibles.includes(ultimoContextoIA.categoria) ? ultimoContextoIA.categoria : catsDisponibles[0];
+                        let totalVal = subDatos.reduce((acc, r) => acc + (r.votos || 0), 0);
+                        subDatos.sort((a, b) => b.votos - a.votos);
 
-                        let datosFiltradosLoc = subDatos.filter(d => d.categoria === catAUsar);
-                        let totalVal = datosFiltradosLoc.reduce((acc, r) => acc + (r.votos || 0), 0);
-                        datosFiltradosLoc.sort((a, b) => b.votos - a.votos);
-
-                        let ganador = datosFiltradosLoc[0];
+                        let ganador = subDatos[0];
                         let pctG = totalVal > 0 ? ((ganador.votos / totalVal) * 100).toFixed(2) : "0";
                         let nombreG = ganador.nombre_lista || `Lista ${ganador.lista_id}`;
 
-                        htmlRespuesta += `📍 <b>${loc}</b> (${nombresCategorias[catAUsar] || catAUsar}):<br>`;
+                        htmlRespuesta += `📍 <b>${loc}:</b><br>`;
                         htmlRespuesta += `• Lidera: <b>${nombreG}</b> con ${ganador.votos.toLocaleString()} votos (${pctG}%)`;
 
-                        if (datosFiltradosLoc.length > 1) {
-                            let segundo = datosFiltradosLoc[1];
+                        if (subDatos.length > 1) {
+                            let segundo = subDatos[1];
                             let pctS = totalVal > 0 ? ((segundo.votos / totalVal) * 100).toFixed(2) : "0";
                             let nombreS = segundo.nombre_lista || `Lista ${segundo.lista_id}`;
-                            htmlRespuesta += `<br>• 2° Lugar: <b>${nombreS}</b> (${pctS}%)`;
+                            htmlRespuesta += `<br>• 2° Lugar: <b>${nombreS}</b> con ${segundo.votos.toLocaleString()} votos (${pctS}%)`;
                         }
                         htmlRespuesta += `<br><br>`;
                     }
@@ -521,28 +540,23 @@
                 }
 
                 // --- MODALIDAD B: ANÁLISIS DE 1 SOLA LOCALIDAD ---
-                let datosFiltrados = datosElectorales;
+                let localidadActiva = ultimoContextoIA.localidades.length === 1 ? ultimoContextoIA.localidades[0] : "Viedma";
+                let datosFiltrados = datosElectorales.filter(d => (d.localidad || '').toLowerCase() === localidadActiva.toLowerCase());
 
-                if (ultimoContextoIA.localidades.length === 1) {
-                    let locObjetivo = ultimoContextoIA.localidades[0].toLowerCase();
-                    datosFiltrados = datosFiltrados.filter(d => (d.localidad || '').toLowerCase() === locObjetivo);
-                }
+                let datosPorAnio = datosFiltrados.filter(d => d.anio === ultimoContextoIA.anio);
+                if (datosPorAnio.length > 0) datosFiltrados = datosPorAnio;
 
-                // Auto-selección de categoría con datos reales si la pedida no existe
                 let catsEnLugar = [...new Set(datosFiltrados.map(d => d.categoria))];
                 if (catsEnLugar.length > 0 && !catsEnLugar.includes(ultimoContextoIA.categoria)) {
                     ultimoContextoIA.categoria = catsEnLugar[0];
                 }
 
-                if (ultimoContextoIA.categoria) {
-                    datosFiltrados = datosFiltrados.filter(d => d.categoria === ultimoContextoIA.categoria);
-                }
+                datosFiltrados = datosFiltrados.filter(d => d.categoria === ultimoContextoIA.categoria);
 
                 if (datosFiltrados.length === 0) {
-                    let nombreLugar = ultimoContextoIA.localidades[0] || 'la localidad';
                     document.getElementById(idCarga).outerHTML = `
                         <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>DAEBot:</b> No encontré registros para <b>${nombreLugar}</b> en la categoría seleccionada. Verificá que los datos estén guardados en Supabase.
+                            <b>DAEBot:</b> No encontré registros para <b>${localidadActiva}</b> en la categoría ${nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria}.
                         </div>`;
                     mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
                     return;
@@ -559,15 +573,13 @@
 
                 let ranking = Object.entries(totalesPorLista).sort((a, b) => b[1] - a[1]);
                 let respuestaGenerada = "";
-
-                let textoLugar = ultimoContextoIA.localidades[0] ? `Localidad: <b>${ultimoContextoIA.localidades[0]}</b>` : "Cómputos consultados";
-                let textoCat = ultimoContextoIA.categoria ? ` (${nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria})` : "";
+                let textoCat = ` (${nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria})`;
 
                 if (ranking.length > 0) {
                     let ganador = ranking[0];
                     let pctGanador = totalVotosValidos > 0 ? ((ganador[1] / totalVotosValidos) * 100).toFixed(2) : "0";
 
-                    respuestaGenerada = `📍 <b>${textoLugar}</b>${textoCat}<br>`;
+                    respuestaGenerada = `📍 Localidad: <b>${localidadActiva}</b>${textoCat}<br>`;
                     if (ranking.length > 1) {
                         let segundo = ranking[1];
                         let pctSegundo = totalVotosValidos > 0 ? ((segundo[1] / totalVotosValidos) * 100).toFixed(2) : "0";
