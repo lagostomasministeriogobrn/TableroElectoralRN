@@ -22,9 +22,13 @@ ${JSON.stringify(datosElectorales)}
 
 Pregunta del usuario: ${pregunta}`;
 
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // Usamos el endpoint y autenticación por Bearer token compatible con credenciales de proyecto (AQ...)
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
         contents: [{
           parts: [{ text: promptSistema }]
@@ -35,7 +39,7 @@ Pregunta del usuario: ${pregunta}`;
     const resultadoJson = await geminiRes.json();
 
     if (resultadoJson.error) {
-      throw new Error(resultadoJson.error.message || "Error en la API de Gemini");
+      throw new Error(resultadoJson.error.message || "Error en la API de Google");
     }
 
     const respuestaTexto = resultadoJson.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo procesar la respuesta.";
