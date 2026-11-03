@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase + IA Avanzada)</title>
+    <title>Tablero Electoral - Río Negro (Supabase + DAEBot)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -127,20 +127,20 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT IA CON MEMORIA DE CONTEXTO) -->
+        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT CON DAEBot) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🧠 Asistente Electoral Inteligente (IA)</h2>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🤖 DAEBot - Asistente Electoral</h2>
                 <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             </div>
             <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
                 <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Podés hacerme consultas complejas sobre municipios, comisiones de fomento, categorías y repreguntar en contexto.
+                    ¡Hola! Soy <b>DAEBot</b>. Podés hacerme consultas sobre municipios, comisiones de fomento, categorías y repreguntar en contexto.
                 </div>
             </div>
             <div class="flex flex-col gap-2">
                 <input type="text" id="chat-input" placeholder="Ej: ¿Cómo salió Viedma para intendente?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
-                <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a la IA</button>
+                <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a DAEBot</button>
             </div>
         </div>
 
@@ -389,7 +389,7 @@
             }
         }
 
-        // --- SISTEMA DE MEMORIA Y CONTEXTO DE LA IA ---
+        // MOTOR DAEBot DE CONTEXTO E INTELIGENCIA ELECTORAL
         let ultimoContextoIA = {
             localidad: null,
             circuito: null,
@@ -427,7 +427,7 @@
             const idCarga = 'carga-' + Date.now();
             mensajesContainer.innerHTML += `
                 <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
-                    Analizando cómputos...
+                    DAEBot analizando cómputos...
                 </div>`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
@@ -437,7 +437,7 @@
                 if (error || !datosElectorales || datosElectorales.length === 0) {
                     document.getElementById(idCarga).outerHTML = `
                         <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>IA:</b> No hay datos cargados en Supabase aún para analizar.
+                            <b>DAEBot:</b> No hay datos cargados en Supabase aún para analizar.
                         </div>`;
                     mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
                     return;
@@ -445,13 +445,11 @@
 
                 const qLower = textoPregunta.toLowerCase();
 
-                // 1. AÑO
                 if (qLower.includes('2023')) ultimoContextoIA.anio = 2023;
                 else if (qLower.includes('2025')) ultimoContextoIA.anio = 2025;
                 else if (qLower.includes('2026')) ultimoContextoIA.anio = 2026;
                 else if (qLower.includes('2027')) ultimoContextoIA.anio = 2027;
 
-                // 2. CATEGORÍA
                 let categoriaDetectada = null;
                 for (let [clave, codigo] of Object.entries(mapaCategoriasIA)) {
                     if (qLower.includes(clave)) {
@@ -463,7 +461,6 @@
                     ultimoContextoIA.categoria = categoriaDetectada;
                 }
 
-                // 3. LOCALIDAD O COMISIÓN DE FOMENTO
                 let localidadesExistentes = [...new Set(datosElectorales.map(d => d.localidad))].filter(Boolean);
                 let localidadDetectada = null;
 
@@ -478,9 +475,8 @@
 
                 if (localidadDetectada) {
                     ultimoContextoIA.localidad = localidadDetectada;
-                    ultimoContextoIA.circuito = null; // Reinicia circuito si es especifico
+                    ultimoContextoIA.circuito = null;
                 } else {
-                    // 4. CIRCUITO ELECTORAL
                     if (qLower.includes('valle medio')) ultimoContextoIA.circuito = 'Valle Medio';
                     else if (qLower.includes('alto valle centro') || qLower.includes('valle centro')) ultimoContextoIA.circuito = 'Alto Valle Centro';
                     else if (qLower.includes('alto valle este') || qLower.includes('valle este')) ultimoContextoIA.circuito = 'Alto Valle Este';
@@ -495,7 +491,6 @@
                     }
                 }
 
-                // APLICACIÓN DEL FILTRADO CON MEMORIA
                 let datosFiltrados = datosElectorales;
 
                 if (ultimoContextoIA.anio) {
@@ -512,20 +507,18 @@
                     datosFiltrados = datosFiltrados.filter(d => d.categoria === ultimoContextoIA.categoria);
                 }
 
-                // SI NO SE ENCONTRARON DATOS PARA ESA COMBINACIÓN
                 if (datosFiltrados.length === 0) {
                     let nombreCat = nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria || '';
                     let nombreLugar = ultimoContextoIA.localidad || ultimoContextoIA.circuito || 'la selección';
                     
                     document.getElementById(idCarga).outerHTML = `
                         <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>IA:</b> No hay datos cargados en Supabase para <b>${nombreLugar}</b> en la categoría <b>${nombreCat || 'consultada'}</b>.
+                            <b>DAEBot:</b> No hay datos cargados en Supabase para <b>${nombreLugar}</b> en la categoría <b>${nombreCat || 'consultada'}</b>.
                         </div>`;
                     mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
                     return;
                 }
 
-                // AGRUPACIÓN Y CONSTRUCCIÓN DE RESPUESTA
                 let totalesPorLista = {};
                 let totalVotosValidos = 0;
 
@@ -566,7 +559,7 @@
             } catch (err) {
                 document.getElementById(idCarga).outerHTML = `
                     <div class="bg-red-50 text-red-800 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                        <b>IA:</b> Ocurrió un error al procesar la consulta en Supabase.
+                        <b>DAEBot:</b> Ocurrió un error al procesar la consulta en Supabase.
                     </div>`;
             }
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
