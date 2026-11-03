@@ -127,7 +127,7 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT IA) -->
+        <!-- COLUMNA DERECHA (CHAT IA) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🧠 Asistente Electoral Inteligente (IA)</h2>
@@ -176,38 +176,14 @@
 
         const jerarquiaCircuitos = {
             "Provincial": { municipios: ["Provincial General"], fomentos: [] },
-            "Alto Valle Centro": {
-                municipios: ["Allen", "Cervantes", "General Roca"],
-                fomentos: ["Cerro Policía", "El Cuy", "Mencué", "Bajada Colorada/Naupa Huen", "Lonco Vaca/Aguada Guzmán"]
-            },
-            "Alto Valle Este": {
-                municipios: ["Chichinales", "Villa Regina", "Gral. E Godoy", "Mainqué", "Ing. Huergo"],
-                fomentos: ["Valle Azul"]
-            },
-            "Alto Valle Oeste": {
-                municipios: ["Barda del Medio", "Catriel", "Cinco Saltos", "Cipolletti", "Balsa Las Perlas (Anexo Cipolletti)", "Contralmirante Cordero", "Gral. Fernandez Oro", "Campo Grande"],
-                fomentos: ["Catriel Rural/Peñas Blancas"]
-            },
-            "Línea Sur": {
-                municipios: ["Los Menucos", "Maquinchao", "Sierra Colorada", "Ing. Jacobacci", "Mtro. Ramos Mexía"],
-                fomentos: ["Mtro. Ramos Mexía Rural/Comicó", "Prahuaniyeu", "Rincón Treneta", "Quetrequile", "Pilquiniyeu", "El Caín", "Maquinchao Rural/Colán Conhue", "Yaminué", "Laguna Blanca", "Aguada de Guerra", "Clemente Onelli"]
-            },
-            "Circuito Andino": {
-                municipios: ["El Bolsón", "San Carlos de Bariloche", "Ñorquinco", "Pilcaniyeu", "Comallo", "Dina Huapi"],
-                fomentos: ["El Foyel/El Manso", "Las Bayas", "Mamuel Choique", "Ojos de Agua", "Río Chico", "Paso Flores", "Pilquiniyeu del Limay", "Villa Llanquín", "Villa Mascardi", "Arroyo Las Minas", "Chacay Huarruca", "Mallín Ahogado"]
-            },
-            "Circuito Atlántico": {
-                municipios: ["San Antonio Oeste", "Anexo San Antonio Oeste: Las Grutas", "Anexo San Antonio Oeste: Puerto SAE", "Valcheta"],
-                fomentos: ["Cona Niyeu", "Aguada Cecilio", "Arroyo Los Berros", "Arroyo Ventana", "Nahuel Niyeu", "Sierra Paileman", "Chipauquil"]
-            },
-            "Valle Inferior": {
-                municipios: ["Viedma", "Gral. Conesa", "Guardia Mitre"],
-                fomentos: ["San Javier", "Cubanea", "Gral. E Frías", "Vicealmirante O'Connor", "Gral. Conesa Rural"]
-            },
-            "Valle Medio": {
-                municipios: ["Río Colorado", "Pomona", "Luis Beltrán", "Lamarque", "Darwin", "Coronel Belisle", "Choele Choel", "Chimpay"],
-                fomentos: ["Chelforó", "Pichi Mahuida", "Benjamín Zorrilla"]
-            }
+            "Alto Valle Centro": { municipios: ["Allen", "Cervantes", "General Roca"], fomentos: [] },
+            "Alto Valle Este": { municipios: ["Chichinales", "Villa Regina", "Gral. E Godoy", "Mainqué", "Ing. Huergo"], fomentos: [] },
+            "Alto Valle Oeste": { municipios: ["Barda del Medio", "Catriel", "Cinco Saltos", "Cipolletti", "Campo Grande"], fomentos: [] },
+            "Línea Sur": { municipios: ["Los Menucos", "Maquinchao", "Sierra Colorada", "Ing. Jacobacci"], fomentos: [] },
+            "Circuito Andino": { municipios: ["El Bolsón", "San Carlos de Bariloche", "Ñorquinco", "Dina Huapi"], fomentos: [] },
+            "Circuito Atlántico": { municipios: ["San Antonio Oeste", "Valcheta"], fomentos: [] },
+            "Valle Inferior": { municipios: ["Viedma", "Gral. Conesa", "Guardia Mitre"], fomentos: [] },
+            "Valle Medio": { municipios: ["Río Colorado", "Pomona", "Luis Beltrán", "Lamarque", "Darwin", "Choele Choel", "Chimpay"], fomentos: [] }
         };
 
         function actualizarSelectLocalidades() {
@@ -228,29 +204,12 @@
                 return;
             }
 
-            if (datosCircuito.municipios.length > 0) {
-                let groupMun = document.createElement('optgroup');
-                groupMun.label = "--- MUNICIPIOS ---";
-                datosCircuito.municipios.forEach(m => {
-                    let opt = document.createElement('option');
-                    opt.value = m;
-                    opt.innerText = m;
-                    groupMun.appendChild(opt);
-                });
-                selectLoc.appendChild(groupMun);
-            }
-
-            if (datosCircuito.fomentos.length > 0) {
-                let groupFom = document.createElement('optgroup');
-                groupFom.label = "--- COMISIONES DE FOMENTO ---";
-                datosCircuito.fomentos.forEach(f => {
-                    let opt = document.createElement('option');
-                    opt.value = f;
-                    opt.innerText = f;
-                    groupFom.appendChild(opt);
-                });
-                selectLoc.appendChild(groupFom);
-            }
+            datosCircuito.municipios.forEach(m => {
+                let opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = m;
+                selectLoc.appendChild(opt);
+            });
         }
 
         async function actualizarCategoriasDisponibles() {
