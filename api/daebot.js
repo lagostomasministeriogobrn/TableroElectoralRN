@@ -22,7 +22,7 @@ ${JSON.stringify(datosElectorales)}
 
 Pregunta del usuario: ${pregunta}`;
 
-    // Usamos el endpoint y autenticación por Bearer token compatible con credenciales de proyecto (AQ...)
+    // Usamos el endpoint de la API con autenticación Bearer para credenciales de proyecto (AQ...)
     const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`, {
       method: 'POST',
       headers: { 
