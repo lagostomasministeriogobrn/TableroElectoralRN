@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase)</title>
+    <title>Tablero Electoral - Río Negro (Supabase + IA Avanzada)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -127,7 +127,7 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT IA) -->
+        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT IA CON MEMORIA DE CONTEXTO) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🧠 Asistente Electoral Inteligente (IA)</h2>
@@ -135,11 +135,11 @@
             </div>
             <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
                 <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Preguntame sobre cualquier localidad, circuito o partido político de Río Negro.
+                    ¡Hola! Podés hacerme consultas complejas sobre municipios, comisiones de fomento, categorías y repreguntar en contexto.
                 </div>
             </div>
             <div class="flex flex-col gap-2">
-                <input type="text" id="chat-input" placeholder="Ej: ¿Cómo salió Lonco Vaca o Bariloche?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
+                <input type="text" id="chat-input" placeholder="Ej: ¿Cómo salió Viedma para intendente?" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
                 <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a la IA</button>
             </div>
         </div>
@@ -175,10 +175,7 @@
         };
 
         const jerarquiaCircuitos = {
-            "Provincial": { 
-                municipios: ["Provincial General"], 
-                fomentos: [] 
-            },
+            "Provincial": { municipios: ["Provincial General"], fomentos: [] },
             "Alto Valle Centro": {
                 municipios: ["Allen", "Cervantes", "General Roca"],
                 fomentos: ["Cerro Policía", "El Cuy", "Mencué", "Bajada Colorada/Naupa Huen", "Lonco Vaca/Aguada Guzmán"]
@@ -392,7 +389,27 @@
             }
         }
 
-        // MOTOR DE CONSULTA INTELIGENTE DE LA IA CON RECONOCIMIENTO DE LOCALIDADES Y COMISIONES DE FOMENTO
+        // --- SISTEMA DE MEMORIA Y CONTEXTO DE LA IA ---
+        let ultimoContextoIA = {
+            localidad: null,
+            circuito: null,
+            categoria: null,
+            anio: null
+        };
+
+        const mapaCategoriasIA = {
+            "intendente": "INT", "intendencia": "INT",
+            "gobernador": "GOB", "gobernación": "GOB", "vice": "GOB",
+            "concejal": "CON", "concejales": "CON", "concejo": "CON",
+            "legislador circuital": "LEGC", "circuital": "LEGC",
+            "legislador poblacional": "LEGP", "poblacional": "LEGP",
+            "comision de fomento": "COF", "fomento": "COF", "comisionado": "COF",
+            "vocal": "VCF",
+            "contraloría": "MCM", "contralor": "MCM",
+            "tribunal de cuentas": "MTC", "cuentas": "MTC",
+            "endecom": "END"
+        };
+
         async function procesarConsultaIA() {
             const input = document.getElementById('chat-input');
             const mensajesContainer = document.getElementById('chat-messages');
@@ -427,56 +444,90 @@
                 }
 
                 const qLower = textoPregunta.toLowerCase();
-                let datosFiltrados = datosElectorales;
 
-                // 1. Filtrado por Año si el usuario lo menciona
-                if (qLower.includes('2023')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2023);
-                else if (qLower.includes('2025')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2025);
-                else if (qLower.includes('2026')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2026);
-                else if (qLower.includes('2027')) datosFiltrados = datosFiltrados.filter(d => d.anio === 2027);
+                // 1. AÑO
+                if (qLower.includes('2023')) ultimoContextoIA.anio = 2023;
+                else if (qLower.includes('2025')) ultimoContextoIA.anio = 2025;
+                else if (qLower.includes('2026')) ultimoContextoIA.anio = 2026;
+                else if (qLower.includes('2027')) ultimoContextoIA.anio = 2027;
 
-                // 2. Búsqueda inteligente por Localidad o Comisión de Fomento
+                // 2. CATEGORÍA
+                let categoriaDetectada = null;
+                for (let [clave, codigo] of Object.entries(mapaCategoriasIA)) {
+                    if (qLower.includes(clave)) {
+                        categoriaDetectada = codigo;
+                        break;
+                    }
+                }
+                if (categoriaDetectada) {
+                    ultimoContextoIA.categoria = categoriaDetectada;
+                }
+
+                // 3. LOCALIDAD O COMISIÓN DE FOMENTO
                 let localidadesExistentes = [...new Set(datosElectorales.map(d => d.localidad))].filter(Boolean);
-                let localidadEncontrada = null;
+                let localidadDetectada = null;
 
                 for (let loc of localidadesExistentes) {
                     let locClean = loc.toLowerCase();
-                    // Permite coincidencia incluso si busca solo "Lonco Vaca" en "Lonco Vaca/Aguada Guzmán"
                     let partes = locClean.split(/[\/\-\(]/).map(p => p.trim());
                     if (qLower.includes(locClean) || partes.some(p => p.length > 3 && qLower.includes(p))) {
-                        localidadEncontrada = loc;
+                        localidadDetectada = loc;
                         break;
                     }
                 }
 
-                if (localidadEncontrada) {
-                    datosFiltrados = datosFiltrados.filter(d => d.localidad === localidadEncontrada);
+                if (localidadDetectada) {
+                    ultimoContextoIA.localidad = localidadDetectada;
+                    ultimoContextoIA.circuito = null; // Reinicia circuito si es especifico
                 } else {
-                    // 3. Si no es localidad, buscamos por Circuito Electoral
-                    if (qLower.includes('valle medio')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle medio'));
-                    else if (qLower.includes('valle centro') || qLower.includes('alto valle centro')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('alto valle centro'));
-                    else if (qLower.includes('valle este') || qLower.includes('alto valle este')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('alto valle este'));
-                    else if (qLower.includes('valle oeste') || qLower.includes('alto valle oeste')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('alto valle oeste'));
-                    else if (qLower.includes('andino')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('andino'));
-                    else if (qLower.includes('atlántico') || qLower.includes('atlantico')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('atlántico'));
-                    else if (qLower.includes('línea sur') || qLower.includes('linea sur')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('línea sur'));
-                    else if (qLower.includes('valle inferior')) datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes('valle inferior'));
+                    // 4. CIRCUITO ELECTORAL
+                    if (qLower.includes('valle medio')) ultimoContextoIA.circuito = 'Valle Medio';
+                    else if (qLower.includes('alto valle centro') || qLower.includes('valle centro')) ultimoContextoIA.circuito = 'Alto Valle Centro';
+                    else if (qLower.includes('alto valle este') || qLower.includes('valle este')) ultimoContextoIA.circuito = 'Alto Valle Este';
+                    else if (qLower.includes('alto valle oeste') || qLower.includes('valle oeste')) ultimoContextoIA.circuito = 'Alto Valle Oeste';
+                    else if (qLower.includes('andino')) ultimoContextoIA.circuito = 'Circuito Andino';
+                    else if (qLower.includes('atlántico') || qLower.includes('atlantico')) ultimoContextoIA.circuito = 'Circuito Atlántico';
+                    else if (qLower.includes('línea sur') || qLower.includes('linea sur')) ultimoContextoIA.circuito = 'Línea Sur';
+                    else if (qLower.includes('valle inferior')) ultimoContextoIA.circuito = 'Valle Inferior';
+                    else if (qLower.includes('provincial') || qLower.includes('provincia')) {
+                        ultimoContextoIA.localidad = 'Provincial General';
+                        ultimoContextoIA.circuito = null;
+                    }
                 }
 
-                // 4. Si se buscó una localidad específica pero no tenía datos cargados
-                if (localidadEncontrada && datosFiltrados.length === 0) {
+                // APLICACIÓN DEL FILTRADO CON MEMORIA
+                let datosFiltrados = datosElectorales;
+
+                if (ultimoContextoIA.anio) {
+                    datosFiltrados = datosFiltrados.filter(d => d.anio === ultimoContextoIA.anio);
+                }
+
+                if (ultimoContextoIA.localidad) {
+                    datosFiltrados = datosFiltrados.filter(d => (d.localidad || '').toLowerCase() === ultimoContextoIA.localidad.toLowerCase());
+                } else if (ultimoContextoIA.circuito) {
+                    datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes(ultimoContextoIA.circuito.toLowerCase()));
+                }
+
+                if (ultimoContextoIA.categoria) {
+                    datosFiltrados = datosFiltrados.filter(d => d.categoria === ultimoContextoIA.categoria);
+                }
+
+                // SI NO SE ENCONTRARON DATOS PARA ESA COMBINACIÓN
+                if (datosFiltrados.length === 0) {
+                    let nombreCat = nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria || '';
+                    let nombreLugar = ultimoContextoIA.localidad || ultimoContextoIA.circuito || 'la selección';
+                    
                     document.getElementById(idCarga).outerHTML = `
                         <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>IA:</b> No se encontraron datos cargados en la base de datos para la localidad <b>${localidadEncontrada}</b>.
+                            <b>IA:</b> No hay datos cargados en Supabase para <b>${nombreLugar}</b> en la categoría <b>${nombreCat || 'consultada'}</b>.
                         </div>`;
                     mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
                     return;
                 }
 
-                // 5. Agrupamiento y cálculo de votos
+                // AGRUPACIÓN Y CONSTRUCCIÓN DE RESPUESTA
                 let totalesPorLista = {};
                 let totalVotosValidos = 0;
-                let lugarTexto = localidadEncontrada ? `Localidad: <b>${localidadEncontrada}</b>` : "Cómputos consultados";
 
                 datosFiltrados.forEach(d => {
                     let nombre = d.nombre_lista || `Lista ${d.lista_id}`;
@@ -487,18 +538,21 @@
                 let ranking = Object.entries(totalesPorLista).sort((a, b) => b[1] - a[1]);
                 let respuestaGenerada = "";
 
+                let textoLugar = ultimoContextoIA.localidad ? `Localidad: <b>${ultimoContextoIA.localidad}</b>` : (ultimoContextoIA.circuito ? `Circuito: <b>${ultimoContextoIA.circuito}</b>` : "Cómputos consultados");
+                let textoCat = ultimoContextoIA.categoria ? ` (${nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria})` : "";
+
                 if (ranking.length > 0) {
                     let ganador = ranking[0];
                     let pctGanador = totalVotosValidos > 0 ? ((ganador[1] / totalVotosValidos) * 100).toFixed(2) : "0";
 
-                    respuestaGenerada = `📍 <b>${lugarTexto}</b><br>`;
+                    respuestaGenerada = `📍 <b>${textoLugar}</b>${textoCat}<br>`;
                     if (ranking.length > 1) {
                         let segundo = ranking[1];
                         let pctSegundo = totalVotosValidos > 0 ? ((segundo[1] / totalVotosValidos) * 100).toFixed(2) : "0";
                         let dif = (ganador[1] - segundo[1]).toLocaleString();
-                        respuestaGenerada += `El espacio <b>${ganador[0]}</b> lidera con ${ganador[1].toLocaleString()} votos (${pctGanador}%), seguido por <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctSegundo}%). Margen: ${dif} votos.`;
+                        respuestaGenerada += `El espacio <b>${ganador[0]}</b> lidera con ${ganador[1].toLocaleString()} votos (${pctGanador}%), sobre <b>${segundo[0]}</b> con ${segundo[1].toLocaleString()} votos (${pctSegundo}%). Margen: ${dif} votos.`;
                     } else {
-                        respuestaGenerada += `La fuerza <b>${ganador[0]}</b> registra ${ganador[1].toLocaleString()} votos (${pctGanador}%).`;
+                        respuestaGenerada += `La fuerza <b>${ganador[0]}</b> cuenta con ${ganador[1].toLocaleString()} votos (${pctGanador}%).`;
                     }
                 } else {
                     respuestaGenerada = "No se encontraron cómputos guardados para esa consulta.";
