@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase + DAEBot Inteligente)</title>
+    <title>Tablero Electoral - Río Negro (Supabase + DAEBot Definitivo)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -127,7 +127,7 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT DAEBot CON MOTOR COMPARATIVO Y CRUZADO) -->
+        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT DAEBot) -->
         <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
             <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
                 <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🤖 DAEBot - Asistente Electoral</h2>
@@ -135,11 +135,11 @@
             </div>
             <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
                 <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Soy <b>DAEBot</b>. Podés pedirme comparaciones entre localidades (ej: <i>"Compará Viedma con Bariloche para Gobernador"</i>), análisis por categoría o tendencias.
+                    ¡Hola! Soy <b>DAEBot</b>. Pedime comparaciones de localidades, partidos o categorías.
                 </div>
             </div>
             <div class="flex flex-col gap-2">
-                <input type="text" id="chat-input" placeholder="Ej: Comparame Viedma con Bariloche para Gobernador" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
+                <input type="text" id="chat-input" placeholder="Ej: Compará Viedma con Huergo" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
                 <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a DAEBot</button>
             </div>
         </div>
@@ -389,7 +389,7 @@
             }
         }
 
-        // MOTOR DAEBot CON ANÁLISIS COMPARATIVO MULTI-LOCALIDAD Y MEMORIA
+        // MOTOR DAEBot BLINDADO Y DINÁMICO
         let ultimoContextoIA = {
             localidades: [],
             circuito: null,
@@ -427,7 +427,7 @@
             const idCarga = 'carga-' + Date.now();
             mensajesContainer.innerHTML += `
                 <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
-                    DAEBot analizando y cruzando datos...
+                    DAEBot consultando Supabase...
                 </div>`;
             mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
 
@@ -445,26 +445,11 @@
 
                 const qLower = textoPregunta.toLowerCase();
 
-                // 0. CONSULTAS META / SOBRE CAPACIDADES DE DAEBot
-                if (qLower.includes('sabes comparar') || qLower.includes('podes comparar') || qLower.includes('hacer comparaciones') || qLower.includes('que sabes hacer')) {
-                    document.getElementById(idCarga).outerHTML = `
-                        <div class="bg-blue-50 border border-blue-200 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>DAEBot:</b> ¡Sí, por supuesto! Puedo cruzar y comparar datos de múltiples localidades, categorías y circuitos. Probá escribirme por ejemplo:<br>
-                            • <i>"Compará Viedma con Bariloche para Gobernador"</i><br>
-                            • <i>"Diferencia entre Roca y Cipolletti para Intendente"</i><br>
-                            • <i>"¿Cómo salió Valle Medio vs Circuito Andino?"</i>
-                        </div>`;
-                    mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
-                    return;
-                }
-
-                // 1. AÑO
                 if (qLower.includes('2023')) ultimoContextoIA.anio = 2023;
                 else if (qLower.includes('2025')) ultimoContextoIA.anio = 2025;
                 else if (qLower.includes('2026')) ultimoContextoIA.anio = 2026;
                 else if (qLower.includes('2027')) ultimoContextoIA.anio = 2027;
 
-                // 2. CATEGORÍA
                 let categoriaDetectada = null;
                 for (let [clave, codigo] of Object.entries(mapaCategoriasIA)) {
                     if (qLower.includes(clave)) {
@@ -476,64 +461,50 @@
                     ultimoContextoIA.categoria = categoriaDetectada;
                 }
 
-                // 3. DETECCIÓN MULTI-LOCALIDAD (PARA COMPARACIONES)
+                // Detección flexible de localidades presentes en la pregunta
                 let localidadesExistentes = [...new Set(datosElectorales.map(d => d.localidad))].filter(Boolean);
                 let localidadesDetectadas = [];
 
                 for (let loc of localidadesExistentes) {
                     let locClean = loc.toLowerCase();
                     let partes = locClean.split(/[\/\-\(]/).map(p => p.trim());
-                    if (qLower.includes(locClean) || partes.some(p => p.length > 3 && qLower.includes(p))) {
-                        localidadesDetectadas.push(loc);
+                    if (qLower.includes(locClean) || partes.some(p => p.length > 2 && qLower.includes(p))) {
+                        if (!localidadesDetectadas.includes(loc)) localidadesDetectadas.push(loc);
                     }
                 }
 
                 if (localidadesDetectadas.length > 0) {
                     ultimoContextoIA.localidades = localidadesDetectadas;
-                    ultimoContextoIA.circuito = null;
-                }
-
-                // 4. DETECCIÓN DE CIRCUITO (SI NO HAY LOCALIDADES)
-                if (localidadesDetectadas.length === 0 && !qLower.includes('para ') && !qLower.includes('como ')) {
-                    if (qLower.includes('valle medio')) ultimoContextoIA.circuito = 'Valle Medio';
-                    else if (qLower.includes('alto valle centro') || qLower.includes('valle centro')) ultimoContextoIA.circuito = 'Alto Valle Centro';
-                    else if (qLower.includes('alto valle este') || qLower.includes('valle este')) ultimoContextoIA.circuito = 'Alto Valle Este';
-                    else if (qLower.includes('alto valle oeste') || qLower.includes('valle oeste')) ultimoContextoIA.circuito = 'Alto Valle Oeste';
-                    else if (qLower.includes('andino')) ultimoContextoIA.circuito = 'Circuito Andino';
-                    else if (qLower.includes('atlántico') || qLower.includes('atlantico')) ultimoContextoIA.circuito = 'Circuito Atlántico';
-                    else if (qLower.includes('línea sur') || qLower.includes('linea sur')) ultimoContextoIA.circuito = 'Línea Sur';
-                    else if (qLower.includes('valle inferior')) ultimoContextoIA.circuito = 'Valle Inferior';
                 }
 
                 // --- MODALIDAD A: COMPARACIÓN DE MÚLTIPLES LOCALIDADES ---
                 if (ultimoContextoIA.localidades.length > 1) {
-                    let catNombre = nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria;
-                    let htmlRespuesta = `📊 <b>Comparación Electoral (${catNombre} - ${ultimoContextoIA.anio}):</b><br><br>`;
+                    let htmlRespuesta = `📊 <b>Comparación Electoral:</b><br><br>`;
 
                     for (let loc of ultimoContextoIA.localidades) {
-                        let subDatos = datosElectorales.filter(d => 
-                            (d.localidad || '').toLowerCase() === loc.toLowerCase() &&
-                            d.categoria === ultimoContextoIA.categoria &&
-                            d.anio === ultimoContextoIA.anio
-                        );
+                        let subDatos = datosElectorales.filter(d => (d.localidad || '').toLowerCase() === loc.toLowerCase());
 
                         if (subDatos.length === 0) {
-                            htmlRespuesta += `📍 <b>${loc}:</b> Sin datos cargados.<br><br>`;
+                            htmlRespuesta += `📍 <b>${loc}:</b> Sin registros cargados.<br><br>`;
                             continue;
                         }
 
-                        let totalVal = subDatos.reduce((acc, r) => acc + (r.votos || 0), 0);
-                        subDatos.sort((a, b) => b.votos - a.votos);
+                        let catsDisponibles = [...new Set(subDatos.map(d => d.categoria))];
+                        let catAUsar = catsDisponibles.includes(ultimoContextoIA.categoria) ? ultimoContextoIA.categoria : catsDisponibles[0];
 
-                        let ganador = subDatos[0];
+                        let datosFiltradosLoc = subDatos.filter(d => d.categoria === catAUsar);
+                        let totalVal = datosFiltradosLoc.reduce((acc, r) => acc + (r.votos || 0), 0);
+                        datosFiltradosLoc.sort((a, b) => b.votos - a.votos);
+
+                        let ganador = datosFiltradosLoc[0];
                         let pctG = totalVal > 0 ? ((ganador.votos / totalVal) * 100).toFixed(2) : "0";
                         let nombreG = ganador.nombre_lista || `Lista ${ganador.lista_id}`;
 
-                        htmlRespuesta += `📍 <b>${loc}:</b><br>`;
+                        htmlRespuesta += `📍 <b>${loc}</b> (${nombresCategorias[catAUsar] || catAUsar}):<br>`;
                         htmlRespuesta += `• Lidera: <b>${nombreG}</b> con ${ganador.votos.toLocaleString()} votos (${pctG}%)`;
 
-                        if (subDatos.length > 1) {
-                            let segundo = subDatos[1];
+                        if (datosFiltradosLoc.length > 1) {
+                            let segundo = datosFiltradosLoc[1];
                             let pctS = totalVal > 0 ? ((segundo.votos / totalVal) * 100).toFixed(2) : "0";
                             let nombreS = segundo.nombre_lista || `Lista ${segundo.lista_id}`;
                             htmlRespuesta += `<br>• 2° Lugar: <b>${nombreS}</b> (${pctS}%)`;
@@ -549,17 +520,18 @@
                     return;
                 }
 
-                // --- MODALIDAD B: ANÁLISIS DE 1 SOLA LOCALIDAD O CIRCUITO ---
+                // --- MODALIDAD B: ANÁLISIS DE 1 SOLA LOCALIDAD ---
                 let datosFiltrados = datosElectorales;
 
-                if (ultimoContextoIA.anio) {
-                    datosFiltrados = datosFiltrados.filter(d => d.anio === ultimoContextoIA.anio);
+                if (ultimoContextoIA.localidades.length === 1) {
+                    let locObjetivo = ultimoContextoIA.localidades[0].toLowerCase();
+                    datosFiltrados = datosFiltrados.filter(d => (d.localidad || '').toLowerCase() === locObjetivo);
                 }
 
-                if (ultimoContextoIA.localidades.length === 1) {
-                    datosFiltrados = datosFiltrados.filter(d => (d.localidad || '').toLowerCase() === ultimoContextoIA.localidades[0].toLowerCase());
-                } else if (ultimoContextoIA.circuito) {
-                    datosFiltrados = datosFiltrados.filter(d => (d.circuito_id || '').toLowerCase().includes(ultimoContextoIA.circuito.toLowerCase()));
+                // Auto-selección de categoría con datos reales si la pedida no existe
+                let catsEnLugar = [...new Set(datosFiltrados.map(d => d.categoria))];
+                if (catsEnLugar.length > 0 && !catsEnLugar.includes(ultimoContextoIA.categoria)) {
+                    ultimoContextoIA.categoria = catsEnLugar[0];
                 }
 
                 if (ultimoContextoIA.categoria) {
@@ -567,12 +539,10 @@
                 }
 
                 if (datosFiltrados.length === 0) {
-                    let nombreCat = nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria || '';
-                    let nombreLugar = ultimoContextoIA.localidades[0] || ultimoContextoIA.circuito || 'la selección';
-                    
+                    let nombreLugar = ultimoContextoIA.localidades[0] || 'la localidad';
                     document.getElementById(idCarga).outerHTML = `
                         <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>DAEBot:</b> No hay datos cargados en Supabase para <b>${nombreLugar}</b> en la categoría <b>${nombreCat || 'consultada'}</b>.
+                            <b>DAEBot:</b> No encontré registros para <b>${nombreLugar}</b> en la categoría seleccionada. Verificá que los datos estén guardados en Supabase.
                         </div>`;
                     mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
                     return;
@@ -590,7 +560,7 @@
                 let ranking = Object.entries(totalesPorLista).sort((a, b) => b[1] - a[1]);
                 let respuestaGenerada = "";
 
-                let textoLugar = ultimoContextoIA.localidades[0] ? `Localidad: <b>${ultimoContextoIA.localidades[0]}</b>` : (ultimoContextoIA.circuito ? `Circuito: <b>${ultimoContextoIA.circuito}</b>` : "Cómputos consultados");
+                let textoLugar = ultimoContextoIA.localidades[0] ? `Localidad: <b>${ultimoContextoIA.localidades[0]}</b>` : "Cómputos consultados";
                 let textoCat = ultimoContextoIA.categoria ? ` (${nombresCategorias[ultimoContextoIA.categoria] || ultimoContextoIA.categoria})` : "";
 
                 if (ranking.length > 0) {
