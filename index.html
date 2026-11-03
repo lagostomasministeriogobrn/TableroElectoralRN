@@ -72,7 +72,7 @@
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
                         <select id="public-circuit" onchange="onCircuitChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                            <option value="Provincial" selected>🌐 Provincia / General</option>
+                            <option value="Provincial" selected>Provincia / General</option>
                             <option value="Alto Valle Centro">Alto Valle Centro</option>
                             <option value="Alto Valle Este">Alto Valle Este</option>
                             <option value="Alto Valle Oeste">Alto Valle Oeste</option>
@@ -223,7 +223,7 @@
             if (circuitoSeleccionado === "Provincial") {
                 let opt = document.createElement('option');
                 opt.value = "Provincial General";
-                opt.innerText = "🌐 Provincia / General";
+                opt.innerText = "Provincial General";
                 selectLoc.appendChild(opt);
                 return;
             }
@@ -327,7 +327,6 @@
             try {
                 if (!supabaseClient) throw new Error("Supabase no disponible");
 
-                // Filtro estricto: consulta ÚNICAMENTE por lo cargado exactamente para esa localidad y categoría
                 let { data, error } = await supabaseClient
                     .from('resultados_mesas')
                     .select('*')
