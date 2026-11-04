@@ -106,7 +106,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1" id="label-locality">Localidad / Municipio</label>
                     <input type="text" id="admin-locality" value="Provincial General" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General, Viedma...">
                 </div>
 
@@ -128,7 +128,6 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1" id="label-circuit">Circuito Electoral</label>
-                    <!-- Selector original para Provincial -->
                     <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
@@ -140,8 +139,6 @@
                         <option value="Valle Medio">Valle Medio</option>
                         <option value="Valle Inferior">Valle Inferior</option>
                     </select>
-                    <!-- Input de texto libre que reemplaza al selector cuando es General (Nacional) -->
-                    <input type="text" id="admin-section-input" value="Bariloche" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none hidden" placeholder="Ej: Bariloche...">
                 </div>
             </div>
 
@@ -200,16 +197,17 @@
         function onAdminElectionKindChange() {
             const kind = document.getElementById('admin-election-kind').value;
             const selectCat = document.getElementById('admin-election-type');
-            const selectCircuit = document.getElementById('admin-circuit');
-            const inputSection = document.getElementById('admin-section-input');
+            const labelLocality = document.getElementById('label-locality');
             const labelCircuit = document.getElementById('label-circuit');
+            const inputLocality = document.getElementById('admin-locality');
+            const selectCircuit = document.getElementById('admin-circuit');
 
             selectCat.innerHTML = "";
 
             if (kind === "General") {
-                labelCircuit.innerText = "Sección Electoral";
-                selectCircuit.classList.add("hidden");
-                inputSection.classList.remove("hidden");
+                labelLocality.innerText = "Sección Electoral";
+                labelCircuit.innerText = "Ámbito / Detalle";
+                inputLocality.value = "Bariloche"; // Valor por defecto editable para general
 
                 const opcionesNacionales = [
                     { val: "SEN", text: "Senador Nacional" },
@@ -223,9 +221,9 @@
                     selectCat.appendChild(opt);
                 });
             } else {
+                labelLocality.innerText = "Localidad / Municipio";
                 labelCircuit.innerText = "Circuito Electoral";
-                selectCircuit.classList.remove("hidden");
-                inputSection.classList.add("hidden");
+                inputLocality.value = "Provincial General";
 
                 const opcionesProvinciales = [
                     { val: "GOB", text: "Gobernador / Vice" },
@@ -272,9 +270,7 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const electionKind = document.getElementById('admin-election-kind').value;
-            
-            const circuito_id = electionKind === "General" ? document.getElementById('admin-section-input').value.trim() : document.getElementById('admin-circuit').value;
+            const circuito = document.getElementById('admin-circuit').value;
 
             if (!localidad) return;
 
@@ -283,7 +279,7 @@
                 .select('*')
                 .eq('anio', anio)
                 .ilike('localidad', localidad)
-                .eq('circuito_id', circuito_id)
+                .eq('circuito_id', circuito)
                 .eq('categoria', categoria);
 
             if (data && data.length > 0) {
@@ -501,9 +497,7 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const electionKind = document.getElementById('admin-election-kind').value;
-            
-            const circuito_id = electionKind === "General" ? document.getElementById('admin-section-input').value.trim() : document.getElementById('admin-circuit').value;
+            const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
             const subValidosText = document.getElementById('admin-subvalidos').value;
@@ -549,8 +543,7 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const electionKind = document.getElementById('admin-election-kind').value;
-            const circuito_id = electionKind === "General" ? document.getElementById('admin-section-input').value.trim() : document.getElementById('admin-circuit').value;
+            const circuito_id = document.getElementById('admin-circuit').value;
 
             if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
                 await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
@@ -566,7 +559,7 @@
 
                 let agrupados = {};
                 data.forEach(row => {
-                    let key = `AÑO: ${row.anio} | LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | CIRCUITO/SECCIÓN: ${row.circuito_id}`;
+                    let key = `AÑO: ${row.anio} | LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | CIRCUITO: ${row.circuito_id}`;
                     if (!agrupados[key]) {
                         agrupados[key] = {
                             mesas: row.mesas_procesadas || '0',
@@ -656,7 +649,6 @@
         }
 
         window.onload = function() {
-            onAdminElectionKindChange();
             autocompletarCircuitoAdmin();
             loadAdminData();
         };
