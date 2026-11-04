@@ -81,7 +81,8 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <!-- Fila de Filtros con Tipo de Elección integrado -->
+            <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
                     <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
@@ -97,6 +98,14 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
+                    <select id="admin-election-kind" onchange="onAdminElectionKindChange()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
+                        <option value="Provincial" selected>Provincial</option>
+                        <option value="General">General (Nacional)</option>
+                    </select>
+                </div>
+
+                <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
                     <input type="text" id="admin-locality" value="Provincial General" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General, Viedma...">
                 </div>
@@ -104,20 +113,11 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="LEGP">Legislador por Representación Poblacional</option>
-                        <option value="LEGC">Legislador Circuital</option>
-                        <option value="INT">Intendente Municipal</option>
-                        <option value="CON">Concejal Municipal</option>
-                        <option value="COF">Comisión de Fomento</option>
-                        <option value="VCF">Vocal de Comisión de Fomento</option>
-                        <option value="MCM">Miembro de la Contraloría Municipal</option>
-                        <option value="MTC">Miembro del Tribunal de Cuentas</option>
-                        <option value="END">Representantes del Endecom</option>
+                        <!-- Se llena dinámicamente -->
                     </select>
                 </div>
 
-                <div>
+                <div id="admin-circuit-container">
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
                     <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial" selected>Provincial</option>
@@ -185,6 +185,57 @@
             "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio", "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
         };
 
+        function actualizarCategoriasAdmin() {
+            const kind = document.getElementById('admin-election-kind').value;
+            const selectCat = document.getElementById('admin-election-type');
+            const circuitContainer = document.getElementById('admin-circuit-container');
+
+            selectCat.innerHTML = "";
+
+            if (kind === "General") {
+                if (circuitContainer) circuitContainer.style.display = "none";
+                document.getElementById('admin-circuit').value = "Provincial";
+
+                const opcionesNacionales = [
+                    { val: "SEN", text: "Senador Nacional" },
+                    { val: "DIP", text: "Diputado Nacional" },
+                    { val: "PRES", text: "Presidente" }
+                ];
+                opcionesNacionales.forEach(op => {
+                    let opt = document.createElement('option');
+                    opt.value = op.val;
+                    opt.text = op.text;
+                    selectCat.appendChild(opt);
+                });
+            } else {
+                if (circuitContainer) circuitContainer.style.display = "block";
+
+                const opcionesProvinciales = [
+                    { val: "GOB", text: "Gobernador / Vice" },
+                    { val: "LEGP", text: "Legislador por Representación Poblacional" },
+                    { val: "LEGC", text: "Legislador Circuital" },
+                    { val: "INT", text: "Intendente Municipal" },
+                    { val: "CON", text: "Concejal Municipal" },
+                    { val: "COF", text: "Comisión de Fomento" },
+                    { val: "VCF", text: "Vocal de Comisión de Fomento" },
+                    { val: "MCM", text: "Miembro de la Contraloría Municipal" },
+                    { val: "MTC", text: "Miembro del Tribunal de Cuentas" },
+                    { val: "END", text: "Representantes del Endecom" }
+                ];
+                opcionesProvinciales.forEach(op => {
+                    let opt = document.createElement('option');
+                    opt.value = op.val;
+                    opt.text = op.text;
+                    selectCat.appendChild(opt);
+                });
+            }
+            loadAdminData();
+        }
+
+        function onAdminElectionKindChange() {
+            actualizarCategoriasAdmin();
+        }
+
         function autocompletarCircuitoAdmin() {
             const inputLoc = document.getElementById('admin-locality');
             const selectCircuito = document.getElementById('admin-circuit');
@@ -205,7 +256,8 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito = document.getElementById('admin-circuit').value;
+            const electionKind = document.getElementById('admin-election-kind').value;
+            const circuito = electionKind === "General" ? "Provincial" : document.getElementById('admin-circuit').value;
 
             if (!localidad) return;
 
@@ -258,7 +310,6 @@
                 const text = e.target.result;
                 const lines = text.split(/\r\n|\n/).map(l => l.trim()).filter(Boolean);
 
-                // Detectar si es un reporte oficial DINE o CSV estándar
                 if (text.includes('Agrupaciones políticas') || text.includes('Mesas computadas')) {
                     let mesasProcesadasStr = "0 / 0";
                     let porcentajePart = "0.00%";
@@ -349,7 +400,6 @@
                     document.getElementById('admin-status').innerText = "✓ ¡Reporte DINE importado y copiado al panel con éxito!";
 
                 } else {
-                    // CSV estándar
                     if (lines.length < 2) { alert("El archivo está vacío."); return; }
                     let sampleLine = lines[0];
                     let separator = ',';
@@ -420,7 +470,8 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito_id = document.getElementById('admin-circuit').value;
+            const electionKind = document.getElementById('admin-election-kind').value;
+            const circuito_id = electionKind === "General" ? "Provincial" : document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
             const subValidosText = document.getElementById('admin-subvalidos').value;
@@ -466,7 +517,8 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito_id = document.getElementById('admin-circuit').value;
+            const electionKind = document.getElementById('admin-election-kind').value;
+            const circuito_id = electionKind === "General" ? "Provincial" : document.getElementById('admin-circuit').value;
 
             if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
                 await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
@@ -572,10 +624,10 @@
         }
 
         window.onload = function() {
+            actualizarCategoriasAdmin();
             autocompletarCircuitoAdmin();
             loadAdminData();
         };
     </script>
 </body>
 </html>
-```[cite: 10, 11]
