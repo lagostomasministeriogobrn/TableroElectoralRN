@@ -66,7 +66,6 @@
                 <p class="text-xs text-slate-600 mt-1">Sube archivos PDF oficiales, CSV o reportes en texto para extraer mesas, participación, votantes y votos por fuerza.</p>
             </div>
             <div>
-                <!-- SE ACTUALIZÓ AQUÍ PARA QUE ACEPTE .pdf -->
                 <input type="file" id="file-uploader" accept=".pdf, .csv, .txt, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
             </div>
         </div>
@@ -82,7 +81,7 @@
                 </div>
             </div>
 
-            <!-- Fila de Filtros con Tipo de Elección integrado -->
+            <!-- Tus 5 columnas originales exactas -->
             <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
@@ -114,12 +113,22 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <!-- Se llena dinámicamente -->
+                        <option value="GOB" selected>Gobernador / Vice</option>
+                        <option value="LEGP">Legislador por Representación Poblacional</option>
+                        <option value="LEGC">Legislador Circuital</option>
+                        <option value="INT">Intendente Municipal</option>
+                        <option value="CON">Concejal Municipal</option>
+                        <option value="COF">Comisión de Fomento</option>
+                        <option value="VCF">Vocal de Comisión de Fomento</option>
+                        <option value="MCM">Miembro de la Contraloría Municipal</option>
+                        <option value="MTC">Miembro del Tribunal de Cuentas</option>
+                        <option value="END">Representantes del Endecom</option>
                     </select>
                 </div>
 
-                <div id="admin-circuit-container">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1" id="label-circuit">Circuito Electoral</label>
+                    <!-- Selector original para Provincial -->
                     <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
@@ -131,6 +140,8 @@
                         <option value="Valle Medio">Valle Medio</option>
                         <option value="Valle Inferior">Valle Inferior</option>
                     </select>
+                    <!-- Input de texto libre que reemplaza al selector cuando es General (Nacional) -->
+                    <input type="text" id="admin-section-input" value="Bariloche" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none hidden" placeholder="Ej: Bariloche...">
                 </div>
             </div>
 
@@ -186,15 +197,19 @@
             "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio", "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
         };
 
-        function actualizarCategoriasAdmin() {
+        function onAdminElectionKindChange() {
             const kind = document.getElementById('admin-election-kind').value;
             const selectCat = document.getElementById('admin-election-type');
-            const circuitContainer = document.getElementById('admin-circuit-container');
+            const selectCircuit = document.getElementById('admin-circuit');
+            const inputSection = document.getElementById('admin-section-input');
+            const labelCircuit = document.getElementById('label-circuit');
 
             selectCat.innerHTML = "";
 
             if (kind === "General") {
-                if (circuitContainer) circuitContainer.style.display = "block";
+                labelCircuit.innerText = "Sección Electoral";
+                selectCircuit.classList.add("hidden");
+                inputSection.classList.remove("hidden");
 
                 const opcionesNacionales = [
                     { val: "SEN", text: "Senador Nacional" },
@@ -208,7 +223,9 @@
                     selectCat.appendChild(opt);
                 });
             } else {
-                if (circuitContainer) circuitContainer.style.display = "block";
+                labelCircuit.innerText = "Circuito Electoral";
+                selectCircuit.classList.remove("hidden");
+                inputSection.classList.add("hidden");
 
                 const opcionesProvinciales = [
                     { val: "GOB", text: "Gobernador / Vice" },
@@ -232,11 +249,10 @@
             loadAdminData();
         }
 
-        function onAdminElectionKindChange() {
-            actualizarCategoriasAdmin();
-        }
-
         function autocompletarCircuitoAdmin() {
+            const kind = document.getElementById('admin-election-kind').value;
+            if (kind === "General") return;
+
             const inputLoc = document.getElementById('admin-locality');
             const selectCircuito = document.getElementById('admin-circuit');
             if (!inputLoc || !selectCircuito) return;
@@ -256,7 +272,9 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito = document.getElementById('admin-circuit').value;
+            const electionKind = document.getElementById('admin-election-kind').value;
+            
+            const circuito_id = electionKind === "General" ? document.getElementById('admin-section-input').value.trim() : document.getElementById('admin-circuit').value;
 
             if (!localidad) return;
 
@@ -265,7 +283,7 @@
                 .select('*')
                 .eq('anio', anio)
                 .ilike('localidad', localidad)
-                .eq('circuito_id', circuito)
+                .eq('circuito_id', circuito_id)
                 .eq('categoria', categoria);
 
             if (data && data.length > 0) {
@@ -304,7 +322,6 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            // Si es un PDF, intentamos leerlo como texto directo (si el PDF contiene texto seleccionable) o aplicamos el parser DINE
             const reader = new FileReader();
             reader.readAsText(file, "UTF-8");
             reader.onload = function(e) {
@@ -395,7 +412,6 @@
                         }
                     }
 
-                    // Valores por defecto basados en el reporte oficial DINE provisto (Bariloche Senador / Diputado)
                     if (rawParties.length === 0) {
                         rawParties = [
                             { lista_id: 1, nombre_lista: "FUERZA PATRIA", votos: 28346 },
@@ -486,7 +502,8 @@
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
             const electionKind = document.getElementById('admin-election-kind').value;
-            const circuito_id = document.getElementById('admin-circuit').value;
+            
+            const circuito_id = electionKind === "General" ? document.getElementById('admin-section-input').value.trim() : document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
             const subValidosText = document.getElementById('admin-subvalidos').value;
@@ -532,7 +549,8 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito_id = document.getElementById('admin-circuit').value;
+            const electionKind = document.getElementById('admin-election-kind').value;
+            const circuito_id = electionKind === "General" ? document.getElementById('admin-section-input').value.trim() : document.getElementById('admin-circuit').value;
 
             if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
                 await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
@@ -548,7 +566,7 @@
 
                 let agrupados = {};
                 data.forEach(row => {
-                    let key = `AÑO: ${row.anio} | LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | CIRCUITO: ${row.circuito_id}`;
+                    let key = `AÑO: ${row.anio} | LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | CIRCUITO/SECCIÓN: ${row.circuito_id}`;
                     if (!agrupados[key]) {
                         agrupados[key] = {
                             mesas: row.mesas_procesadas || '0',
@@ -638,7 +656,7 @@
         }
 
         window.onload = function() {
-            actualizarCategoriasAdmin();
+            onAdminElectionKindChange();
             autocompletarCircuitoAdmin();
             loadAdminData();
         };
