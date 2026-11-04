@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero Electoral - Río Negro (Supabase + DAEBot Inteligente)</title>
+    <title>Tablero Electoral Oficial - Río Negro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Librería jsPDF para descarga automática de reportes en PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -28,7 +31,7 @@
     <header class="bg-rngreen text-white shadow-md border-b-4 border-rnblue">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center">
             <div class="flex items-center space-x-4 mb-2 md:mb-0">
-                <div class="flex h-11 w-24 rounded overflow-hidden shadow border border-white/20 flex-shrink-0 bg-black">
+                <div class="flex h-11 w-24 rounded overflow-hidden shadow border border-white/25 flex-shrink-0 bg-black">
                     <div class="w-1/2 bg-black flex items-center justify-center relative">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
                             <g fill="white">
@@ -45,419 +48,614 @@
                 </div>
                 <div>
                     <span class="text-[10px] uppercase font-bold tracking-widest text-green-100 block">Dirección de Asuntos Electorales</span>
-                    <h1 class="text-lg md:text-xl font-semibold tracking-tight">Tablero de Resultados Escrutados - Provincia de Río Negro</h1>
+                    <h1 class="text-lg md:text-xl font-semibold tracking-tight">Tablero Electoral Oficial</h1>
                 </div>
             </div>
-            <div class="flex items-center space-x-4 text-sm">
-                <a href="admin.html" class="bg-white text-rngreen font-bold px-3 py-1.5 rounded text-xs hover:bg-green-50 transition shadow">Ir al Panel Admin ⚙️</a>
+            <div class="flex items-center space-x-3 text-sm">
+                <a href="admin.html" target="_blank" class="bg-white text-rngreen font-bold px-3 py-1.5 rounded text-xs hover:bg-green-50 transition shadow">Panel de Administración ⚙️</a>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
         
-        <!-- COLUMNA IZQUIERDA (TABLERO ELECTORAL) -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white p-4 rounded border border-slate-200 custom-shadow flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Año</label>
-                        <select id="public-year" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                            <option value="2026" selected>2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2025">2025</option>
-                            <option value="2023">2023</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Circuito Electoral</label>
-                        <select id="public-circuit" onchange="onCircuitChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                            <option value="Provincial" selected>Provincia / General</option>
-                            <option value="Alto Valle Centro">Alto Valle Centro</option>
-                            <option value="Alto Valle Este">Alto Valle Este</option>
-                            <option value="Alto Valle Oeste">Alto Valle Oeste</option>
-                            <option value="Circuito Andino">Circuito Andino</option>
-                            <option value="Circuito Atlántico">Circuito Atlántico</option>
-                            <option value="Línea Sur">Línea Sur</option>
-                            <option value="Valle Inferior">Valle Inferior</option>
-                            <option value="Valle Medio">Valle Medio</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Localidad / Municipio</label>
-                        <select id="public-locality" onchange="onLocalityChange()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoría</label>
-                        <select id="public-election-type" onchange="loadPublicData()" class="bg-slate-50 border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold">
-                        </select>
-                    </div>
+        <!-- Grid Superior: Filtros y Cómputos Principales -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- Panel de Filtros -->
+            <section class="lg:col-span-1 bg-white p-5 rounded border border-slate-200 custom-shadow space-y-4 h-fit">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Filtros de Cómputos</h2>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
+                    <select id="filter-year" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="2027">2027</option>
+                        <option value="2026">2026</option>
+                        <option value="2025" selected>2025</option>
+                        <option value="2023">2023</option>
+                        <option value="2021">2021</option>
+                        <option value="2019">2019</option>
+                        <option value="2017">2017</option>
+                        <option value="2015">2015</option>
+                    </select>
                 </div>
-            </div>
 
-            <div id="public-status" class="text-xs font-semibold text-slate-500 px-1">
-                Conectando con Supabase...
-            </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
+                    <select id="filter-election-kind" onchange="onPublicElectionKindChange()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
+                        <option value="Provincial" selected>Provincial</option>
+                        <option value="General">General (Nacional)</option>
+                    </select>
+                </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Mesas Procesadas</span>
-                    <h3 id="stat-mesas" class="text-xl font-black text-slate-800">0</h3>
+                <div id="filter-circuit-container">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
+                    <select id="filter-circuit" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="Provincial" selected>Provincial</option>
+                        <option value="Alto Valle Centro">Alto Valle Centro</option>
+                        <option value="Alto Valle Este">Alto Valle Este</option>
+                        <option value="Alto Valle Oeste">Alto Valle Oeste</option>
+                        <option value="Circuito Andino">Circuito Andino</option>
+                        <option value="Circuito Atlántico">Circuito Atlántico</option>
+                        <option value="Línea Sur">Línea Sur</option>
+                        <option value="Valle Medio">Valle Medio</option>
+                        <option value="Valle Inferior">Valle Inferior</option>
+                    </select>
                 </div>
-                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Participación Electoral</span>
-                    <h3 id="stat-participacion" class="text-xl font-black text-rngreen">0.00%</h3>
-                </div>
-                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Votos Procesados</span>
-                    <h3 id="stat-procesados" class="text-xl font-black text-rnblue">0</h3>
-                </div>
-                <div class="bg-white p-4 rounded border border-slate-200 custom-shadow text-center">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Sub-válidos</span>
-                    <h3 id="stat-subvalidos" class="text-xs font-bold text-slate-600 mt-2">Blanco: 0 | Nulos: 0</h3>
-                </div>
-            </div>
 
-            <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
-                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700 border-b pb-2">Resultados por Fuerza Política / Lista</h2>
-                <div id="public-results-container" class="space-y-4">
-                    <p class="text-xs text-slate-400 italic text-center py-6">Seleccioná un circuito, localidad y categoría para ver los resultados.</p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Localidad / Sección</label>
+                    <select id="filter-locality" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="Provincial General" selected>Provincial General</option>
+                    </select>
                 </div>
-            </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
+                    <select id="filter-category" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                </div>
+            </section>
+
+            <!-- Panel Central y Resultados -->
+            <section class="lg:col-span-3 space-y-6">
+                
+                <!-- Indicadores generales -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded border border-slate-200 custom-shadow">
+                        <span class="text-xs text-slate-500 font-semibold block">Mesas Escrutadas</span>
+                        <h3 id="stat-mesas" class="text-xl font-black text-rnblue mt-1">0 / 0</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded border border-slate-200 custom-shadow">
+                        <span class="text-xs text-slate-500 font-semibold block">Participación Ciudadana</span>
+                        <h3 id="stat-participacion" class="text-xl font-black text-rngreen mt-1">0.00%</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded border border-slate-200 custom-shadow">
+                        <span class="text-xs text-slate-500 font-semibold block">Votos Blancos / Nulos</span>
+                        <h3 id="stat-subvalidos" class="text-sm font-bold text-slate-700 mt-2">Blanco: 0 | Nulos: 0</h3>
+                    </div>
+                </div>
+
+                <!-- Gráfico y Tabla -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow flex flex-col justify-center items-center">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 w-full text-left">Distribución de Porcentajes</h3>
+                        <div class="w-full max-w-xs h-64 relative">
+                            <canvas id="chart-resultados"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow overflow-x-auto">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Detalle por Fuerza Política</h3>
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b text-slate-400 font-bold">
+                                    <th class="pb-2">Fuerza / Lista</th>
+                                    <th class="pb-2 text-right">Votos</th>
+                                    <th class="pb-2 text-right">%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-results-body">
+                                <tr><td colspan="3" class="py-4 text-center text-slate-400">Sin datos para mostrar.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </div>
 
-        <!-- COLUMNA DERECHA (BARRA LATERAL CHAT DAEBot INTELIGENTE) -->
-        <div class="bg-white p-4 rounded border border-slate-200 custom-shadow space-y-3 sticky top-4">
-            <div class="border-b border-slate-200 pb-2 flex justify-between items-center">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-rnblue flex items-center gap-1.5">🤖 DAEBot - Asistente Electoral</h2>
-                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            </div>
-            <div id="chat-messages" class="bg-slate-50 border border-slate-200 rounded p-3 h-[420px] overflow-y-auto space-y-3 text-xs flex flex-col">
-                <div class="bg-blue-100 text-blue-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                    ¡Hola! Soy <b>DAEBot</b>. Pedime comparaciones entre localidades (ej: <i>"Compará Viedma con Bariloche"</i>), partidos o categorías.
+        <!-- Módulo: Pedile Reportes a DAEBot -->
+        <section class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
+            <div class="border-b pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                <div class="flex items-center gap-3">
+                    <img src="daebot.png" alt="DAEBot" class="w-12 h-12 object-contain drop-shadow">
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-rnblue">Pedile Reportes a DAEBot</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Generá tablas comparativas inteligentes y descargalas de inmediato en PDF.</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generarReporteDAEBot()" class="bg-rnblue hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Generar Reporte 📊</button>
+                    <button onclick="descargarReportePDF()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow flex items-center gap-1">Descargar PDF 📄</button>
                 </div>
             </div>
-            <div class="flex flex-col gap-2">
-                <input type="text" id="chat-input" placeholder="Ej: Compará Viedma con Bariloche" class="bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs focus:ring-2 focus:ring-rnblue focus:outline-none" onkeypress="if(event.key === 'Enter') procesarConsultaIA()">
-                <button onclick="procesarConsultaIA()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded text-xs transition shadow w-full">Preguntar a DAEBot</button>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Reporte</label>
+                    <select id="bot-tipo" onchange="actualizarOpcionesBotEntidad()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
+                        <option value="comparativa_circuitos">Comparar Circuitos (Mismo Año)</option>
+                        <option value="evolucion_interanual">Evolución Interanual (Histórico)</option>
+                        <option value="reporte_localidad">Detalle por Municipio / Fomento</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
+                    <select id="bot-categoria" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
+                        <option value="GOB" selected>Gobernador / Vice</option>
+                        <option value="SEN">Senador Nacional</option>
+                        <option value="DIP">Diputado Nacional</option>
+                        <option value="PRES">Presidente</option>
+                        <option value="INT">Intendente Municipal</option>
+                        <option value="CON">Concejal Municipal</option>
+                        <option value="COF">Comisión de Fomento</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Años (Ej: 2023, 2025)</label>
+                    <input type="text" id="bot-anios" value="2023, 2025" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs font-semibold" placeholder="Separados por coma">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1" id="bot-label-entidad">Seleccionar Opción</label>
+                    <select id="bot-entidad" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                </div>
             </div>
-        </div>
+
+            <!-- Caja de Resultados del Asistente -->
+            <div id="bot-resultado-container" class="bg-slate-50 p-4 rounded border text-xs space-y-3 mt-3">
+                <p class="text-slate-400 text-center py-4">Seleccioná los parámetros y hacé clic en <b>Generar Reporte</b> para ver la tabla comparativa de DAEBot.</p>
+            </div>
+        </section>
 
     </main>
 
     <footer class="bg-rngreen text-white py-4 text-center text-xs border-t-4 border-rnblue mt-auto">
-        <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Tablero Público Oficial</p>
+        <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Tablero Oficial</p>
     </footer>
 
     <script>
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
-        
-        let supabaseClient = null;
-        try {
-            if (typeof supabase !== 'undefined') {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let chartInstance = null;
+        let cacheDatosGlobales = [];
+
+        const comisionadosFomento = [
+            "cerro policía", "el cuy", "mencué", "bajada colorada", "naupa huen", "lonco vaca", 
+            "aguada guzmán", "valle azul", "peñas blancas", "comicó", "prahuaniyeu", "rincón treneta", 
+            "quetrequile", "pilquiniyeu", "el caín", "colán conhue", "yaminué", "laguna blanca", 
+            "aguada de guerra", "clemente onelli", "el foyel", "el manso", "las bayas", "mamuel choique", 
+            "ojos de agua", "río chico", "paso flores", "pilquiniyeu del limay", "villa llanquín", 
+            "villa mascardi", "arroyo las minas", "chacay huarruca", "mallín ahogado", "cona niyeu", 
+            "aguada cecilio", "arroyo los berros", "arroyo ventana", "nahuel niyeu", "sierra paileman", 
+            "chipauquil", "cubanea", "gral. e frías", "vicealmirante o'connor", "pichi mahuida", "benjamín zorrilla"
+        ];
+
+        const circuitosOficiales = [
+            "Alto Valle Centro", "Alto Valle Este", "Alto Valle Oeste", 
+            "Circuito Andino", "Circuito Atlántico", "Línea Sur", "Valle Medio", "Valle Inferior"
+        ];
+
+        async function actualizarLocalidadesPorCircuito() {
+            const anio = parseInt(document.getElementById('filter-year').value);
+            const circuitoSeleccionado = document.getElementById('filter-circuit').value;
+            const selectLoc = document.getElementById('filter-locality');
+            const electionKind = document.getElementById('filter-election-kind').value;
+            const circuitoQuery = electionKind === "General" ? "Provincial" : circuitoSeleccionado;
+
+            let query = supabaseClient.from('resultados_mesas').select('localidad').eq('anio', anio);
+            if (circuitoQuery !== "Provincial") {
+                query = query.eq('circuito_id', circuitoQuery);
             }
-        } catch(e) { console.error("Error Supabase:", e); }
 
-        const nombresCategorias = {
-            "GOB": "Gobernador / Vice",
-            "LEGP": "Legislador por Representación Poblacional",
-            "LEGC": "Legislador Circuital",
-            "INT": "Intendente Municipal",
-            "CON": "Concejal Municipal",
-            "COF": "Comisión de Fomento",
-            "VCF": "Vocal de Comisión de Fomento",
-            "MCM": "Miembro de la Contraloría Municipal",
-            "MTC": "Miembro del Tribunal de Cuentas",
-            "END": "Representantes del Endecom"
-        };
-
-        const jerarquiaCircuitos = {
-            "Provincial": { municipios: ["Provincial General"], fomentos: [] },
-            "Alto Valle Centro": {
-                municipios: ["Allen", "Cervantes", "General Roca"],
-                fomentos: ["Cerro Policía", "El Cuy", "Mencué", "Bajada Colorada/Naupa Huen", "Lonco Vaca/Aguada Guzmán"]
-            },
-            "Alto Valle Este": {
-                municipios: ["Chichinales", "Villa Regina", "Gral. E Godoy", "Mainqué", "Ing. Huergo"],
-                fomentos: ["Valle Azul"]
-            },
-            "Alto Valle Oeste": {
-                municipios: ["Barda del Medio", "Catriel", "Cinco Saltos", "Cipolletti", "Balsa Las Perlas (Anexo Cipolletti)", "Contralmirante Cordero", "Gral. Fernandez Oro", "Campo Grande"],
-                fomentos: ["Catriel Rural/Peñas Blancas"]
-            },
-            "Línea Sur": {
-                municipios: ["Los Menucos", "Maquinchao", "Sierra Colorada", "Ing. Jacobacci", "Mtro. Ramos Mexía"],
-                fomentos: ["Mtro. Ramos Mexía Rural/Comicó", "Prahuaniyeu", "Rincón Treneta", "Quetrequile", "Pilquiniyeu", "El Caín", "Maquinchao Rural/Colán Conhue", "Yaminué", "Laguna Blanca", "Aguada de Guerra", "Clemente Onelli"]
-            },
-            "Circuito Andino": {
-                municipios: ["El Bolsón", "San Carlos de Bariloche", "Ñorquinco", "Pilcaniyeu", "Comallo", "Dina Huapi"],
-                fomentos: ["El Foyel/El Manso", "Las Bayas", "Mamuel Choique", "Ojos de Agua", "Río Chico", "Paso Flores", "Pilquiniyeu del Limay", "Villa Llanquín", "Villa Mascardi", "Arroyo Las Minas", "Chacay Huarruca", "Mallín Ahogado"]
-            },
-            "Circuito Atlántico": {
-                municipios: ["San Antonio Oeste", "Anexo San Antonio Oeste: Las Grutas", "Anexo San Antonio Oeste: Puerto SAE", "Valcheta"],
-                fomentos: ["Cona Niyeu", "Aguada Cecilio", "Arroyo Los Berros", "Arroyo Ventana", "Nahuel Niyeu", "Sierra Paileman", "Chipauquil"]
-            },
-            "Valle Inferior": {
-                municipios: ["Viedma", "Gral. Conesa", "Guardia Mitre"],
-                fomentos: ["San Javier", "Cubanea", "Gral. E Frías", "Vicealmirante O'Connor", "Gral. Conesa Rural"]
-            },
-            "Valle Medio": {
-                municipios: ["Río Colorado", "Pomona", "Luis Beltrán", "Lamarque", "Darwin", "Coronel Belisle", "Choele Choel", "Chimpay"],
-                fomentos: ["Chelforó", "Pichi Mahuida", "Benjamín Zorrilla"]
-            }
-        };
-
-        function actualizarSelectLocalidades() {
-            const selectCircuito = document.getElementById('public-circuit');
-            const selectLoc = document.getElementById('public-locality');
-            if (!selectCircuito || !selectLoc) return;
-
-            const circuitoSeleccionado = selectCircuito.value;
+            let { data } = await query;
             selectLoc.innerHTML = "";
 
-            let datosCircuito = jerarquiaCircuitos[circuitoSeleccionado] || { municipios: [], fomentos: [] };
-            
-            if (circuitoSeleccionado === "Provincial") {
-                let opt = document.createElement('option');
-                opt.value = "Provincial General";
-                opt.innerText = "Provincial General";
-                selectLoc.appendChild(opt);
-                return;
-            }
+            let optGeneral = document.createElement('option');
+            optGeneral.value = "Provincial General";
+            optGeneral.text = "Provincial General";
+            selectLoc.appendChild(optGeneral);
 
-            if (datosCircuito.municipios.length > 0) {
-                let groupMun = document.createElement('optgroup');
-                groupMun.label = "--- MUNICIPIOS ---";
-                datosCircuito.municipios.forEach(m => {
-                    let opt = document.createElement('option');
-                    opt.value = m;
-                    opt.innerText = m;
-                    groupMun.appendChild(opt);
+            if (data && data.length > 0) {
+                let unicas = [...new Set(data.map(d => d.localidad))].filter(Boolean);
+                let localidadesReales = unicas.filter(l => l.toLowerCase() !== "provincial general" && l.toLowerCase() !== "provincial");
+
+                let municipios = [];
+                let comisionados = [];
+
+                localidadesReales.forEach(loc => {
+                    let locLower = loc.toLowerCase().trim();
+                    if (comisionadosFomento.some(cf => locLower.includes(cf))) {
+                        comisionados.push(loc);
+                    } else {
+                        municipios.push(loc);
+                    }
                 });
-                selectLoc.appendChild(groupMun);
-            }
 
-            if (datosCircuito.fomentos.length > 0) {
-                let groupFom = document.createElement('optgroup');
-                groupFom.label = "--- COMISIONES DE FOMENTO ---";
-                datosCircuito.fomentos.forEach(f => {
-                    let opt = document.createElement('option');
-                    opt.value = f;
-                    opt.innerText = f;
-                    groupFom.appendChild(opt);
-                });
-                selectLoc.appendChild(groupFom);
-            }
-        }
-
-        async function actualizarCategoriasDisponibles() {
-            if (!supabaseClient) return;
-            const selectLoc = document.getElementById('public-locality');
-            const selectCat = document.getElementById('public-election-type');
-            if (!selectLoc || !selectCat) return;
-
-            const locActual = selectLoc.value;
-
-            try {
-                let { data, error } = await supabaseClient
-                    .from('resultados_mesas')
-                    .select('categoria')
-                    .ilike('localidad', locActual);
-
-                if (error) throw error;
-
-                let categoriasUnicas = [...new Set((data || []).map(item => item.categoria))].filter(Boolean);
-                selectCat.innerHTML = "";
-
-                if (categoriasUnicas.length === 0) {
-                    let opt = document.createElement('option');
-                    opt.value = "";
-                    opt.innerText = "Sin datos cargados";
-                    selectCat.appendChild(opt);
-                    loadPublicData();
-                    return;
+                if (municipios.length > 0) {
+                    let groupMun = document.createElement('optgroup');
+                    groupMun.label = "Municipios";
+                    municipios.sort().forEach(loc => {
+                        let opt = document.createElement('option');
+                        opt.value = loc;
+                        opt.text = loc;
+                        groupMun.appendChild(opt);
+                    });
+                    selectLoc.appendChild(groupMun);
                 }
 
-                categoriasUnicas.forEach(catCode => {
+                if (comisionados.length > 0) {
+                    let groupCom = document.createElement('optgroup');
+                    groupCom.label = "Comisión de Fomento";
+                    comisionados.sort().forEach(loc => {
+                        let opt = document.createElement('option');
+                        opt.value = loc;
+                        opt.text = loc;
+                        groupCom.appendChild(opt);
+                    });
+                    selectLoc.appendChild(groupCom);
+                }
+            }
+
+            cargarDatosPublicos();
+        }
+
+        async function actualizarOpcionesBotEntidad() {
+            const tipo = document.getElementById('bot-tipo').value;
+            const selectEntidad = document.getElementById('bot-entidad');
+            const labelEntidad = document.getElementById('bot-label-entidad');
+            selectEntidad.innerHTML = "";
+
+            if (tipo === "comparativa_circuitos") {
+                labelEntidad.innerText = "Circuito Base / Referencia";
+                circuitosOficiales.forEach(c => {
                     let opt = document.createElement('option');
-                    opt.value = catCode;
-                    opt.innerText = nombresCategorias[catCode] || catCode;
-                    selectCat.appendChild(opt);
+                    opt.value = c;
+                    opt.text = c;
+                    selectEntidad.appendChild(opt);
+                });
+            } else {
+                labelEntidad.innerText = "Municipio / Comisión de Fomento";
+                let { data } = await supabaseClient.from('resultados_mesas').select('localidad');
+                let unicas = data ? [...new Set(data.map(d => d.localidad))].filter(Boolean) : [];
+                let localidadesReales = unicas.filter(l => l.toLowerCase() !== "provincial general" && l.toLowerCase() !== "provincial");
+
+                let municipios = [];
+                let comisionados = [];
+
+                localidadesReales.forEach(loc => {
+                    let locLower = loc.toLowerCase().trim();
+                    if (comisionadosFomento.some(cf => locLower.includes(cf))) {
+                        comisionados.push(loc);
+                    } else {
+                        municipios.push(loc);
+                    }
                 });
 
-                await loadPublicData();
-            } catch (e) {
-                console.error("Error filtrando categorías:", e);
-                loadPublicData();
+                if (municipios.length > 0) {
+                    let groupMun = document.createElement('optgroup');
+                    groupMun.label = "Municipios";
+                    municipios.sort().forEach(loc => {
+                        let opt = document.createElement('option');
+                        opt.value = loc;
+                        opt.text = loc;
+                        groupMun.appendChild(opt);
+                    });
+                    selectEntidad.appendChild(groupMun);
+                }
+
+                if (comisionados.length > 0) {
+                    let groupCom = document.createElement('optgroup');
+                    groupCom.label = "Comisión de Fomento";
+                    comisionados.sort().forEach(loc => {
+                        let opt = document.createElement('option');
+                        opt.value = loc;
+                        opt.text = loc;
+                        groupCom.appendChild(opt);
+                    });
+                    selectEntidad.appendChild(groupCom);
+                }
+
+                if (selectEntidad.children.length === 0) {
+                    let opt = document.createElement('option');
+                    opt.value = "Provincial General";
+                    opt.text = "Provincial General";
+                    selectEntidad.appendChild(opt);
+                }
             }
         }
 
-        async function onCircuitChange() {
-            actualizarSelectLocalidades();
-            await actualizarCategoriasDisponibles();
+        function actualizarCategoriasPublicas() {
+            const kind = document.getElementById('filter-election-kind').value;
+            const selectCat = document.getElementById('filter-category');
+            const circuitContainer = document.getElementById('filter-circuit-container');
+
+            selectCat.innerHTML = "";
+
+            if (kind === "General") {
+                if (circuitContainer) circuitContainer.style.display = "none";
+                document.getElementById('filter-circuit').value = "Provincial";
+
+                const opcionesNacionales = [
+                    { val: "SEN", text: "Senador Nacional" },
+                    { val: "DIP", text: "Diputado Nacional" },
+                    { val: "PRES", text: "Presidente" }
+                ];
+                opcionesNacionales.forEach(op => {
+                    let opt = document.createElement('option');
+                    opt.value = op.val;
+                    opt.text = op.text;
+                    selectCat.appendChild(opt);
+                });
+            } else {
+                if (circuitContainer) circuitContainer.style.display = "block";
+
+                const opcionesProvinciales = [
+                    { val: "GOB", text: "Gobernador / Vice" },
+                    { val: "LEGP", text: "Legislador por Rep. Poblacional" },
+                    { val: "LEGC", text: "Legislador Circuital" },
+                    { val: "INT", text: "Intendente Municipal" },
+                    { val: "CON", text: "Concejal Municipal" },
+                    { val: "COF", text: "Comisión de Fomento" },
+                    { val: "VCF", text: "Vocal de Comisión de Fomento" },
+                    { val: "MCM", text: "Miembro de la Contraloría Municipal" },
+                    { val: "MTC", text: "Miembro del Tribunal de Cuentas" },
+                    { val: "END", text: "Representantes del Endecom" }
+                ];
+                opcionesProvinciales.forEach(op => {
+                    let opt = document.createElement('option');
+                    opt.value = op.val;
+                    opt.text = op.text;
+                    selectCat.appendChild(opt);
+                });
+            }
+            actualizarLocalidadesPorCircuito();
         }
 
-        async function onLocalityChange() {
-            await actualizarCategoriasDisponibles();
+        function onPublicElectionKindChange() {
+            actualizarCategoriasPublicas();
         }
 
-        async function loadPublicData() {
-            const anio = parseInt(document.getElementById('public-year').value);
-            const circuito = document.getElementById('public-circuit').value;
-            const localidad = document.getElementById('public-locality').value || "Provincial General";
-            const categoria = document.getElementById('public-election-type').value;
-            const statusEl = document.getElementById('public-status');
-            const container = document.getElementById('public-results-container');
+        async function cargarDatosPublicos() {
+            const anio = parseInt(document.getElementById('filter-year').value);
+            const localidad = document.getElementById('filter-locality').value;
+            const categoria = document.getElementById('filter-category').value;
+            const electionKind = document.getElementById('filter-election-kind').value;
+            const circuito = electionKind === "General" ? "Provincial" : document.getElementById('filter-circuit').value;
 
-            if (!categoria) {
-                statusEl.innerText = "Sin datos cargados.";
-                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en el año ${anio}.</p>`;
-                document.getElementById('stat-mesas').innerText = "0";
+            let { data } = await supabaseClient
+                .from('resultados_mesas')
+                .select('*')
+                .eq('anio', anio)
+                .ilike('localidad', localidad)
+                .eq('circuito_id', circuito)
+                .eq('categoria', categoria);
+
+            cacheDatosGlobales = data || [];
+            renderizarResultados(cacheDatosGlobales);
+        }
+
+        function renderizarResultados(data) {
+            const tbody = document.getElementById('table-results-body');
+            tbody.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                document.getElementById('stat-mesas').innerText = "0 / 0";
                 document.getElementById('stat-participacion').innerText = "0.00%";
-                document.getElementById('stat-procesados').innerText = "0";
                 document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
+                tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">Sin registros computados para esta selección.</td></tr>`;
+                if (chartInstance) chartInstance.destroy();
                 return;
             }
 
-            statusEl.innerText = "Cargando datos...";
+            document.getElementById('stat-mesas').innerText = data[0].mesas_procesadas || "0 / 0";
+            document.getElementById('stat-participacion').innerText = data[0].porcentaje_participacion || "0.00%";
+            document.getElementById('stat-subvalidos').innerText = `Blanco: ${data[0].votos_blanco || 0} | Nulos: ${data[0].votos_nulos || 0}`;
 
-            try {
-                if (!supabaseClient) throw new Error("Supabase no disponible");
+            let totalValidos = data.reduce((acc, r) => acc + (r.votos || 0), 0);
+            data.sort((a, b) => b.votos - a.votos);
 
-                let { data, error } = await supabaseClient
-                    .from('resultados_mesas')
-                    .select('*')
-                    .eq('anio', anio)
-                    .ilike('localidad', localidad)
-                    .eq('categoria', categoria);
+            let labels = [];
+            let votosArr = [];
+            let bgColors = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#B4B5E0", "#88D9E8", "#444444"];
 
-                if (error) throw error;
+            data.forEach((row) => {
+                let nombre = row.nombre_lista || `Lista ${row.lista_id}`;
+                let pct = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
+                labels.push(nombre);
+                votosArr.push(row.votos);
 
-                if (!data || data.length === 0) {
-                    statusEl.innerText = "Sin datos cargados.";
-                    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-6">No hay registros cargados para ${localidad} en la categoría seleccionada.</p>`;
-                    document.getElementById('stat-mesas').innerText = "0";
-                    document.getElementById('stat-participacion').innerText = "0.00%";
-                    document.getElementById('stat-procesados').innerText = "0";
-                    document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
-                    return;
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="py-2 font-semibold text-slate-700">${nombre}</td>
+                        <td class="py-2 text-right font-bold">${row.votos.toLocaleString()}</td>
+                        <td class="py-2 text-right font-bold text-rnblue">${pct}%</td>
+                    </tr>`;
+            });
+
+            const ctx = document.getElementById('chart-resultados').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: votosArr,
+                        backgroundColor: bgColors.slice(0, labels.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
                 }
-
-                let mesasCSV = data[0].mesas_procesadas || "0";
-                let participacionCSV = data[0].porcentaje_participacion || "0.00%";
-                let blanco = data[0].votos_blanco || 0;
-                let nulos = data[0].votos_nulos || 0;
-                let totalValidos = 0;
-
-                data.sort((a, b) => b.votos - a.votos);
-                data.forEach(row => { totalValidos += (row.votos || 0); });
-
-                let totalVotantes = totalValidos + blanco + nulos;
-
-                document.getElementById('stat-mesas').innerText = mesasCSV;
-                document.getElementById('stat-participacion').innerText = participacionCSV;
-                document.getElementById('stat-procesados').innerText = totalVotantes.toLocaleString();
-                document.getElementById('stat-subvalidos').innerText = `Blanco: ${blanco.toLocaleString()} | Nulos: ${nulos.toLocaleString()}`;
-
-                container.innerHTML = "";
-                let colorPalette = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#88D9E8", "#B4B5E0", "#FFEE55", "#444444"];
-
-                data.forEach((row, idx) => {
-                    let porcentaje = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
-                    let color = colorPalette[idx % colorPalette.length];
-                    let nombrePartido = row.nombre_lista || `Lista ${row.lista_id}`;
-
-                    container.innerHTML += `
-                        <div class="space-y-1">
-                            <div class="flex justify-between text-xs font-semibold">
-                                <span class="text-slate-700">${nombrePartido}</span>
-                                <span class="text-slate-900 font-bold">${row.votos.toLocaleString()} votos (${porcentaje}%)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
-                                <div class="h-full rounded-full transition-all duration-500" style="width: ${porcentaje}%; background-color: ${color};"></div>
-                            </div>
-                        </div>`;
-                });
-
-                statusEl.innerText = "✓ Sincronizado con Supabase";
-            } catch (err) {
-                console.error(err);
-                statusEl.innerText = "Error al procesar la información.";
-            }
+            });
         }
 
-        // MOTOR DAEBot INTELIGENTE CONECTADO A LA SERVERLESS FUNCTION (/api/daebot)
-        async function procesarConsultaIA() {
-            const input = document.getElementById('chat-input');
-            const mensajesContainer = document.getElementById('chat-messages');
-            const textoPregunta = input.value.trim();
+        async function generarReporteDAEBot() {
+            const tipo = document.getElementById('bot-tipo').value;
+            const categoria = document.getElementById('bot-categoria').value;
+            const aniosInput = document.getElementById('bot-anios').value;
+            const entidad = document.getElementById('bot-entidad').value;
+            const anios = aniosInput.split(',').map(a => parseInt(a.trim())).filter(Boolean);
+            const container = document.getElementById('bot-resultado-container');
 
-            if (!textoPregunta) return;
+            container.innerHTML = `<div class="text-center py-4 text-slate-500">🤖 DAEBot está procesando la tabla comparativa...</div>`;
 
-            mensajesContainer.innerHTML += `
-                <div class="bg-slate-200 text-slate-900 p-2.5 rounded-lg self-end max-w-[90%] shadow-sm">
-                    <b>Tú:</b> ${textoPregunta}
-                </div>`;
-            input.value = "";
-            mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
-
-            const idCarga = 'carga-' + Date.now();
-            mensajesContainer.innerHTML += `
-                <div id="${idCarga}" class="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm italic">
-                    🤖 DAEBot consultando con IA...
-                </div>`;
-            mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
-
-            try {
-                let { data: datosElectorales, error } = await supabaseClient.from('resultados_mesas').select('*');
-
-                if (error || !datosElectorales || datosElectorales.length === 0) {
-                    document.getElementById(idCarga).outerHTML = `
-                        <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                            <b>DAEBot:</b> No hay datos cargados en Supabase aún para analizar.
-                        </div>`;
-                    mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
-                    return;
-                }
-
-                const response = await fetch('/api/daebot', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pregunta: textoPregunta,
-                        datosElectorales: datosElectorales
-                    })
-                });
-
-                const resultado = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(resultado.error || "Error al procesar en el servidor");
-                }
-
-                document.getElementById(idCarga).outerHTML = `
-                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm leading-relaxed">
-                        ${resultado.respuesta.replace(/\n/g, '<br>')}
-                    </div>`;
-
-            } catch (err) {
-                console.error("Error DAEBot:", err);
-                document.getElementById(idCarga).outerHTML = `
-                    <div class="bg-red-50 text-red-800 p-2.5 rounded-lg self-start max-w-[90%] shadow-sm">
-                        <b>DAEBot:</b> Ocurrió un error al conectar con la IA (${err.message}).
-                    </div>`;
+            let { data, error } = await supabaseClient.from('resultados_mesas').select('*').eq('categoria', categoria);
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `<div class="text-red-500 p-2">DAEBot: No hay registros suficientes para la categoría seleccionada.</div>`;
+                return;
             }
-            mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
+
+            let htmlRespuesta = "";
+
+            if (tipo === "comparativa_circuitos") {
+                let anioTarget = anios[0] || 2025;
+                let circuitos = circuitosOficiales;
+                
+                htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📊 Reporte DAEBot: Comparativa entre Circuitos (Categoría ${categoria} - Año ${anioTarget})</h4>`;
+                htmlRespuesta += `<div class="overflow-x-auto"><table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza Política</th>` + circuitos.map(c => `<th class="p-2 text-right">${c}</th>`).join('') + `</tr>`;
+                
+                let fuerzasUnicas = [...new Set(data.filter(d => d.anio === anioTarget).map(d => d.nombre_lista))].filter(Boolean);
+                fuerzasUnicas.forEach(fuerza => {
+                    htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
+                    circuitos.forEach(circ => {
+                        let match = data.find(d => d.anio === anioTarget && d.circuito_id === circ && d.nombre_lista === fuerza);
+                        let votos = match ? match.votos.toLocaleString() : "0";
+                        htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
+                    });
+                    htmlRespuesta += `</tr>`;
+                });
+                htmlRespuesta += `</table></div>`;
+
+            } else if (tipo === "evolucion_interanual") {
+                htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📈 Reporte DAEBot: Evolución Interanual en <b>${entidad}</b> (Categoría ${categoria})</h4>`;
+                htmlRespuesta += `<div class="overflow-x-auto"><table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza Política</th>` + anios.map(a => `<th class="p-2 text-right">Año ${a}</th>`).join('') + `</tr>`;
+                
+                let fuerzasUnicas = [...new Set(data.map(d => d.nombre_lista))].filter(Boolean);
+                fuerzasUnicas.forEach(fuerza => {
+                    htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
+                    anios.forEach(anio => {
+                        let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && d.localidad.toLowerCase() === entidad.toLowerCase());
+                        let votos = match ? match.votos.toLocaleString() : "0";
+                        htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
+                    });
+                    htmlRespuesta += `</tr>`;
+                });
+                htmlRespuesta += `</table></div>`;
+
+            } else if (tipo === "reporte_localidad") {
+                let anioTarget = anios[0] || 2025;
+                let subDatos = data.filter(d => d.anio === anioTarget && d.localidad.toLowerCase() === entidad.toLowerCase());
+                
+                if (subDatos.length === 0) {
+                    htmlRespuesta = `<div class="text-amber-600 p-2">🤖 DAEBot: No hay datos registrados para <b>${entidad}</b> en el año ${anioTarget}.</div>`;
+                } else {
+                    let totalValidos = subDatos.reduce((acc, r) => acc + (r.votos || 0), 0);
+                    subDatos.sort((a, b) => b.votos - a.votos);
+
+                    htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📍 Reporte Detallado: <b>${entidad}</b> (${anioTarget})</h4>`;
+                    htmlRespuesta += `<p class="text-slate-600 mb-2">Total de votos válidos computados: <b>${totalValidos.toLocaleString()}</b></p>`;
+                    htmlRespuesta += `<table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza / Lista</th><th class="p-2 text-right">Votos</th><th class="p-2 text-right">Porcentaje</th></tr>`;
+                    subDatos.forEach(d => {
+                        let pct = totalValidos > 0 ? ((d.votos / totalValidos) * 100).toFixed(2) : "0";
+                        htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${d.nombre_lista || 'Lista ' + d.lista_id}</td><td class="p-2 text-right font-bold">${d.votos.toLocaleString()}</td><td class="p-2 text-right font-bold text-rnblue">${pct}%</td></tr>`;
+                    });
+                    htmlRespuesta += `</table>`;
+                }
+            }
+
+            container.innerHTML = htmlRespuesta;
         }
 
-        // CARGA SEGURA DE SUPABASE AL ABRIR LA PÁGINA
-        document.addEventListener('DOMContentLoaded', async () => {
-            actualizarSelectLocalidades();
-            await actualizarCategoriasDisponibles();
-        });
+        // Función para exportar automáticamente la tabla a PDF
+        function descargarReportePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("Dirección de Asuntos Electorales - Provincia de Río Negro", 14, 20);
+            doc.setFontSize(11);
+            doc.setTextColor(0, 114, 206);
+            doc.text("Reporte Oficial / Tablero Comparativo DAEBot", 14, 28);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Fecha de emisión: " + new Date().toLocaleDateString(), 14, 35);
+
+            let tabla = document.getElementById('tabla-reporte-pdf');
+            if (!tabla) {
+                alert("Primero generá un reporte válido en pantalla antes de descargarlo en PDF.");
+                return;
+            }
+
+            let filas = [];
+            let cabeceras = [];
+            
+            for (let i = 0; i < tabla.rows[0].cells.length; i++) {
+                cabeceras.push(tabla.rows[0].cells[i].innerText);
+            }
+
+            for (let i = 1; i < tabla.rows.length; i++) {
+                let filaActual = [];
+                for (let j = 0; j < tabla.rows[i].cells.length; j++) {
+                    filaActual.push(tabla.rows[i].cells[j].innerText);
+                }
+                filas.push(filaActual);
+            }
+
+            let startY = 42;
+            doc.setFillColor(0, 114, 206);
+            doc.rect(14, startY, 182, 8, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+
+            let colWidth = 182 / cabeceras.length;
+            cabeceras.forEach((cab, idx) => {
+                doc.text(cab, 16 + (idx * colWidth), startY + 5);
+            });
+
+            startY += 8;
+            doc.setTextColor(50, 50, 50);
+            doc.setFont("helvetica", "normal");
+
+            filas.forEach((fila) => {
+                if (startY > 270) {
+                    doc.addPage();
+                    startY = 20;
+                }
+                fila.forEach((celda, colIdx) => {
+                    doc.text(celda, 16 + (colIdx * colWidth), startY + 5);
+                });
+                startY += 7;
+            });
+
+            doc.save("Reporte_Electoral_Rio_Negro.pdf");
+        }
+
+        window.onload = async function() {
+            actualizarCategoriasPublicas();
+            await actualizarOpcionesBotEntidad();
+        };
     </script>
 </body>
 </html>
