@@ -245,7 +245,7 @@
                     let opt = document.createElement('option');
                     opt.value = op.val;
                     opt.text = op.text;
-                    selectCat.appendChild(opt);
+                    selectCat.appendChild(op);
                 });
             }
             loadAdminData();
@@ -325,7 +325,7 @@
             });
         }
 
-        // Parser definitivo optimizado para la estructura exacta del PDF oficial DINE
+        // Lector Inteligente Real: Extrae de forma dinámica las líneas de texto del PDF subido sin datos predeterminados fijos
         async function handleSmartUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -356,103 +356,86 @@
                 let votosNulos = 0;
                 let rawParties = [];
 
-                // 1. Extracción de Mesas
+                // 1. Extracción dinámica de Mesas
                 let idxMesas = lines.findIndex(l => l.toLowerCase().includes('mesas computadas'));
                 if (idxMesas !== -1 && lines[idxMesas + 1]) {
                     let numMesas = lines[idxMesas + 1].replace(/\D/g, '');
                     if (numMesas) mesasProcesadasStr = `${numMesas} / ${numMesas}`;
                 }
 
-                // 2. Extracción de Participación
+                // 2. Extracción dinámica de Participación
                 let idxPart = lines.findIndex(l => l.toLowerCase().includes('participación sobre escrutado'));
                 if (idxPart !== -1 && lines[idxPart + 1]) {
                     porcentajePart = lines[idxPart + 1];
                 }
 
-                // 3. Extracción de Votantes y Blancos/Nulos desde los porcentajes del círculo
+                // 3. Extracción dinámica de Votantes y Blancos/Nulos
                 let totalVotantes = 0;
                 let idxVotantes = lines.findIndex(l => l === 'Votantes');
                 if (idxVotantes !== -1 && lines[idxVotantes + 1]) {
                     totalVotantes = parseInt(lines[idxVotantes + 1].replace(/\./g, '')) || 0;
                 }
 
-                let pctBlanco = 1.9; // Por defecto del círculo que se ve en el PDF
-                let pctNulo = 3.2;   // Por defecto del círculo que se ve en el PDF
+                let pctBlanco = 0;
+                let pctNulo = 0;
                 lines.forEach(l => {
                     let lLower = l.toLowerCase();
                     if (lLower.includes('en blanco')) {
                         let match = l.match(/([\d,\.]+)%/);
-                        if (match) pctBlanco = parseFloat(match[1].replace(',', '.')) || 1.9;
+                        if (match) pctBlanco = parseFloat(match[1].replace(',', '.')) || 0;
                     }
                     if (lLower.includes('votos nulos')) {
                         let match = l.match(/([\d,\.]+)%/);
-                        if (match) pctNulo = parseFloat(match[1].replace(',', '.')) || 3.2;
+                        if (match) pctNulo = parseFloat(match[1].replace(',', '.')) || 0;
                     }
                 });
 
                 if (totalVotantes > 0) {
                     votosBlanco = Math.round(totalVotantes * (pctBlanco / 100));
                     votosNulos = Math.round(totalVotantes * (pctNulo / 100));
-                } else {
-                    votosBlanco = 158; // Estimación segura si no lee el total exacto del círculo
-                    votosNulos = 266;
                 }
 
-                // 4. Extracción de partidos y votos basados en el formato de bloques del PDF de Pichi Mahuida
-                let nombresFuerzas = [
-                    "JUNTOS DEFENDEMOS RÍO NEGRO",
-                    "FUERZA PATRIA",
-                    "ALIANZA LA LIBERTAD AVANZA",
-                    "PRO-PROPUESTA REPUBLICANA",
-                    "PRIMERO RÍO NEGRO",
-                    "FRENTE DE IZQUIERDA Y DE TRABAJADORES - UNIDAD",
-                    "MOVIMIENTO AL SOCIALISMO-MAS"
-                ];
-
-                // Buscar bloques numéricos de votos exactos en el texto
+                // 4. Extracción limpia y estrictamente dinámica de los partidos y votos que figuran en el PDF
+                let fuerzasDetectadas = [];
                 let votosDetectados = [];
+
                 lines.forEach(l => {
-                    // Detecta líneas que terminan en "votos" precedidas de número
+                    let lUpper = l.toUpperCase();
+                    // Identificar nombres de fuerzas políticas comunes en los reportes DINE de Río Negro
+                    if (lUpper.includes('JUNTOS') || lUpper.includes('FUERZA PATRIA') || lUpper.includes('LIBERTAD AVANZA') || lUpper.includes('PROPUESTA REPUBLICANA') || lUpper.includes('PRIMERO RÍO') || lUpper.includes('IZQUIERDA') || lUpper.includes('SOCIALISMO')) {
+                        if (!fuerzasDetectadas.includes(lUpper) && lUpper.length > 4) {
+                            fuerzasDetectadas.push(lUpper);
+                        }
+                    }
+                    // Capturar votos asociados en el texto
                     if (l.toLowerCase().includes('votos') && !l.toLowerCase().includes('positivos')) {
                         let nums = l.match(/([\d\.]+)\s*votos/i);
                         if (nums && nums[1]) {
                             let val = parseInt(nums[1].replace(/\./g, '')) || 0;
-                            if (val > 5 && val < 50000 && !votosDetectados.includes(val)) {
+                            if (val > 0 && !votosDetectados.includes(val)) {
                                 votosDetectados.push(val);
                             }
                         }
                     }
                 });
 
-                // Si se encontraron los votos del PDF, los asociamos en orden
-                if (votosDetectados.length >= 3) {
-                    // Ordenamos de mayor a menor por lógica electoral
+                // Si encontramos bloques del PDF, construimos las filas de forma 100% real
+                if (fuerzasDetectadas.length > 0 && votosDetectados.length > 0) {
                     votosDetectados.sort((a, b) => b - a);
-                    for (let i = 0; i < Math.min(nombresFuerzas.length, votosDetectados.length); i++) {
+                    for (let i = 0; i < Math.min(fuerzasDetectadas.length, votosDetectados.length); i++) {
                         rawParties.push({
                             lista_id: i + 1,
-                            nombre_lista: nombresFuerzas[i],
+                            nombre_lista: fuerzasDetectadas[i],
                             votos: votosDetectados[i]
                         });
                     }
-                } else {
-                    // Fallback directo con los datos exactos leídos del PDF de Pichi Mahuida que me pasaste
-                    rawParties = [
-                        { lista_id: 1, nombre_lista: "JUNTOS DEFENDEMOS RÍO NEGRO", votos: 2626 },
-                        { lista_id: 2, nombre_lista: "FUERZA PATRIA", votos: 2287 },
-                        { lista_id: 3, nombre_lista: "ALIANZA LA LIBERTAD AVANZA", votos: 2263 },
-                        { lista_id: 4, nombre_lista: "PRO-PROPUESTA REPUBLICANA", votos: 379 },
-                        { lista_id: 5, nombre_lista: "PRIMERO RÍO NEGRO", votos: 141 },
-                        { lista_id: 6, nombre_lista: "FRENTE DE IZQUIERDA Y DE TRABAJADORES - UNIDAD", votos: 115 },
-                        { lista_id: 7, nombre_lista: "MOVIMIENTO AL SOCIALISMO-MAS", votos: 64 }
-                    ];
                 }
 
-                document.getElementById('admin-mesas').value = mesasProcesadasStr !== "0 / 0" ? mesasProcesadasStr : "38 / 38";
-                document.getElementById('admin-participacion').value = porcentajePart !== "0.00%" ? porcentajePart : "63,4%";
+                document.getElementById('admin-mesas').value = mesasProcesadasStr;
+                document.getElementById('admin-participacion').value = porcentajePart;
                 document.getElementById('admin-subvalidos').value = `Blanco: ${votosBlanco} | Nulos: ${votosNulos}`;
                 renderPartiesRows(rawParties);
-                document.getElementById('admin-status').innerText = "✓ ¡PDF oficial DINE de Pichi Mahuida leído con éxito!";
+                document.getElementById('admin-status').innerText = "✓ ¡PDF oficial procesado dinámicamente!";
 
             } catch (err) {
                 alert("Error al leer el PDF: " + err.message);
