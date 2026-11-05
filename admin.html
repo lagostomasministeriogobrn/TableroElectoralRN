@@ -7,11 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script>
@@ -67,11 +62,11 @@
         
         <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática DINE (PDF Oficial)</h3>
-                <p class="text-xs text-slate-600 mt-1">Sube archivos PDF oficiales de la DINE para extraer mesas, participación, blancos y votos exactos al instante.</p>
+                <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV Oficial</h3>
+                <p class="text-xs text-slate-600 mt-1">Sube el archivo CSV para extraer mesas procesadas, participación, votos, blancos y nulos.</p>
             </div>
             <div>
-                <input type="file" id="file-uploader" accept=".pdf, .png, .jpg, .jpeg" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
+                <input type="file" id="file-uploader" accept=".csv, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
             </div>
         </div>
 
@@ -86,46 +81,40 @@
                 </div>
             </div>
 
-            <!-- Tus 5 columnas originales exactas -->
-            <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
                     <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="2026" selected>2026</option>
                         <option value="2027">2027</option>
-                        <option value="2026">2026</option>
-                        <option value="2025" selected>2025</option>
+                        <option value="2025">2025</option>
                         <option value="2023">2023</option>
-                        <option value="2021">2021</option>
-                        <option value="2019">2019</option>
-                        <option value="2017">2017</option>
-                        <option value="2015">2015</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
-                    <select id="admin-election-kind" onchange="onAdminElectionKindChange()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
-                        <option value="Provincial">Provincial</option>
-                        <option value="General" selected>General (Nacional)</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1" id="label-locality">Sección Electoral</label>
-                    <input type="text" id="admin-locality" value="El Cuy" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Bariloche, El Cuy...">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
+                    <input type="text" id="admin-locality" value="Provincial General" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General, Viedma...">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="SEN">Senador Nacional</option>
-                        <option value="DIP" selected>Diputado Nacional</option>
-                        <option value="PRES">Presidente</option>
+                        <option value="GOB" selected>Gobernador / Vice</option>
+                        <option value="LEGP">Legislador por Representación Poblacional</option>
+                        <option value="LEGC">Legislador Circuital</option>
+                        <option value="INT">Intendente Municipal</option>
+                        <option value="CON">Concejal Municipal</option>
+                        <option value="COF">Comisión de Fomento</option>
+                        <option value="VCF">Vocal de Comisión de Fomento</option>
+                        <option value="MCM">Miembro de la Contraloría Municipal</option>
+                        <option value="MTC">Miembro del Tribunal de Cuentas</option>
+                        <option value="END">Representantes del Endecom</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1" id="label-circuit">Ámbito / Detalle</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
                     <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
@@ -142,11 +131,11 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mesas Procesadas</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mesas Procesadas (del CSV)</label>
                     <input type="text" id="admin-mesas" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="0 / 0">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">% Participación</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">% Participación (del CSV)</label>
                     <input type="text" id="admin-participacion" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="0.00%">
                 </div>
                 <div>
@@ -179,77 +168,36 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // MAPA COMPLETO DE CIRCUITOS CON MUNICIPIOS Y COMISIONES DE FOMENTO RESTITUIDOS
         const mapaCircuitos = {
             "provincial": "Provincial", "provincial general": "Provincial",
+            // Alto Valle Centro
             "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "general roca": "Alto Valle Centro",
             "cerro policía": "Alto Valle Centro", "el cuy": "Alto Valle Centro", "mencué": "Alto Valle Centro", "bajada colorada": "Alto Valle Centro", "naupa huen": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "aguada guzmán": "Alto Valle Centro",
-            "chichinales": "Alto Valle Este", "villa regina": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "general e godoy": "Alto Valle Este", "mainqué": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "ing. huergo": "Alto Valle Este", "valle azul": "Alto Valle Este",
-            "barda del medio": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "gral. fernandez oro": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
-            "los menucos": "Línea Sur", "maquinchao": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ing. jacobacci": "Línea Sur", "ramos mexía": "Línea Sur", "mtro. ramos mexía": "Línea Sur", "comicó": "Línea Sur", "prahuaniyeu": "Línea Sur", "rincón treneta": "Línea Sur", "quetrequile": "Línea Sur", "pilquiniyeu": "Línea Sur", "el caín": "Línea Sur", "colán conhue": "Línea Sur", "yaminué": "Línea Sur", "laguna blanca": "Línea Sur", "aguada de guerra": "Línea Sur", "clemente onelli": "Línea Sur",
-            "el bolsón": "Circuito Andino", "san carlos de bariloche": "Circuito Andino", "bariloche": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino", "comallo": "Circuito Andino", "dina huapi": "Circuito Andino", "el foyel": "Circuito Andino", "el manso": "Circuito Andino", "las bayas": "Circuito Andino", "mamuel choique": "Circuito Andino", "ojos de agua": "Circuito Andino", "río chico": "Circuito Andino", "paso flores": "Circuito Andino", "pilquiniyeu del limay": "Circuito Andino", "villa llanquín": "Circuito Andino", "villa mascardi": "Circuito Andino", "arroyo las minas": "Circuito Andino", "chacay huarruca": "Circuito Andino", "mallín ahogado": "Circuito Andino",
-            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico", "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
-            "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior", "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
-            "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio", "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
+            // Alto Valle Este
+            "chichinales": "Alto Valle Este", "villa regina": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "general e godoy": "Alto Valle Este", "mainqué": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "ing. huergo": "Alto Valle Este",
+            "valle azul": "Alto Valle Este",
+            // Alto Valle Oeste
+            "barda del medio": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "gral. fernandez oro": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste",
+            "peñas blancas": "Alto Valle Oeste",
+            // Línea Sur
+            "los menucos": "Línea Sur", "maquinchao": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ing. jacobacci": "Línea Sur", "ramos mexía": "Línea Sur", "mtro. ramos mexía": "Línea Sur",
+            "comicó": "Línea Sur", "prahuaniyeu": "Línea Sur", "rincón treneta": "Línea Sur", "quetrequile": "Línea Sur", "pilquiniyeu": "Línea Sur", "el caín": "Línea Sur", "colán conhue": "Línea Sur", "yaminué": "Línea Sur", "laguna blanca": "Línea Sur", "aguada de guerra": "Línea Sur", "clemente onelli": "Línea Sur",
+            // Circuito Andino
+            "el bolsón": "Circuito Andino", "san carlos de bariloche": "Circuito Andino", "bariloche": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino", "comallo": "Circuito Andino", "dina huapi": "Circuito Andino",
+            "el foyel": "Circuito Andino", "el manso": "Circuito Andino", "las bayas": "Circuito Andino", "mamuel choique": "Circuito Andino", "ojos de agua": "Circuito Andino", "río chico": "Circuito Andino", "paso flores": "Circuito Andino", "pilquiniyeu del limay": "Circuito Andino", "villa llanquín": "Circuito Andino", "villa mascardi": "Circuito Andino", "arroyo las minas": "Circuito Andino", "chacay huarruca": "Circuito Andino", "mallín ahogado": "Circuito Andino",
+            // Circuito Atlántico
+            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico",
+            "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
+            // Valle Inferior
+            "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior",
+            "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
+            // Valle Medio
+            "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio",
+            "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
         };
 
-        function onAdminElectionKindChange() {
-            const kind = document.getElementById('admin-election-kind').value;
-            const selectCat = document.getElementById('admin-election-type');
-            const labelLocality = document.getElementById('label-locality');
-            const labelCircuit = document.getElementById('label-circuit');
-            const inputLocality = document.getElementById('admin-locality');
-            const selectCircuit = document.getElementById('admin-circuit');
-
-            selectCat.innerHTML = "";
-
-            if (kind === "General") {
-                labelLocality.innerText = "Sección Electoral";
-                labelCircuit.innerText = "Ámbito / Detalle";
-                inputLocality.value = "El Cuy";
-
-                const opcionesNacionales = [
-                    { val: "SEN", text: "Senador Nacional" },
-                    { val: "DIP", text: "Diputado Nacional" },
-                    { val: "PRES", text: "Presidente" }
-                ];
-                opcionesNacionales.forEach(op => {
-                    let opt = document.createElement('option');
-                    opt.value = op.val;
-                    opt.text = op.text;
-                    selectCat.appendChild(opt);
-                });
-                selectCat.value = "DIP";
-            } else {
-                labelLocality.innerText = "Localidad / Municipio";
-                labelCircuit.innerText = "Circuito Electoral";
-                inputLocality.value = "Provincial General";
-
-                const opcionesProvinciales = [
-                    { val: "GOB", text: "Gobernador / Vice" },
-                    { val: "LEGP", text: "Legislador por Representación Poblacional" },
-                    { val: "LEGC", text: "Legislador Circuital" },
-                    { val: "INT", text: "Intendente Municipal" },
-                    { val: "CON", text: "Concejal Municipal" },
-                    { val: "COF", text: "Comisión de Fomento" },
-                    { val: "VCF", text: "Vocal de Comisión de Fomento" },
-                    { val: "MCM", text: "Miembro de la Contraloría Municipal" },
-                    { val: "MTC", text: "Miembro del Tribunal de Cuentas" },
-                    { val: "END", text: "Representantes del Endecom" }
-                ];
-                opcionesProvinciales.forEach(op => {
-                    let opt = document.createElement('option');
-                    opt.value = op.val;
-                    opt.text = op.text;
-                    selectCat.appendChild(opt);
-                });
-            }
-            loadAdminData();
-        }
-
         function autocompletarCircuitoAdmin() {
-            const kind = document.getElementById('admin-election-kind').value;
-            if (kind === "General") return;
-
             const inputLoc = document.getElementById('admin-locality');
             const selectCircuito = document.getElementById('admin-circuit');
             if (!inputLoc || !selectCircuito) return;
@@ -267,26 +215,19 @@
 
         async function loadAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
-            let inputValue = document.getElementById('admin-locality').value.trim();
+            let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const electionKind = document.getElementById('admin-election-kind').value;
+            const circuito = document.getElementById('admin-circuit').value;
 
-            if (!inputValue) return;
+            if (!localidad) return;
 
-            let query = supabaseClient
+            let { data } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
+                .ilike('localidad', localidad)
+                .eq('circuito_id', circuito)
                 .eq('categoria', categoria);
-
-            if (electionKind === "General") {
-                query = query.ilike('localidad', inputValue);
-            } else {
-                const circuito = document.getElementById('admin-circuit').value;
-                query = query.ilike('localidad', inputValue).eq('circuito_id', circuito);
-            }
-
-            let { data } = await query;
 
             if (data && data.length > 0) {
                 document.getElementById('admin-mesas').value = data[0].mesas_procesadas || "0";
@@ -320,150 +261,60 @@
             });
         }
 
-        // Lector DINE blindado: extracción limpia y exacta de mesas, participación y votos
         async function handleSmartUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
+            const reader = new FileReader();
+            reader.readAsText(file, "UTF-8");
+            reader.onload = function(e) {
+                const lines = e.target.result.split(/\r\n|\n/).filter(l => l.trim() !== "");
+                if (lines.length < 2) { alert("El CSV está vacío."); return; }
 
-            document.getElementById('admin-status').innerText = "⏳ Procesando documento DINE (OCR avanzado)...";
-
-            try {
-                let text = "";
-                if (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                    let fullText = "";
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const tokenizedText = await page.getTextContent();
-                        let pageText = tokenizedText.items.map(item => item.str).join(" ");
-                        
-                        if (pageText.trim().length < 30) {
-                            document.getElementById('admin-status').innerText = `🔍 Aplicando OCR en página ${i}...`;
-                            const viewport = page.getViewport({ scale: 2.5 });
-                            const canvas = document.createElement('canvas');
-                            const context = canvas.getContext('2d');
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-                            await page.render({ canvasContext: context, viewport: viewport }).promise;
-                            
-                            const imageUrl = canvas.toDataURL('image/png');
-                            const ocrResult = await Tesseract.recognize(imageUrl, 'spa');
-                            pageText += " " + ocrResult.data.text;
-                        }
-                        fullText += pageText + "\n";
-                    }
-                    text = fullText;
-                } else if (file.type.startsWith('image/')) {
-                    document.getElementById('admin-status').innerText = "🔍 Analizando imagen con OCR...";
-                    const ocrResult = await Tesseract.recognize(file, 'spa');
-                    text = ocrResult.data.text;
-                } else {
-                    text = await file.text();
-                }
-
-                let mesasProcesadasStr = "13 / 13";
-                let porcentajePart = "66,39%";
-                let votosBlanco = 11;
-                let votosNulos = 3;
-                let rawParties = [];
-
-                // 1. Extracción blindada de Mesas (busca exactamente el bloque "Mesas computadas" y un número menor a 500)
-                let matchMesas = text.match(/mesas\s*computadas[^\d]*(\d{1,3})/i);
-                if (matchMesas && matchMesas[1]) {
-                    let m = parseInt(matchMesas[1]);
-                    if (m < 500) {
-                        mesasProcesadasStr = `${m} / ${m}`;
-                    }
-                }
-
-                // 2. Extracción de Participación oficial del tablero
-                let matchPart = text.match(/participaci[oó]n[^\d]*([\d,\.]+%)/i);
-                if (matchPart && matchPart[1]) {
-                    porcentajePart = matchPart[1];
-                }
-
-                // 3. Extracción de Votantes y Blancos/Nulos
-                let matchVotantes = text.match(/votantes[^\d]*(\d+)/i);
-                let totalVotantes = matchVotantes ? parseInt(matchVotantes[1]) : 2220;
-
-                let matchBlanco = text.match(/en blanco[^\d]*([\d,\.]+)%/i) || text.match(/blanco[^\d]*(\d+)/i);
-                let matchNulo = text.match(/nulos[^\d]*([\d,\.]+)%/i) || text.match(/nulo[^\d]*(\d+)/i);
-
-                if (matchBlanco) {
-                    if (matchBlanco[1].includes('%')) {
-                        let pctB = parseFloat(matchBlanco[1].replace(',', '.'));
-                        votosBlanco = Math.round(totalVotantes * (pctB / 100));
-                    } else {
-                        votosBlanco = parseInt(matchBlanco[1]);
-                    }
-                }
-
-                if (matchNulo) {
-                    if (matchNulo[1].includes('%')) {
-                        let pctN = parseFloat(matchNulo[1].replace(',', '.'));
-                        votosNulos = Math.round(totalVotantes * (pctN / 100));
-                    } else {
-                        votosNulos = parseInt(matchNulo[1]);
-                    }
-                }
-
-                // 4. Extracción exacta de fuerzas políticas y votos
-                let fuerzasConfig = [
-                    { nombre: "JUNTOS DEFENDEMOS RÍO NEGRO", keywords: ["JUNTOS DEFENDEMOS"] },
-                    { nombre: "FUERZA PATRIA", keywords: ["FUERZA PATRIA"] },
-                    { nombre: "ALIANZA LA LIBERTAD AVANZA", keywords: ["LIBERTAD AVANZA"] },
-                    { nombre: "FRENTE DE IZQUIERDA Y DE TRABAJADORES - UNIDAD", keywords: ["IZQUIERDA", "TRABAJADORES"] },
-                    { nombre: "PRIMERO RÍO NEGRO", keywords: ["PRIMERO RÍO", "PRIMERO RIO"] },
-                    { nombre: "PRO-PROPUESTA REPUBLICANA", keywords: ["PROPUESTA", "REPUBLICANA"] },
-                    { nombre: "MOVIMIENTO AL SOCIALISMO-MAS", keywords: ["SOCIALISMO"] }
-                ];
-
-                let listaIdCounter = 1;
-                fuerzasConfig.forEach(f => {
-                    let votosEncontrados = 0;
-                    f.keywords.forEach(kw => {
-                        let idx = text.indexOf(kw);
-                        if (idx !== -1 && votosEncontrados === 0) {
-                            let fragmento = text.substring(idx, idx + 200);
-                            let matchVotos = fragmento.match(/(\d{1,5})\s*votos/i) || fragmento.match(/votos[^\d]*(\d{1,5})/i);
-                            if (matchVotos && matchVotos[1]) {
-                                let val = parseInt(matchVotos[1]);
-                                if (val > 0 && val < 40000) votosEncontrados = val;
-                            }
-                        }
-                    });
-
-                    // Respaldo de seguridad para este reporte exacto si el OCR patina
-                    if (votosEncontrados === 0) {
-                        if (f.nombre.includes("JUNTOS")) votosEncontrados = 802;
-                        else if (f.nombre.includes("PATRIA")) votosEncontrados = 557;
-                        else if (f.nombre.includes("LIBERTAD")) votosEncontrados = 369;
-                        else if (f.nombre.includes("IZQUIERDA")) votosEncontrados = 79;
-                        else if (f.nombre.includes("PRIMERO")) votosEncontrados = 45;
-                        else if (f.nombre.includes("PROPUESTA")) votosEncontrados = 26;
-                        else if (f.nombre.includes("SOCIALISMO")) votosEncontrados = 25;
-                    }
-
-                    if (votosEncontrados > 0) {
-                        rawParties.push({
-                            lista_id: listaIdCounter++,
-                            nombre_lista: f.nombre,
-                            votos: votosEncontrados
-                        });
-                    }
-                });
-
-                document.getElementById('admin-mesas').value = mesasProcesadasStr;
-                document.getElementById('admin-participacion').value = porcentajePart;
-                document.getElementById('admin-subvalidos').value = `Blanco: ${votosBlanco} | Nulos: ${votosNulos}`;
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                const idxClase = headers.indexOf('clase_candidatura');
+                const idxIdCand = headers.indexOf('id_candidatura');
+                const idxDescCand = headers.indexOf('descripcion_candidatura');
+                const idxVotos = headers.indexOf('cant_votos');
                 
-                renderPartiesRows(rawParties);
-                document.getElementById('admin-status').innerText = "✓ ¡Reporte DINE procesado y cargado con éxito!";
+                const idxPart = headers.findIndex(h => h.includes('participacion') || h.includes('part'));
+                const idxMesas = headers.findIndex(h => h.includes('mesa') || h.includes('escrutad') || h.includes('procesad'));
 
-            } catch (err) {
-                alert("Error al procesar el archivo: " + err.message);
-                document.getElementById('admin-status').innerText = "❌ Error al procesar el archivo.";
+                let rawParties = [];
+                let blancoVotos = 0;
+                let nulosVotos = 0;
+                let porcentajePartCSV = "0.00%";
+                let mesasCSV = "0";
+
+                for (let i = 1; i < lines.length; i++) {
+                    let cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+                    if (cols.length < headers.length) continue;
+
+                    if (idxPart !== -1 && cols[idxPart]) porcentajePartCSV = cols[idxPart];
+                    if (idxMesas !== -1 && cols[idxMesas]) mesasCSV = cols[idxMesas];
+
+                    let clase = idxClase !== -1 ? cols[idxClase].toLowerCase() : "";
+                    let desc = idxDescCand !== -1 ? cols[idxDescCand].toLowerCase() : "";
+                    let votos = idxVotos !== -1 ? (parseInt(cols[idxVotos]) || 0) : 0;
+
+                    if (clase === 'blanco' || desc.includes('blanco')) {
+                        blancoVotos += votos;
+                    } else if (clase === 'nulo' || clase === 'nulos' || desc.includes('nulo') || desc.includes('impugnado')) {
+                        nulosVotos += votos;
+                    } else if (clase === 'lista' || clase === 'candidatura' || !clase) {
+                        let idC = idxIdCand !== -1 ? cols[idxIdCand] : i;
+                        let dC = idxDescCand !== -1 ? cols[idxDescCand] : "Lista " + i;
+                        if (!dC.toLowerCase().includes('blanco') && !dC.toLowerCase().includes('nulo')) {
+                            rawParties.push({ id: idC, name: dC, votos: votos });
+                        }
+                    }
+                }
+
+                document.getElementById('admin-mesas').value = mesasCSV;
+                document.getElementById('admin-participacion').value = porcentajePartCSV;
+                document.getElementById('admin-subvalidos').value = `Blanco: ${blancoVotos} | Nulos: ${nulosVotos}`;
+
+                renderPartiesRows(rawParties.map(p => ({ lista_id: p.id, nombre_lista: p.name, votos: p.votos })));
+                document.getElementById('admin-status').innerText = "✓ CSV importado correctamente. Se conservó tu selección de categoría.";
             }
         }
 
@@ -482,33 +333,22 @@
 
         async function saveAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
-            let inputValue = document.getElementById('admin-locality').value.trim();
+            let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const electionKind = document.getElementById('admin-election-kind').value;
-            
-            let localidad = inputValue;
-            let circuito_id = electionKind === "General" ? "Provincial General" : document.getElementById('admin-circuit').value;
-
+            const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
             const subValidosText = document.getElementById('admin-subvalidos').value;
             let blanco = parseInt((subValidosText.match(/Blanco:\s*(\d+)/i) || [])[1]) || 0;
             let nulos = parseInt((subValidosText.match(/Nulos:\s*(\d+)/i) || [])[1]) || 0;
 
-            if (!localidad) { alert("Por favor ingresa un valor."); return; }
+            if (!localidad) { alert("Por favor ingresa una localidad."); return; }
 
-            let deleteQuery = supabaseClient
-                .from('resultados_mesas')
-                .delete()
-                .eq('anio', anio)
-                .ilike('localidad', localidad)
-                .eq('categoria', categoria);
-
-            if (electionKind !== "General") {
-                deleteQuery = deleteQuery.eq('circuito_id', circuito_id);
+            if (localidad.toLowerCase() === "provincial" || localidad.toLowerCase() === "provincia") {
+                localidad = "Provincial General";
             }
 
-            await deleteQuery;
+            await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
             
             let rows = [];
             document.querySelectorAll('.party-row').forEach(row => {
@@ -539,26 +379,12 @@
 
         async function resetCloudData() {
             const anio = parseInt(document.getElementById('admin-year').value);
-            let inputValue = document.getElementById('admin-locality').value.trim();
+            let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const electionKind = document.getElementById('admin-election-kind').value;
-            
-            let localidad = inputValue;
-            let circuito_id = electionKind === "General" ? "Provincial General" : document.getElementById('admin-circuit').value;
+            const circuito_id = document.getElementById('admin-circuit').value;
 
             if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
-                let deleteQuery = supabaseClient
-                    .from('resultados_mesas')
-                    .delete()
-                    .eq('anio', anio)
-                    .ilike('localidad', localidad)
-                    .eq('categoria', categoria);
-
-                if (electionKind !== "General") {
-                    deleteQuery = deleteQuery.eq('circuito_id', circuito_id);
-                }
-
-                await deleteQuery;
+                await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
                 loadAdminData();
             }
         }
@@ -571,7 +397,7 @@
 
                 let agrupados = {};
                 data.forEach(row => {
-                    let key = `AÑO: ${row.anio} | SECCIÓN/LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | ÁMBITO: ${row.circuito_id}`;
+                    let key = `AÑO: ${row.anio} | LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | CIRCUITO: ${row.circuito_id}`;
                     if (!agrupados[key]) {
                         agrupados[key] = {
                             mesas: row.mesas_procesadas || '0',
