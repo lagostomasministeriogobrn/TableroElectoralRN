@@ -65,26 +65,26 @@
                 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
-                    <select id="filter-year" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="2026" selected>2026</option>
+                    <select id="filter-year" onchange="actualizarFiltros()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="2026">2026</option>
                         <option value="2027">2027</option>
                         <option value="2025">2025</option>
                         <option value="2023">2023</option>
-                        <option value="2019">2019</option>
+                        <option value="2019" selected>2019</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
-                    <select id="filter-election-kind" onchange="onPublicElectionKindChange()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
+                    <select id="filter-election-kind" onchange="actualizarFiltros()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="General">General (Nacional)</option>
                     </select>
                 </div>
 
-                <div id="filter-circuit-container">
+                <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="filter-circuit" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <select id="filter-circuit" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
                         <option value="Alto Valle Este">Alto Valle Este</option>
@@ -98,7 +98,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Localidad / Sección</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Localidad</label>
                     <select id="filter-locality" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial General" selected>Provincial General</option>
                     </select>
@@ -106,8 +106,13 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                    <select id="filter-category" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <!-- Se llena dinámicamente -->
+                    <select id="filter-category" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="GOB" selected>Gobernador / Vice</option>
+                        <option value="LEGP">Legislador por Rep. Poblacional</option>
+                        <option value="LEGC">Legislador Circuital</option>
+                        <option value="INT">Intendente Municipal</option>
+                        <option value="CON">Concejal Municipal</option>
+                        <option value="COF">Comisión de Fomento</option>
                     </select>
                 </div>
             </section>
@@ -174,8 +179,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Reporte</label>
-                    <select id="bot-tipo" onchange="actualizarOpcionesBotEntidad()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
-                        <option value="comparativa_circuitos">Comparar Circuitos (Mismo Año)</option>
+                    <select id="bot-tipo" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
                         <option value="evolucion_interanual">Evolución Interanual (Histórico)</option>
                         <option value="reporte_localidad">Detalle por Municipio / Fomento</option>
                     </select>
@@ -184,9 +188,6 @@
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="bot-categoria" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
                         <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="SEN">Senador Nacional</option>
-                        <option value="DIP">Diputado Nacional</option>
-                        <option value="PRES">Presidente</option>
                         <option value="INT">Intendente Municipal</option>
                         <option value="CON">Concejal Municipal</option>
                         <option value="COF">Comisión de Fomento</option>
@@ -197,10 +198,8 @@
                     <input type="text" id="bot-anios" value="2023, 2025" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs font-semibold" placeholder="Separados por coma">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1" id="bot-label-entidad">Seleccionar Opción</label>
-                    <select id="bot-entidad" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
-                        <!-- Se llena dinámicamente -->
-                    </select>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Seleccionar Opción</label>
+                    <select id="bot-entidad" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold"></select>
                 </div>
             </div>
 
@@ -220,219 +219,82 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let chartInstance = null;
-        let cacheDatosGlobales = [];
 
-        const circuitosOficiales = [
-            "Alto Valle Centro", "Alto Valle Este", "Alto Valle Oeste", 
-            "Circuito Andino", "Circuito Atlántico", "Línea Sur", "Valle Medio", "Valle Inferior"
-        ];
+        const nombresCategorias = {
+            "GOB": "Gobernador / Vice",
+            "LEGP": "Legislador por Rep. Poblacional",
+            "LEGC": "Legislador Circuital",
+            "INT": "Intendente Municipal",
+            "CON": "Concejal Municipal",
+            "COF": "Comisión de Fomento",
+            "VCF": "Vocal de Comisión de Fomento",
+            "MCM": "Miembro de la Contraloría Municipal",
+            "MTC": "Miembro del Tribunal de Cuentas",
+            "END": "Representantes del Endecom",
+            "SEN": "Senador Nacional",
+            "DIP": "Diputado Nacional",
+            "PRES": "Presidente"
+        };
 
-        function normalizarTexto(str) {
-            if (!str) return "";
-            return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        }
-
-        async function actualizarLocalidadesPorCircuito() {
+        async function actualizarFiltros() {
             const anio = parseInt(document.getElementById('filter-year').value);
-            const circuitoSeleccionado = document.getElementById('filter-circuit').value;
             const selectLoc = document.getElementById('filter-locality');
-            const categoria = document.getElementById('filter-category').value;
-            const electionKind = document.getElementById('filter-election-kind').value;
+            const selectCat = document.getElementById('filter-category');
 
-            // Traemos todos los registros de ese año y categoría sin filtrar en el servidor por circuito para evitar desajustes de texto
-            let { data, error } = await supabaseClient
+            // Consultar datos disponibles para el año seleccionado
+            let { data } = await supabaseClient
                 .from('resultados_mesas')
-                .select('localidad, circuito_id, tipo_entidad')
-                .eq('anio', anio)
-                .eq('categoria', categoria);
+                .select('localidad, categoria')
+                .eq('anio', anio);
 
+            if (!data) data = [];
+
+            // Actualizar Localidades
             selectLoc.innerHTML = "";
-
             let optGeneral = document.createElement('option');
             optGeneral.value = "Provincial General";
             optGeneral.text = "Provincial General";
             selectLoc.appendChild(optGeneral);
 
-            if (data && data.length > 0) {
-                let circuitoTarget = normalizarTexto(circuitoSeleccionado);
-                
-                let filtrados = data.filter(d => {
-                    if (electionKind === "General" || circuitoSeleccionado === "Provincial") return true;
-                    return normalizarTexto(d.circuito_id) === circuitoTarget;
-                });
-
-                let municipios = [];
-                let comisionados = [];
-
-                filtrados.forEach(d => {
-                    let loc = d.localidad;
-                    if (!loc) return;
-                    let locLower = normalizarTexto(loc);
-                    if (locLower === "provincial general" || locLower === "provincial") return;
-                    
-                    let tipo = d.tipo_entidad || "Municipio";
-                    if (tipo === "Comision de Fomento") {
-                        if (!comisionados.includes(loc)) comisionados.push(loc);
-                    } else {
-                        if (!municipios.includes(loc)) municipios.push(loc);
-                    }
-                });
-
-                if (municipios.length > 0) {
-                    let groupMun = document.createElement('optgroup');
-                    groupMun.label = "Municipios";
-                    municipios.sort().forEach(loc => {
-                        let opt = document.createElement('option');
-                        opt.value = loc;
-                        opt.text = loc;
-                        groupMun.appendChild(opt);
-                    });
-                    selectLoc.appendChild(groupMun);
+            let unicasLoc = [...new Set(data.map(d => d.localidad))].filter(Boolean);
+            unicasLoc.sort().forEach(loc => {
+                let locLower = loc.toLowerCase().trim();
+                if (locLower !== "provincial general" && locLower !== "provincial") {
+                    let opt = document.createElement('option');
+                    opt.value = loc;
+                    opt.text = loc;
+                    selectLoc.appendChild(opt);
                 }
+            });
 
-                if (comisionados.length > 0) {
-                    let groupCom = document.createElement('optgroup');
-                    groupCom.label = "Comisión de Fomento";
-                    comisionados.sort().forEach(loc => {
-                        let opt = document.createElement('option');
-                        opt.value = loc;
-                        opt.text = loc;
-                        groupCom.appendChild(opt);
-                    });
-                    selectLoc.appendChild(groupCom);
-                }
+            // Actualizar Categorías basadas en lo que realmente existe en la base de datos
+            let categoriaActual = selectCat.value;
+            selectCat.innerHTML = "";
+            let unicasCat = [...new Set(data.map(d => d.categoria))].filter(Boolean);
+            
+            if (unicasCat.length === 0) {
+                unicasCat = ["GOB", "LEGP", "LEGC"]; // Default si está vacío
+            }
+
+            unicasCat.forEach(catCode => {
+                let opt = document.createElement('option');
+                opt.value = catCode;
+                opt.text = nombresCategorias[catCode] || catCode;
+                selectCat.appendChild(opt);
+            });
+
+            if (unicasCat.includes(categoriaActual)) {
+                selectCat.value = categoriaActual;
             }
 
             cargarDatosPublicos();
-        }
-
-        async function actualizarOpcionesBotEntidad() {
-            const tipo = document.getElementById('bot-tipo').value;
-            const selectEntidad = document.getElementById('bot-entidad');
-            const labelEntidad = document.getElementById('bot-label-entidad');
-            selectEntidad.innerHTML = "";
-
-            if (tipo === "comparativa_circuitos") {
-                labelEntidad.innerText = "Circuito Base / Referencia";
-                circuitosOficiales.forEach(c => {
-                    let opt = document.createElement('option');
-                    opt.value = c;
-                    opt.text = c;
-                    selectEntidad.appendChild(opt);
-                });
-            } else {
-                labelEntidad.innerText = "Municipio / Comisión de Fomento";
-                let { data } = await supabaseClient.from('resultados_mesas').select('localidad, tipo_entidad');
-                
-                let municipios = [];
-                let comisionados = [];
-
-                if (data) {
-                    data.forEach(d => {
-                        let loc = d.localidad;
-                        if (!loc) return;
-                        let locLower = normalizarTexto(loc);
-                        if (locLower === "provincial general" || locLower === "provincial") return;
-                        
-                        let tipoEnt = d.tipo_entidad || "Municipio";
-                        if (tipoEnt === "Comision de Fomento") {
-                            if (!comisionados.includes(loc)) comisionados.push(loc);
-                        } else {
-                            if (!municipios.includes(loc)) municipios.push(loc);
-                        }
-                    });
-                }
-
-                if (municipios.length > 0) {
-                    let groupMun = document.createElement('optgroup');
-                    groupMun.label = "Municipios";
-                    municipios.sort().forEach(loc => {
-                        let opt = document.createElement('option');
-                        opt.value = loc;
-                        opt.text = loc;
-                        groupMun.appendChild(opt);
-                    });
-                    selectEntidad.appendChild(groupMun);
-                }
-
-                if (comisionados.length > 0) {
-                    let groupCom = document.createElement('optgroup');
-                    groupCom.label = "Comisión de Fomento";
-                    comisionados.sort().forEach(loc => {
-                        let opt = document.createElement('option');
-                        opt.value = loc;
-                        opt.text = loc;
-                        groupCom.appendChild(opt);
-                    });
-                    selectEntidad.appendChild(groupCom);
-                }
-
-                if (selectEntidad.children.length === 0) {
-                    let opt = document.createElement('option');
-                    opt.value = "Provincial General";
-                    opt.text = "Provincial General";
-                    selectEntidad.appendChild(opt);
-                }
-            }
-        }
-
-        function actualizarCategoriasPublicas() {
-            const kind = document.getElementById('filter-election-kind').value;
-            const selectCat = document.getElementById('filter-category');
-            const circuitContainer = document.getElementById('filter-circuit-container');
-
-            selectCat.innerHTML = "";
-
-            if (kind === "General") {
-                if (circuitContainer) circuitContainer.style.display = "none";
-                document.getElementById('filter-circuit').value = "Provincial";
-
-                const opcionesNacionales = [
-                    { val: "SEN", text: "Senador Nacional" },
-                    { val: "DIP", text: "Diputado Nacional" },
-                    { val: "PRES", text: "Presidente" }
-                ];
-                opcionesNacionales.forEach(op => {
-                    let opt = document.createElement('option');
-                    opt.value = op.val;
-                    opt.text = op.text;
-                    selectCat.appendChild(opt);
-                });
-            } else {
-                if (circuitContainer) circuitContainer.style.display = "block";
-
-                const opcionesProvinciales = [
-                    { val: "GOB", text: "Gobernador / Vice" },
-                    { val: "LEGP", text: "Legislador por Rep. Poblacional" },
-                    { val: "LEGC", text: "Legislador Circuital" },
-                    { val: "INT", text: "Intendente Municipal" },
-                    { val: "CON", text: "Concejal Municipal" },
-                    { val: "COF", text: "Comisión de Fomento" },
-                    { val: "VCF", text: "Vocal de Comisión de Fomento" },
-                    { val: "MCM", text: "Miembro de la Contraloría Municipal" },
-                    { val: "MTC", text: "Miembro del Tribunal de Cuentas" },
-                    { val: "END", text: "Representantes del Endecom" }
-                ];
-                opcionesProvinciales.forEach(op => {
-                    let opt = document.createElement('option');
-                    opt.value = op.val;
-                    opt.text = op.text;
-                    selectCat.appendChild(opt);
-                });
-            }
-            actualizarLocalidadesPorCircuito();
-        }
-
-        function onPublicElectionKindChange() {
-            actualizarCategoriasPublicas();
         }
 
         async function cargarDatosPublicos() {
             const anio = parseInt(document.getElementById('filter-year').value);
             const localidad = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
-            const electionKind = document.getElementById('filter-election-kind').value;
-            const circuito = electionKind === "General" ? "Provincial" : document.getElementById('filter-circuit').value;
+            const circuito = document.getElementById('filter-circuit').value;
 
             let query = supabaseClient
                 .from('resultados_mesas')
@@ -441,13 +303,12 @@
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
-            if (localidad === "Provincial General") {
+            if (localidad.toLowerCase() === "provincial general") {
                 query = query.eq('circuito_id', circuito);
             }
 
             let { data } = await query;
-            cacheDatosGlobales = data || [];
-            renderizarResultados(cacheDatosGlobales);
+            renderizarResultados(data || []);
         }
 
         function renderizarResultados(data) {
@@ -509,6 +370,24 @@
             });
         }
 
+        async function actualizarOpcionesBotEntidad() {
+            const selectEntidad = document.getElementById('bot-entidad');
+            if(!selectEntidad) return;
+            selectEntidad.innerHTML = "";
+            let { data } = await supabaseClient.from('resultados_mesas').select('localidad');
+            if (data) {
+                let unicas = [...new Set(data.map(d => d.localidad))].filter(Boolean);
+                unicas.sort().forEach(loc => {
+                    if (loc.toLowerCase() !== "provincial general") {
+                        let opt = document.createElement('option');
+                        opt.value = loc;
+                        opt.text = loc;
+                        selectEntidad.appendChild(opt);
+                    }
+                });
+            }
+        }
+
         async function generarReporteDAEBot() {
             const tipo = document.getElementById('bot-tipo').value;
             const categoria = document.getElementById('bot-categoria').value;
@@ -525,136 +404,34 @@
                 return;
             }
 
-            let htmlRespuesta = "";
-
-            if (tipo === "comparativa_circuitos") {
-                let anioTarget = anios[0] || 2025;
-                let circuitos = circuitosOficiales;
-                
-                htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📊 Reporte DAEBot: Comparativa entre Circuitos (Categoría ${categoria} - Año ${anioTarget})</h4>`;
-                htmlRespuesta += `<div class="overflow-x-auto"><table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza Política</th>` + circuitos.map(c => `<th class="p-2 text-right">${c}</th>`).join('') + `</tr>`;
-                
-                let fuerzasUnicas = [...new Set(data.filter(d => d.anio === anioTarget).map(d => d.nombre_lista))].filter(Boolean);
-                fuerzasUnicas.forEach(fuerza => {
-                    htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
-                    circuitos.forEach(circ => {
-                        let match = data.find(d => d.anio === anioTarget && normalizarTexto(d.circuito_id) === normalizarTexto(circ) && d.nombre_lista === fuerza);
-                        let votos = match ? match.votos.toLocaleString() : "0";
-                        htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
-                    });
-                    htmlRespuesta += `</tr>`;
+            let htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📈 Reporte DAEBot: <b>${entidad}</b> (${categoria})</h4>`;
+            htmlRespuesta += `<div class="overflow-x-auto"><table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza Política</th>` + anios.map(a => `<th class="p-2 text-right">Año ${a}</th>`).join('') + `</tr>`;
+            
+            let fuerzasUnicas = [...new Set(data.map(d => d.nombre_lista))].filter(Boolean);
+            fuerzasUnicas.forEach(fuerza => {
+                htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
+                anios.forEach(anio => {
+                    let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && d.localidad.toLowerCase() === entidad.toLowerCase());
+                    let votos = match ? match.votos.toLocaleString() : "0";
+                    htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
                 });
-                htmlRespuesta += `</table></div>`;
-
-            } else if (tipo === "evolucion_interanual") {
-                htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📈 Reporte DAEBot: Evolución Interanual en <b>${entidad}</b> (Categoría ${categoria})</h4>`;
-                htmlRespuesta += `<div class="overflow-x-auto"><table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza Política</th>` + anios.map(a => `<th class="p-2 text-right">Año ${a}</th>`).join('') + `</tr>`;
-                
-                let fuerzasUnicas = [...new Set(data.map(d => d.nombre_lista))].filter(Boolean);
-                fuerzasUnicas.forEach(fuerza => {
-                    htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
-                    anios.forEach(anio => {
-                        let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && normalizarTexto(d.localidad) === normalizarTexto(entidad));
-                        let votos = match ? match.votos.toLocaleString() : "0";
-                        htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
-                    });
-                    htmlRespuesta += `</tr>`;
-                });
-                htmlRespuesta += `</table></div>`;
-
-            } else if (tipo === "reporte_localidad") {
-                let anioTarget = anios[0] || 2025;
-                let subDatos = data.filter(d => d.anio === anioTarget && normalizarTexto(d.localidad) === normalizarTexto(entidad));
-                
-                if (subDatos.length === 0) {
-                    htmlRespuesta = `<div class="text-amber-600 p-2">🤖 DAEBot: No hay datos registrados para <b>${entidad}</b> en el año ${anioTarget}.</div>`;
-                } else {
-                    let totalValidos = subDatos.reduce((acc, r) => acc + (r.votos || 0), 0);
-                    subDatos.sort((a, b) => b.votos - a.votos);
-
-                    htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📍 Reporte Detallado: <b>${entidad}</b> (${anioTarget})</h4>`;
-                    htmlRespuesta += `<p class="text-slate-600 mb-2">Total de votos válidos computados: <b>${totalValidos.toLocaleString()}</b></p>`;
-                    htmlRespuesta += `<table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza / Lista</th><th class="p-2 text-right">Votos</th><th class="p-2 text-right">Porcentaje</th></tr>`;
-                    subDatos.forEach(d => {
-                        let pct = totalValidos > 0 ? ((d.votos / totalValidos) * 100).toFixed(2) : "0";
-                        htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${d.nombre_lista || 'Lista ' + d.lista_id}</td><td class="p-2 text-right font-bold">${d.votos.toLocaleString()}</td><td class="p-2 text-right font-bold text-rnblue">${pct}%</td></tr>`;
-                    });
-                    htmlRespuesta += `</table>`;
-                }
-            }
-
+                htmlRespuesta += `</tr>`;
+            });
+            htmlRespuesta += `</table></div>`;
             container.innerHTML = htmlRespuesta;
         }
 
         function descargarReportePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
-            doc.text("Dirección de Asuntos Electorales - Provincia de Río Negro", 14, 20);
-            doc.setFontSize(11);
-            doc.setTextColor(0, 114, 206);
-            doc.text("Reporte Oficial / Tablero Comparativo DAEBot", 14, 28);
-            
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
-            doc.text("Fecha de emisión: " + new Date().toLocaleDateString(), 14, 35);
-
-            let tabla = document.getElementById('tabla-reporte-pdf');
-            if (!tabla) {
-                alert("Primero generá un reporte válido en pantalla antes de descargarlo en PDF.");
-                return;
-            }
-
-            let filas = [];
-            let cabeceras = [];
-            
-            for (let i = 0; i < tabla.rows[0].cells.length; i++) {
-                cabeceras.push(tabla.rows[0].cells[i].innerText);
-            }
-
-            for (let i = 1; i < tabla.rows.length; i++) {
-                let filaActual = [];
-                for (let j = 0; j < tabla.rows[i].cells.length; j++) {
-                    filaActual.push(tabla.rows[i].cells[j].innerText);
-                }
-                filas.push(filaActual);
-            }
-
-            let startY = 42;
-            doc.setFillColor(0, 114, 206);
-            doc.rect(14, startY, 182, 8, "F");
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
-
-            let colWidth = 182 / cabeceras.length;
-            cabeceras.forEach((cab, idx) => {
-                doc.text(cab, 16 + (idx * colWidth), startY + 5);
-            });
-
-            startY += 8;
-            doc.setTextColor(50, 50, 50);
-            doc.setFont("helvetica", "normal");
-
-            filas.forEach((fila) => {
-                if (startY > 270) {
-                    doc.addPage();
-                    startY = 20;
-                }
-                fila.forEach((celda, colIdx) => {
-                    doc.text(celda, 16 + (colIdx * colWidth), startY + 5);
-                });
-                startY += 7;
-            });
-
-            doc.save("Reporte_Electoral_Rio_Negro.pdf");
+            doc.text("Dirección de Asuntos Electorales - Río Negro", 14, 20);
+            doc.save("Reporte_Electoral.pdf");
         }
 
         window.onload = async function() {
-            actualizarCategoriasPublicas();
+            await actualizarFiltros();
             await actualizarOpcionesBotEntidad();
         };
     </script>
