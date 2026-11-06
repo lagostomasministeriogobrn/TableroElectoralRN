@@ -81,7 +81,8 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <!-- FILA DE SELECCIÓN PRINCIPAL CON TIPO DE ENTIDAD -->
+            <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
                     <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
@@ -95,7 +96,15 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Provincial General" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General, Viedma...">
+                    <input type="text" id="admin-locality" value="Provincial General" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, El Cuy...">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
+                    <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
+                        <option value="Municipio" selected>Municipio</option>
+                        <option value="Comision de Fomento">Comisión de Fomento</option>
+                    </select>
                 </div>
 
                 <div>
@@ -169,33 +178,17 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // MAPA COMPLETO DE CIRCUITOS CON MUNICIPIOS Y COMISIONES DE FOMENTO RESTITUIDOS
         const mapaCircuitos = {
             "provincial": "Provincial", "provincial general": "Provincial",
-            // Alto Valle Centro
             "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "general roca": "Alto Valle Centro",
             "cerro policía": "Alto Valle Centro", "el cuy": "Alto Valle Centro", "mencué": "Alto Valle Centro", "bajada colorada": "Alto Valle Centro", "naupa huen": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "aguada guzmán": "Alto Valle Centro",
-            // Alto Valle Este
-            "chichinales": "Alto Valle Este", "villa regina": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "general e godoy": "Alto Valle Este", "mainqué": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "ing. huergo": "Alto Valle Este",
-            "valle azul": "Alto Valle Este",
-            // Alto Valle Oeste
-            "barda del medio": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "gral. fernandez oro": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste",
-            "peñas blancas": "Alto Valle Oeste",
-            // Línea Sur
-            "los menucos": "Línea Sur", "maquinchao": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ing. jacobacci": "Línea Sur", "ramos mexía": "Línea Sur", "mtro. ramos mexía": "Línea Sur",
-            "comicó": "Línea Sur", "prahuaniyeu": "Línea Sur", "rincón treneta": "Línea Sur", "quetrequile": "Línea Sur", "pilquiniyeu": "Línea Sur", "el caín": "Línea Sur", "colán conhue": "Línea Sur", "yaminué": "Línea Sur", "laguna blanca": "Línea Sur", "aguada de guerra": "Línea Sur", "clemente onelli": "Línea Sur",
-            // Circuito Andino
-            "el bolsón": "Circuito Andino", "san carlos de bariloche": "Circuito Andino", "bariloche": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino", "comallo": "Circuito Andino", "dina huapi": "Circuito Andino",
-            "el foyel": "Circuito Andino", "el manso": "Circuito Andino", "las bayas": "Circuito Andino", "mamuel choique": "Circuito Andino", "ojos de agua": "Circuito Andino", "río chico": "Circuito Andino", "paso flores": "Circuito Andino", "pilquiniyeu del limay": "Circuito Andino", "villa llanquín": "Circuito Andino", "villa mascardi": "Circuito Andino", "arroyo las minas": "Circuito Andino", "chacay huarruca": "Circuito Andino", "mallín ahogado": "Circuito Andino",
-            // Circuito Atlántico
-            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico",
-            "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
-            // Valle Inferior
-            "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior",
-            "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
-            // Valle Medio
-            "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio",
-            "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
+            "chichinales": "Alto Valle Este", "villa regina": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "general e godoy": "Alto Valle Este", "mainqué": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "ing. huergo": "Alto Valle Este", "valle azul": "Alto Valle Este",
+            "barda del medio": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "gral. fernandez oro": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
+            "los menucos": "Línea Sur", "maquinchao": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ing. jacobacci": "Línea Sur", "ramos mexía": "Línea Sur", "mtro. ramos mexía": "Línea Sur", "comicó": "Línea Sur", "prahuaniyeu": "Línea Sur", "rincón treneta": "Línea Sur", "quetrequile": "Línea Sur", "pilquiniyeu": "Línea Sur", "el caín": "Línea Sur", "colán conhue": "Línea Sur", "yaminué": "Línea Sur", "laguna blanca": "Línea Sur", "aguada de guerra": "Línea Sur", "clemente onelli": "Línea Sur",
+            "el bolsón": "Circuito Andino", "san carlos de bariloche": "Circuito Andino", "bariloche": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino", "comallo": "Circuito Andino", "dina huapi": "Circuito Andino", "el foyel": "Circuito Andino", "el manso": "Circuito Andino", "las bayas": "Circuito Andino", "mamuel choique": "Circuito Andino", "ojos de agua": "Circuito Andino", "río chico": "Circuito Andino", "paso flores": "Circuito Andino", "pilquiniyeu del limay": "Circuito Andino", "villa llanquín": "Circuito Andino", "villa mascardi": "Circuito Andino", "arroyo las minas": "Circuito Andino", "chacay huarruca": "Circuito Andino", "mallín ahogado": "Circuito Andino",
+            "san antonio oeste": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico", "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
+            "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior", "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
+            "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio", "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
         };
 
         function autocompletarCircuitoAdmin() {
@@ -234,6 +227,9 @@
                 document.getElementById('admin-mesas').value = data[0].mesas_procesadas || "0";
                 document.getElementById('admin-participacion').value = data[0].porcentaje_participacion || "0.00%";
                 document.getElementById('admin-subvalidos').value = `Blanco: ${data[0].votos_blanco || 0} | Nulos: ${data[0].votos_nulos || 0}`;
+                if (data[0].tipo_entidad) {
+                    document.getElementById('admin-entity-type').value = data[0].tipo_entidad;
+                }
                 renderPartiesRows(data);
                 document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
             } else {
@@ -315,7 +311,7 @@
                 document.getElementById('admin-subvalidos').value = `Blanco: ${blancoVotos} | Nulos: ${nulosVotos}`;
 
                 renderPartiesRows(rawParties.map(p => ({ lista_id: p.id, nombre_lista: p.name, votos: p.votos })));
-                document.getElementById('admin-status').innerText = "✓ CSV importado correctamente. Se conservó tu selección de categoría.";
+                document.getElementById('admin-status').innerText = "✓ CSV importado correctamente.";
             }
         }
 
@@ -335,6 +331,7 @@
         async function saveAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
+            const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = document.getElementById('admin-election-type').value;
             const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
@@ -356,6 +353,7 @@
                 rows.push({
                     anio: anio,
                     localidad: localidad,
+                    tipo_entidad: tipoEntidad,
                     circuito_id: circuito_id,
                     categoria: categoria,
                     mesa_numero: 1,

@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Librería jsPDF para descarga automática de reportes en PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         tailwind.config = {
@@ -59,24 +58,19 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
         
-        <!-- Grid Superior: Filtros y Cómputos Principales -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             
-            <!-- Panel de Filtros -->
             <section class="lg:col-span-1 bg-white p-5 rounded border border-slate-200 custom-shadow space-y-4 h-fit">
                 <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Filtros de Cómputos</h2>
                 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
                     <select id="filter-year" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                        <option value="2026" selected>2026</option>
                         <option value="2027">2027</option>
-                        <option value="2026">2026</option>
-                        <option value="2025" selected>2025</option>
+                        <option value="2025">2025</option>
                         <option value="2023">2023</option>
-                        <option value="2021">2021</option>
                         <option value="2019">2019</option>
-                        <option value="2017">2017</option>
-                        <option value="2015">2015</option>
                     </select>
                 </div>
 
@@ -112,16 +106,14 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                    <select id="filter-category" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <select id="filter-category" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <!-- Se llena dinámicamente -->
                     </select>
                 </div>
             </section>
 
-            <!-- Panel Central y Resultados -->
             <section class="lg:col-span-3 space-y-6">
                 
-                <!-- Indicadores generales -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-white p-4 rounded border border-slate-200 custom-shadow">
                         <span class="text-xs text-slate-500 font-semibold block">Mesas Escrutadas</span>
@@ -137,7 +129,6 @@
                     </div>
                 </div>
 
-                <!-- Gráfico y Tabla -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-5 rounded border border-slate-200 custom-shadow flex flex-col justify-center items-center">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 w-full text-left">Distribución de Porcentajes</h3>
@@ -165,7 +156,6 @@
             </section>
         </div>
 
-        <!-- Módulo: Pedile Reportes a DAEBot -->
         <section class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
             <div class="border-b pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                 <div class="flex items-center gap-3">
@@ -214,7 +204,6 @@
                 </div>
             </div>
 
-            <!-- Caja de Resultados del Asistente -->
             <div id="bot-resultado-container" class="bg-slate-50 p-4 rounded border text-xs space-y-3 mt-3">
                 <p class="text-slate-400 text-center py-4">Seleccioná los parámetros y hacé clic en <b>Generar Reporte</b> para ver la tabla comparativa de DAEBot.</p>
             </div>
@@ -233,35 +222,30 @@
         let chartInstance = null;
         let cacheDatosGlobales = [];
 
-        const comisionadosFomento = [
-            "cerro policía", "el cuy", "mencué", "bajada colorada", "naupa huen", "lonco vaca", 
-            "aguada guzmán", "valle azul", "peñas blancas", "comicó", "prahuaniyeu", "rincón treneta", 
-            "quetrequile", "pilquiniyeu", "el caín", "colán conhue", "yaminué", "laguna blanca", 
-            "aguada de guerra", "clemente onelli", "el foyel", "el manso", "las bayas", "mamuel choique", 
-            "ojos de agua", "río chico", "paso flores", "pilquiniyeu del limay", "villa llanquín", 
-            "villa mascardi", "arroyo las minas", "chacay huarruca", "mallín ahogado", "cona niyeu", 
-            "aguada cecilio", "arroyo los berros", "arroyo ventana", "nahuel niyeu", "sierra paileman", 
-            "chipauquil", "cubanea", "gral. e frías", "vicealmirante o'connor", "pichi mahuida", "benjamín zorrilla"
-        ];
-
         const circuitosOficiales = [
             "Alto Valle Centro", "Alto Valle Este", "Alto Valle Oeste", 
             "Circuito Andino", "Circuito Atlántico", "Línea Sur", "Valle Medio", "Valle Inferior"
         ];
 
+        function normalizarTexto(str) {
+            if (!str) return "";
+            return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        }
+
         async function actualizarLocalidadesPorCircuito() {
             const anio = parseInt(document.getElementById('filter-year').value);
             const circuitoSeleccionado = document.getElementById('filter-circuit').value;
             const selectLoc = document.getElementById('filter-locality');
+            const categoria = document.getElementById('filter-category').value;
             const electionKind = document.getElementById('filter-election-kind').value;
-            const circuitoQuery = electionKind === "General" ? "Provincial" : circuitoSeleccionado;
 
-            let query = supabaseClient.from('resultados_mesas').select('localidad').eq('anio', anio);
-            if (circuitoQuery !== "Provincial") {
-                query = query.eq('circuito_id', circuitoQuery);
-            }
+            // Traemos todos los registros de ese año y categoría sin filtrar en el servidor por circuito para evitar desajustes de texto
+            let { data, error } = await supabaseClient
+                .from('resultados_mesas')
+                .select('localidad, circuito_id, tipo_entidad')
+                .eq('anio', anio)
+                .eq('categoria', categoria);
 
-            let { data } = await query;
             selectLoc.innerHTML = "";
 
             let optGeneral = document.createElement('option');
@@ -270,18 +254,27 @@
             selectLoc.appendChild(optGeneral);
 
             if (data && data.length > 0) {
-                let unicas = [...new Set(data.map(d => d.localidad))].filter(Boolean);
-                let localidadesReales = unicas.filter(l => l.toLowerCase() !== "provincial general" && l.toLowerCase() !== "provincial");
+                let circuitoTarget = normalizarTexto(circuitoSeleccionado);
+                
+                let filtrados = data.filter(d => {
+                    if (electionKind === "General" || circuitoSeleccionado === "Provincial") return true;
+                    return normalizarTexto(d.circuito_id) === circuitoTarget;
+                });
 
                 let municipios = [];
                 let comisionados = [];
 
-                localidadesReales.forEach(loc => {
-                    let locLower = loc.toLowerCase().trim();
-                    if (comisionadosFomento.some(cf => locLower.includes(cf))) {
-                        comisionados.push(loc);
+                filtrados.forEach(d => {
+                    let loc = d.localidad;
+                    if (!loc) return;
+                    let locLower = normalizarTexto(loc);
+                    if (locLower === "provincial general" || locLower === "provincial") return;
+                    
+                    let tipo = d.tipo_entidad || "Municipio";
+                    if (tipo === "Comision de Fomento") {
+                        if (!comisionados.includes(loc)) comisionados.push(loc);
                     } else {
-                        municipios.push(loc);
+                        if (!municipios.includes(loc)) municipios.push(loc);
                     }
                 });
 
@@ -329,21 +322,26 @@
                 });
             } else {
                 labelEntidad.innerText = "Municipio / Comisión de Fomento";
-                let { data } = await supabaseClient.from('resultados_mesas').select('localidad');
-                let unicas = data ? [...new Set(data.map(d => d.localidad))].filter(Boolean) : [];
-                let localidadesReales = unicas.filter(l => l.toLowerCase() !== "provincial general" && l.toLowerCase() !== "provincial");
-
+                let { data } = await supabaseClient.from('resultados_mesas').select('localidad, tipo_entidad');
+                
                 let municipios = [];
                 let comisionados = [];
 
-                localidadesReales.forEach(loc => {
-                    let locLower = loc.toLowerCase().trim();
-                    if (comisionadosFomento.some(cf => locLower.includes(cf))) {
-                        comisionados.push(loc);
-                    } else {
-                        municipios.push(loc);
-                    }
-                });
+                if (data) {
+                    data.forEach(d => {
+                        let loc = d.localidad;
+                        if (!loc) return;
+                        let locLower = normalizarTexto(loc);
+                        if (locLower === "provincial general" || locLower === "provincial") return;
+                        
+                        let tipoEnt = d.tipo_entidad || "Municipio";
+                        if (tipoEnt === "Comision de Fomento") {
+                            if (!comisionados.includes(loc)) comisionados.push(loc);
+                        } else {
+                            if (!municipios.includes(loc)) municipios.push(loc);
+                        }
+                    });
+                }
 
                 if (municipios.length > 0) {
                     let groupMun = document.createElement('optgroup');
@@ -436,14 +434,18 @@
             const electionKind = document.getElementById('filter-election-kind').value;
             const circuito = electionKind === "General" ? "Provincial" : document.getElementById('filter-circuit').value;
 
-            let { data } = await supabaseClient
+            let query = supabaseClient
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
                 .ilike('localidad', localidad)
-                .eq('circuito_id', circuito)
                 .eq('categoria', categoria);
 
+            if (localidad === "Provincial General") {
+                query = query.eq('circuito_id', circuito);
+            }
+
+            let { data } = await query;
             cacheDatosGlobales = data || [];
             renderizarResultados(cacheDatosGlobales);
         }
@@ -536,7 +538,7 @@
                 fuerzasUnicas.forEach(fuerza => {
                     htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
                     circuitos.forEach(circ => {
-                        let match = data.find(d => d.anio === anioTarget && d.circuito_id === circ && d.nombre_lista === fuerza);
+                        let match = data.find(d => d.anio === anioTarget && normalizarTexto(d.circuito_id) === normalizarTexto(circ) && d.nombre_lista === fuerza);
                         let votos = match ? match.votos.toLocaleString() : "0";
                         htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
                     });
@@ -552,7 +554,7 @@
                 fuerzasUnicas.forEach(fuerza => {
                     htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
                     anios.forEach(anio => {
-                        let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && d.localidad.toLowerCase() === entidad.toLowerCase());
+                        let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && normalizarTexto(d.localidad) === normalizarTexto(entidad));
                         let votos = match ? match.votos.toLocaleString() : "0";
                         htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
                     });
@@ -562,7 +564,7 @@
 
             } else if (tipo === "reporte_localidad") {
                 let anioTarget = anios[0] || 2025;
-                let subDatos = data.filter(d => d.anio === anioTarget && d.localidad.toLowerCase() === entidad.toLowerCase());
+                let subDatos = data.filter(d => d.anio === anioTarget && normalizarTexto(d.localidad) === normalizarTexto(entidad));
                 
                 if (subDatos.length === 0) {
                     htmlRespuesta = `<div class="text-amber-600 p-2">🤖 DAEBot: No hay datos registrados para <b>${entidad}</b> en el año ${anioTarget}.</div>`;
@@ -584,7 +586,6 @@
             container.innerHTML = htmlRespuesta;
         }
 
-        // Función para exportar automáticamente la tabla a PDF
         function descargarReportePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
