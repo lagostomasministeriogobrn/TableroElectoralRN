@@ -214,34 +214,30 @@
 
             if (!localidad) return;
 
+            // Busca estrictamente por Año, Localidad, Circuito y Categoría seleccionados por el usuario
             let { data } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
-                .ilike('localidad', localidad);
+                .ilike('localidad', localidad)
+                .eq('circuito_id', circuito)
+                .eq('categoria', categoria);
 
             if (data && data.length > 0) {
-                let match = data.find(d => d.categoria === categoria && d.circuito_id === circuito) || data[0];
-
-                document.getElementById('admin-mesas').value = match.mesas_procesadas || "0";
-                document.getElementById('admin-participacion').value = match.porcentaje_participacion || "0.00%";
-                document.getElementById('admin-subvalidos').value = `Blanco: ${match.votos_blanco || 0} | Nulos: ${match.votos_nulos || 0}`;
-                if (match.categoria) {
-                    document.getElementById('admin-election-type').value = match.categoria;
+                document.getElementById('admin-mesas').value = data[0].mesas_procesadas || "0";
+                document.getElementById('admin-participacion').value = data[0].porcentaje_participacion || "0.00%";
+                document.getElementById('admin-subvalidos').value = `Blanco: ${data[0].votos_blanco || 0} | Nulos: ${data[0].votos_nulos || 0}`;
+                if (data[0].tipo_entidad) {
+                    document.getElementById('admin-entity-type').value = data[0].tipo_entidad;
                 }
-                if (match.circuito_id) {
-                    document.getElementById('admin-circuit').value = match.circuito_id;
-                }
-
-                let listasMismaLocalidad = data.filter(d => d.categoria === match.categoria && d.circuito_id === match.circuito_id);
-                renderPartiesRows(listasMismaLocalidad);
-                document.getElementById('admin-status').innerText = "✓ Datos encontrados y cargados desde Supabase.";
+                renderPartiesRows(data);
+                document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
             } else {
                 renderPartiesRows([]);
                 document.getElementById('admin-mesas').value = "0 / 0";
                 document.getElementById('admin-participacion').value = "0.00%";
                 document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                document.getElementById('admin-status').innerText = "ℹ️ Sin datos guardados para esta localidad en el año seleccionado.";
+                document.getElementById('admin-status').innerText = "ℹ️ Sin datos guardados para esta categoría y circuito exacto.";
             }
         }
 
@@ -335,6 +331,7 @@
         async function saveAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
+            const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = document.getElementById('admin-election-type').value;
             const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
@@ -353,9 +350,10 @@
             
             let rows = [];
             document.querySelectorAll('.party-row').forEach(row => {
-                rows.push({
+                let rowData = {
                     anio: anio,
                     localidad: localidad,
+                    tipo_entidad: tipoEntidad,
                     circuito_id: circuito_id,
                     categoria: categoria,
                     mesa_numero: 1,
@@ -366,12 +364,17 @@
                     votos: parseInt(row.querySelector('.party-votes').value) || 0,
                     votos_blanco: blanco,
                     votos_nulos: nulos
-                });
+                };
+                rows.push(rowData);
             });
 
             if (rows.length) {
                 let { error } = await supabaseClient.from('resultados_mesas').insert(rows);
-                if (error) { alert("Error al guardar: " + error.message); return; }
+                if (error) {
+                    rows.forEach(r => delete r.tipo_entidad);
+                    let { error: err2 } = await supabaseClient.from('resultados_mesas').insert(rows);
+                    if (err2) { alert("Error al guardar: " + err2.message); return; }
+                }
                 document.getElementById('admin-status').innerText = "✓ ¡Guardado con éxito en Supabase!";
             } else {
                 document.getElementById('admin-status').innerText = "⚠️ No hay filas para guardar.";
