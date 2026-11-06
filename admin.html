@@ -81,7 +81,6 @@
                 </div>
             </div>
 
-            <!-- FILA DE SELECCIÓN PRINCIPAL CON TIPO DE ENTIDAD -->
             <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
@@ -100,7 +99,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad (Tilde)</label>
                     <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
                         <option value="Municipio" selected>Municipio</option>
                         <option value="Comision de Fomento">Comisión de Fomento</option>
@@ -219,25 +218,30 @@
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
-                .ilike('localidad', localidad)
-                .eq('circuito_id', circuito)
-                .eq('categoria', categoria);
+                .ilike('localidad', localidad);
 
             if (data && data.length > 0) {
-                document.getElementById('admin-mesas').value = data[0].mesas_procesadas || "0";
-                document.getElementById('admin-participacion').value = data[0].porcentaje_participacion || "0.00%";
-                document.getElementById('admin-subvalidos').value = `Blanco: ${data[0].votos_blanco || 0} | Nulos: ${data[0].votos_nulos || 0}`;
-                if (data[0].tipo_entidad) {
-                    document.getElementById('admin-entity-type').value = data[0].tipo_entidad;
+                let match = data.find(d => d.categoria === categoria && d.circuito_id === circuito) || data[0];
+
+                document.getElementById('admin-mesas').value = match.mesas_procesadas || "0";
+                document.getElementById('admin-participacion').value = match.porcentaje_participacion || "0.00%";
+                document.getElementById('admin-subvalidos').value = `Blanco: ${match.votos_blanco || 0} | Nulos: ${match.votos_nulos || 0}`;
+                if (match.categoria) {
+                    document.getElementById('admin-election-type').value = match.categoria;
                 }
-                renderPartiesRows(data);
-                document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
+                if (match.circuito_id) {
+                    document.getElementById('admin-circuit').value = match.circuito_id;
+                }
+
+                let listasMismaLocalidad = data.filter(d => d.categoria === match.categoria && d.circuito_id === match.circuito_id);
+                renderPartiesRows(listasMismaLocalidad);
+                document.getElementById('admin-status').innerText = "✓ Datos encontrados y cargados desde Supabase.";
             } else {
                 renderPartiesRows([]);
                 document.getElementById('admin-mesas').value = "0 / 0";
                 document.getElementById('admin-participacion').value = "0.00%";
                 document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                document.getElementById('admin-status').innerText = "ℹ️ Sin datos guardados para esta selección.";
+                document.getElementById('admin-status').innerText = "ℹ️ Sin datos guardados para esta localidad en el año seleccionado.";
             }
         }
 
@@ -331,7 +335,6 @@
         async function saveAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
-            const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = document.getElementById('admin-election-type').value;
             const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
@@ -353,7 +356,6 @@
                 rows.push({
                     anio: anio,
                     localidad: localidad,
-                    tipo_entidad: tipoEntidad,
                     circuito_id: circuito_id,
                     categoria: categoria,
                     mesa_numero: 1,
