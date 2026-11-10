@@ -85,17 +85,17 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
                     <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="2026" selected>2026</option>
+                        <option value="2026">2026</option>
                         <option value="2027">2027</option>
                         <option value="2025">2025</option>
                         <option value="2023">2023</option>
-                        <option value="2019">2019</option>
+                        <option value="2019" selected>2019</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Provincial General" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, Cipolletti...">
+                    <input type="text" id="admin-locality" value="Viedma" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, Cipolletti...">
                 </div>
 
                 <div>
@@ -110,7 +110,7 @@
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="LEGP">Legislador por Representación Poblacional</option>
+                        <option value="LEGP">Legislador por Rep. Poblacional</option>
                         <option value="LEGC">Legislador Circuital</option>
                         <option value="INT">Intendente Municipal</option>
                         <option value="CON">Concejal Municipal</option>
@@ -125,7 +125,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
                     <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="Provincial" selected>Provincial</option>
+                        <option value="Provincial">Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
                         <option value="Alto Valle Este">Alto Valle Este</option>
                         <option value="Alto Valle Oeste">Alto Valle Oeste</option>
@@ -133,7 +133,7 @@
                         <option value="Circuito Atlántico">Circuito Atlántico</option>
                         <option value="Línea Sur">Línea Sur</option>
                         <option value="Valle Medio">Valle Medio</option>
-                        <option value="Valle Inferior">Valle Inferior</option>
+                        <option value="Valle Inferior" selected>Valle Inferior</option>
                     </select>
                 </div>
             </div>
@@ -188,7 +188,7 @@
             "san antonio oeste": "Circuito Atlántico", "anexo san antonio oeste: las grutas": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico", "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
             "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior", "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
             "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio", "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
-        ];
+        };
 
         function normalizarTexto(texto) {
             if (!texto) return "";
@@ -215,25 +215,31 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito = document.getElementById('admin-circuit').value;
 
             if (!localidad) return;
 
+            // BÚSQUEDA FLEXIBLE: Se adapta a cualquier variante del nombre y trae los datos guardados
             let { data } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
-                .ilike('localidad', localidad)
-                .eq('circuito_id', circuito)
+                .ilike('localidad', `%${localidad}%`)
                 .eq('categoria', categoria);
 
             if (data && data.length > 0) {
-                document.getElementById('admin-mesas').value = data[0].mesas_procesadas || "0";
-                document.getElementById('admin-participacion').value = data[0].porcentaje_participacion || "0.00%";
-                document.getElementById('admin-subvalidos').value = `Blanco: ${data[0].votos_blanco || 0} | Nulos: ${data[0].votos_nulos || 0}`;
-                if (data[0].tipo_entidad) {
-                    document.getElementById('admin-entity-type').value = data[0].tipo_entidad;
+                // Si encuentra registros, toma el primero y actualiza los campos automáticamente
+                let row = data[0];
+                document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
+                document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
+                document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
+                
+                if (row.tipo_entidad) {
+                    document.getElementById('admin-entity-type').value = row.tipo_entidad;
                 }
+                if (row.circuito_id) {
+                    document.getElementById('admin-circuit').value = row.circuito_id;
+                }
+
                 renderPartiesRows(data);
                 document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
             } else {
@@ -241,7 +247,7 @@
                 document.getElementById('admin-mesas').value = "0 / 0";
                 document.getElementById('admin-participacion').value = "0.00%";
                 document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                document.getElementById('admin-status').innerText = "ℹ️ Sin datos guardados para esta categoría y circuito exacto.";
+                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos para esta localidad y categoría.";
             }
         }
 
@@ -350,7 +356,7 @@
                 localidad = "Provincial General";
             }
 
-            await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
+            await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('categoria', categoria);
             
             let rows = [];
             document.querySelectorAll('.party-row').forEach(row => {
@@ -389,10 +395,9 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito_id = document.getElementById('admin-circuit').value;
 
             if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
-                await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('circuito_id', circuito_id).eq('categoria', categoria);
+                await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('categoria', categoria);
                 loadAdminData();
             }
         }
