@@ -238,6 +238,19 @@
             "PRES": "Presidente"
         };
 
+        const mapaCircuitos = {
+            "provincial": "Provincial", "provincial general": "Provincial",
+            "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "general roca": "Alto Valle Centro",
+            "cerro policía": "Alto Valle Centro", "el cuy": "Alto Valle Centro", "mencué": "Alto Valle Centro", "bajada colorada": "Alto Valle Centro", "naupa huen": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "aguada guzmán": "Alto Valle Centro",
+            "chichinales": "Alto Valle Este", "villa regina": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "general e godoy": "Alto Valle Este", "mainqué": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "ing. huergo": "Alto Valle Este", "valle azul": "Alto Valle Este",
+            "barda del medio": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "colonia catriel rural - peñas blancas": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "gral. fernandez oro": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
+            "los menucos": "Línea Sur", "maquinchao": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ing. jacobacci": "Línea Sur", "ramos mexía": "Línea Sur", "mtro. ramos mexía": "Línea Sur", "comicó": "Línea Sur", "prahuaniyeu": "Línea Sur", "rincón treneta": "Línea Sur", "quetrequile": "Línea Sur", "pilquiniyeu": "Línea Sur", "el caín": "Línea Sur", "colán conhue": "Línea Sur", "yaminué": "Línea Sur", "laguna blanca": "Línea Sur", "aguada de guerra": "Línea Sur", "clemente onelli": "Línea Sur",
+            "el bolsón": "Circuito Andino", "san carlos de bariloche": "Circuito Andino", "bariloche": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino", "comallo": "Circuito Andino", "dina huapi": "Circuito Andino", "el foyel": "Circuito Andino", "el manso": "Circuito Andino", "las bayas": "Circuito Andino", "mamuel choique": "Circuito Andino", "ojos de agua": "Circuito Andino", "río chico": "Circuito Andino", "paso flores": "Circuito Andino", "pilquiniyeu del limay": "Circuito Andino", "villa llanquín": "Circuito Andino", "villa mascardi": "Circuito Andino", "arroyo las minas": "Circuito Andino", "chacay huarruca": "Circuito Andino", "mallín ahogado": "Circuito Andino",
+            "san antonio oeste": "Circuito Atlántico", "anexo san antonio oeste: las grutas": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico", "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
+            "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior", "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
+            "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio", "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
+        };
+
         function normalizarTexto(texto) {
             if (!texto) return "";
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -254,7 +267,6 @@
             const anio = parseInt(document.getElementById('filter-year').value);
             const selectCat = document.getElementById('filter-category');
 
-            // TRAE TODOS LOS DATOS DEL AÑO SIN FILTRAR COLUMNAS PARA ASEGURAR QUE NADA QUEDE FUERA
             let { data } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
@@ -289,7 +301,10 @@
             
             if (normalizarTexto(circuitoSeleccionado) !== "provincial") {
                 filtrados = filtrados.filter(d => {
-                    return d.circuito_id && normalizarTexto(d.circuito_id) === normalizarTexto(circuitoSeleccionado);
+                    let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                    let circMapeado = mapaCircuitos[normalizarTexto(d.localidad)] || "";
+                    let seleccionNorm = normalizarTexto(circuitoSeleccionado);
+                    return circBD === seleccionNorm || normalizarTexto(circcircuitoMapeado) === seleccionNorm;
                 });
             }
 
@@ -348,11 +363,15 @@
             const localidad = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
 
-            // Filtra sobre los datos ya cacheados globalmente para evitar latencia y asegurar consistencia
             let filtrados = datosCacheGlobal.filter(d => d.categoria === categoria);
 
             if (normalizarTexto(circuito) !== "provincial") {
-                filtrados = filtrados.filter(d => d.circuito_id && normalizarTexto(d.circuito_id) === normalizarTexto(circuito));
+                filtrados = filtrados.filter(d => {
+                    let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                    let circMapeado = mapaCircuitos[normalizarTexto(d.localidad)] || "";
+                    let seleccionNorm = normalizarTexto(circuito);
+                    return circBD === seleccionNorm || normalizarTexto(circMapeado) === seleccionNorm;
+                });
             }
 
             if (normalizarTexto(localidad) !== "provincial general") {
