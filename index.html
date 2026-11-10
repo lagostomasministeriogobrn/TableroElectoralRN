@@ -84,7 +84,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="filter-circuit" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <select id="filter-circuit" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
                         <option value="Alto Valle Este">Alto Valle Este</option>
@@ -106,7 +106,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                    <select id="filter-category" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <select id="filter-category" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="GOB" selected>Gobernador / Vice</option>
                         <option value="LEGP">Legislador por Rep. Poblacional</option>
                         <option value="LEGC">Legislador Circuital</option>
@@ -142,11 +142,11 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow overflow-x-auto">
+                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow overflow-x-auto max-h-[400px]">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Detalle por Fuerza Política</h3>
                         <table class="w-full text-left text-xs">
                             <thead>
-                                <tr class="border-b text-slate-400 font-bold">
+                                <tr class="border-b text-slate-400 font-bold sticky top-0 bg-white">
                                     <th class="pb-2">Fuerza / Lista</th>
                                     <th class="pb-2 text-right">Votos</th>
                                     <th class="pb-2 text-right">%</th>
@@ -219,6 +219,7 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let chartInstance = null;
+        let datosCacheGlobal = [];
 
         const nombresCategorias = {
             "GOB": "Gobernador / Vice",
@@ -238,25 +239,50 @@
 
         async function actualizarFiltros() {
             const anio = parseInt(document.getElementById('filter-year').value);
-            const selectLoc = document.getElementById('filter-locality');
             const selectCat = document.getElementById('filter-category');
 
-            // Consultar datos disponibles para el año seleccionado
             let { data } = await supabaseClient
                 .from('resultados_mesas')
-                .select('localidad, categoria')
+                .select('localidad, categoria, circuito_id')
                 .eq('anio', anio);
 
-            if (!data) data = [];
+            datosCacheGlobal = data || [];
 
-            // Actualizar Localidades
+            let categoriaActual = selectCat.value;
+            selectCat.innerHTML = "";
+            let unicasCat = [...new Set(datosCacheGlobal.map(d => d.categoria))].filter(Boolean);
+            if (unicasCat.length === 0) unicasCat = ["GOB", "LEGP", "LEGC"];
+
+            unicasCat.forEach(catCode => {
+                let opt = document.createElement('option');
+                opt.value = catCode;
+                opt.text = nombresCategorias[catCode] || catCode;
+                selectCat.appendChild(opt);
+            });
+            if (unicasCat.includes(categoriaActual)) selectCat.value = categoriaActual;
+
+            actualizarLocalidadesPorCircuito();
+        }
+
+        function actualizarLocalidadesPorCircuito() {
+            const circuitoSeleccionado = document.getElementById('filter-circuit').value;
+            const categoriaSeleccionada = document.getElementById('filter-category').value;
+            const selectLoc = document.getElementById('filter-locality');
+
             selectLoc.innerHTML = "";
+
+            // Filtra estrictamente los registros que pertenecen a la categoría y al circuito seleccionado
+            let filtrados = datosCacheGlobal.filter(d => d.categoria === categoriaSeleccionada);
+            if (circuitoSeleccionado.toLowerCase() !== "provincial") {
+                filtrados = filtrados.filter(d => d.circuito_id && d.circuito_id.toLowerCase().trim() === circuitoSeleccionado.toLowerCase().trim());
+            }
+
             let optGeneral = document.createElement('option');
             optGeneral.value = "Provincial General";
             optGeneral.text = "Provincial General";
             selectLoc.appendChild(optGeneral);
 
-            let unicasLoc = [...new Set(data.map(d => d.localidad))].filter(Boolean);
+            let unicasLoc = [...new Set(filtrados.map(d => d.localidad))].filter(Boolean);
             unicasLoc.sort().forEach(loc => {
                 let locLower = loc.toLowerCase().trim();
                 if (locLower !== "provincial general" && locLower !== "provincial") {
@@ -267,34 +293,14 @@
                 }
             });
 
-            // Actualizar Categorías basadas en lo que realmente existe en la base de datos
-            let categoriaActual = selectCat.value;
-            selectCat.innerHTML = "";
-            let unicasCat = [...new Set(data.map(d => d.categoria))].filter(Boolean);
-            
-            if (unicasCat.length === 0) {
-                unicasCat = ["GOB", "LEGP", "LEGC"]; // Default si está vacío
-            }
-
-            unicasCat.forEach(catCode => {
-                let opt = document.createElement('option');
-                opt.value = catCode;
-                opt.text = nombresCategorias[catCode] || catCode;
-                selectCat.appendChild(opt);
-            });
-
-            if (unicasCat.includes(categoriaActual)) {
-                selectCat.value = categoriaActual;
-            }
-
             cargarDatosPublicos();
         }
 
         async function cargarDatosPublicos() {
             const anio = parseInt(document.getElementById('filter-year').value);
+            const circuito = document.getElementById('filter-circuit').value;
             const localidad = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
-            const circuito = document.getElementById('filter-circuit').value;
 
             let query = supabaseClient
                 .from('resultados_mesas')
@@ -303,19 +309,19 @@
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
-            if (localidad.toLowerCase() === "provincial general") {
-                query = query.eq('circuito_id', circuito);
+            if (circuito.toLowerCase() !== "provincial") {
+                query = query.ilike('circuito_id', circuito);
             }
 
             let { data } = await query;
-            renderizarResultados(data || []);
+            renderizarResultadosUnicos(data || []);
         }
 
-        function renderizarResultados(data) {
+        function renderizarResultadosUnicos(rawRows) {
             const tbody = document.getElementById('table-results-body');
             tbody.innerHTML = "";
 
-            if (!data || data.length === 0) {
+            if (!rawRows || rawRows.length === 0) {
                 document.getElementById('stat-mesas').innerText = "0 / 0";
                 document.getElementById('stat-participacion').innerText = "0.00%";
                 document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
@@ -324,26 +330,38 @@
                 return;
             }
 
-            document.getElementById('stat-mesas').innerText = data[0].mesas_procesadas || "0 / 0";
-            document.getElementById('stat-participacion').innerText = data[0].porcentaje_participacion || "0.00%";
-            document.getElementById('stat-subvalidos').innerText = `Blanco: ${data[0].votos_blanco || 0} | Nulos: ${data[0].votos_nulos || 0}`;
+            document.getElementById('stat-mesas').innerText = rawRows[0].mesas_procesadas || "0 / 0";
+            document.getElementById('stat-participacion').innerText = rawRows[0].porcentaje_participacion || "0.00%";
+            document.getElementById('stat-subvalidos').innerText = `Blanco: ${rawRows[0].votos_blanco || 0} | Nulos: ${rawRows[0].votos_nulos || 0}`;
 
-            let totalValidos = data.reduce((acc, r) => acc + (r.votos || 0), 0);
+            // CONSOLIDA Y EVITA DUPLICADOS TOMANDO UN REGISTRO ÚNICO POR LISTA ID
+            let mapaUnicos = {};
+            rawRows.forEach(row => {
+                let idLista = row.lista_id;
+                mapaUnicos[idLista] = {
+                    nombre: row.nombre_lista || `Lista ${idLista}`,
+                    votos: row.votos || 0
+                };
+            });
+
+            let data = Object.values(mapaUnicos);
+            let totalValidos = data.reduce((acc, r) => acc + r.votos, 0);
             data.sort((a, b) => b.votos - a.votos);
 
             let labels = [];
             let votosArr = [];
-            let bgColors = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#B4B5E0", "#88D9E8", "#444444"];
+            let bgColors = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#B4B5E0", "#88D9E8", "#444444", "#9C27B0", "#FF9800", "#795548"];
 
-            data.forEach((row) => {
-                let nombre = row.nombre_lista || `Lista ${row.lista_id}`;
+            data.forEach((row, index) => {
                 let pct = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
-                labels.push(nombre);
-                votosArr.push(row.votos);
+                if (index < 8) {
+                    labels.push(row.nombre);
+                    votosArr.push(row.votos);
+                }
 
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-slate-50">
-                        <td class="py-2 font-semibold text-slate-700">${nombre}</td>
+                        <td class="py-2 font-semibold text-slate-700">${row.nombre}</td>
                         <td class="py-2 text-right font-bold">${row.votos.toLocaleString()}</td>
                         <td class="py-2 text-right font-bold text-rnblue">${pct}%</td>
                     </tr>`;
@@ -389,7 +407,6 @@
         }
 
         async function generarReporteDAEBot() {
-            const tipo = document.getElementById('bot-tipo').value;
             const categoria = document.getElementById('bot-categoria').value;
             const aniosInput = document.getElementById('bot-anios').value;
             const entidad = document.getElementById('bot-entidad').value;
@@ -398,9 +415,9 @@
 
             container.innerHTML = `<div class="text-center py-4 text-slate-500">🤖 DAEBot está procesando la tabla comparativa...</div>`;
 
-            let { data, error } = await supabaseClient.from('resultados_mesas').select('*').eq('categoria', categoria);
-            if (error || !data || data.length === 0) {
-                container.innerHTML = `<div class="text-red-500 p-2">DAEBot: No hay registros suficientes para la categoría seleccionada.</div>`;
+            let { data } = await supabaseClient.from('resultados_mesas').select('*').eq('categoria', categoria);
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-red-500 p-2">DAEBot: No hay registros suficientes.</div>`;
                 return;
             }
 
