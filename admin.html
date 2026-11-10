@@ -99,7 +99,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad (Gestión)</label>
                     <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
                         <option value="Municipio" selected>Municipio</option>
                         <option value="Comision de Fomento">Comisión de Fomento</option>
@@ -377,7 +377,7 @@
                 let rowData = {
                     anio: anio,
                     localidad: localidad,
-                    tipo_entidad: tipoEntidad,
+                    tipo_entidad: tipoEntidad, // ENVÍA EXPLÍCITAMENTE LO QUE TILDES EN EL PANEL
                     circuito_id: circuito_id,
                     categoria: categoria,
                     mesa_numero: 1,
@@ -393,7 +393,6 @@
             });
 
             if (rows.length) {
-                // Inserta las filas enviando explícitamente el tipo de entidad
                 let { error } = await supabaseClient.from('resultados_mesas').insert(rows);
                 if (error) {
                     alert("Error al guardar en Supabase: " + error.message);
