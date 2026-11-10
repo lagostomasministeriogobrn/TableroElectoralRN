@@ -256,12 +256,15 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        function esComisionDeFomento(loc, categoria) {
-            const locLower = normalizarTexto(loc);
-            if (categoria === 'COF' || categoria === 'VCF') return true;
-            // Se añaden variantes rurales y de peñas blancas explícitamente
-            const keywordsFomento = ['cain', 'quetrequile', 'treneta', 'aguada', 'mencue', 'comico', 'chipauquil', 'conaniyeu', 'oregano', 'nahuel niyeu', 'maminici', 'catriel rural', 'penas blancas'];
-            return keywordsFomento.some(k => locLower.includes(k));
+        // UNIVERSAL: Lee directamente el campo tipo_entidad que guardas en Supabase
+        function esComisionDeFomento(row) {
+            if (row.tipo_entidad && normalizarTexto(row.tipo_entidad).includes('fomento')) {
+                return true;
+            }
+            if (row.categoria === 'COF' || row.categoria === 'VCF') {
+                return true;
+            }
+            return false;
         }
 
         async function actualizarFiltros() {
@@ -314,20 +317,28 @@
             optGeneral.text = "Provincial General";
             selectLoc.appendChild(optGeneral);
 
-            let unicasLoc = [...new Set(filtrados.map(d => d.localidad))].filter(Boolean);
+            // Agrupamos usando el objeto completo para verificar su tipo de entidad
+            let mapaEntidadesLocales = {};
+            filtrados.forEach(d => {
+                if (d.localidad) {
+                    let locNorm = normalizarTexto(d.localidad);
+                    if (locNorm !== "provincial general" && locNorm !== "provincial") {
+                        mapaEntidadesLocales[d.localidad] = esComisionDeFomento(d);
+                    }
+                }
+            });
+
+            let unicasLoc = Object.keys(mapaEntidadesLocales);
             unicasLoc.sort();
 
             let municipios = [];
             let comisiones = [];
 
             unicasLoc.forEach(loc => {
-                let locNorm = normalizarTexto(loc);
-                if (locNorm !== "provincial general" && locNorm !== "provincial") {
-                    if (esComisionDeFomento(loc, categoriaSeleccionada)) {
-                        comisiones.push(loc);
-                    } else {
-                        municipios.push(loc);
-                    }
+                if (mapaEntidadesLocales[loc]) {
+                    comisiones.push(loc);
+                } else {
+                    municipios.push(loc);
                 }
             });
 

@@ -218,16 +218,27 @@
 
             if (!localidad) return;
 
-            // BÚSQUEDA FLEXIBLE: Se adapta a cualquier variante del nombre y trae los datos guardados
             let { data } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
-                .ilike('localidad', `%${localidad}%`)
+                .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
+            if (!data || data.length === 0) {
+                let resFlex = await supabaseClient
+                    .from('resultados_mesas')
+                    .select('*')
+                    .eq('anio', anio)
+                    .ilike('localidad', `%${localidad}%`);
+                
+                if (resFlex.data && resFlex.data.length > 0) {
+                    data = resFlex.data;
+                    document.getElementById('admin-election-type').value = data[0].categoria;
+                }
+            }
+
             if (data && data.length > 0) {
-                // Si encuentra registros, toma el primero y actualiza los campos automáticamente
                 let row = data[0];
                 document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
                 document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
@@ -240,14 +251,17 @@
                     document.getElementById('admin-circuit').value = row.circuito_id;
                 }
 
-                renderPartiesRows(data);
+                let categoriaActual = document.getElementById('admin-election-type').value;
+                let filasFiltradas = data.filter(d => d.categoria === categoriaActual);
+                renderPartiesRows(filasFiltradas.length > 0 ? filasFiltradas : data);
+                
                 document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
             } else {
                 renderPartiesRows([]);
                 document.getElementById('admin-mesas').value = "0 / 0";
                 document.getElementById('admin-participacion').value = "0.00%";
                 document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos para esta localidad y categoría.";
+                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos para esta localidad.";
             }
         }
 
