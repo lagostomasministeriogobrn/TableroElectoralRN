@@ -256,7 +256,7 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // UNIVERSAL: Lee directamente el campo tipo_entidad que guardas en Supabase
+        // UNIVERSAL: Verifica directamente si el registro fue guardado como Comisión de Fomento
         function esComisionDeFomento(row) {
             if (row.tipo_entidad && normalizarTexto(row.tipo_entidad).includes('fomento')) {
                 return true;
@@ -317,13 +317,17 @@
             optGeneral.text = "Provincial General";
             selectLoc.appendChild(optGeneral);
 
-            // Agrupamos usando el objeto completo para verificar su tipo de entidad
             let mapaEntidadesLocales = {};
             filtrados.forEach(d => {
                 if (d.localidad) {
                     let locNorm = normalizarTexto(d.localidad);
                     if (locNorm !== "provincial general" && locNorm !== "provincial") {
-                        mapaEntidadesLocales[d.localidad] = esComisionDeFomento(d);
+                        // Si cualquiera de los registros de esta localidad dice que es fomento, queda guardado como tal
+                        if (!mapaEntidadesLocales[d.localidad]) {
+                            mapaEntidadesLocales[d.localidad] = esComisionDeFomento(d);
+                        } else if (esComisionDeFomento(d)) {
+                            mapaEntidadesLocales[d.localidad] = true;
+                        }
                     }
                 }
             });

@@ -393,11 +393,11 @@
             });
 
             if (rows.length) {
+                // Inserta las filas enviando explícitamente el tipo de entidad
                 let { error } = await supabaseClient.from('resultados_mesas').insert(rows);
                 if (error) {
-                    rows.forEach(r => delete r.tipo_entidad);
-                    let { error: err2 } = await supabaseClient.from('resultados_mesas').insert(rows);
-                    if (err2) { alert("Error al guardar: " + err2.message); return; }
+                    alert("Error al guardar en Supabase: " + error.message);
+                    return;
                 }
                 document.getElementById('admin-status').innerText = "✓ ¡Guardado con éxito en Supabase!";
             } else {
