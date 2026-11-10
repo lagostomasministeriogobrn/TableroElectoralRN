@@ -95,7 +95,8 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Viedma" oninput="onAdminLocalityChange()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, Cipolletti...">
+                    <!-- Ya no modifica automáticamente el circuito -->
+                    <input type="text" id="admin-locality" value="Viedma" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, Cipolletti...">
                 </div>
 
                 <div>
@@ -124,7 +125,8 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="admin-circuit" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <!-- Selector libre y a voluntad -->
+                    <select id="admin-circuit" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial">Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
                         <option value="Alto Valle Este">Alto Valle Este</option>
@@ -177,38 +179,9 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const mapaCircuitos = {
-            "provincial": "Provincial", "provincial general": "Provincial",
-            "allen": "Alto Valle Centro", "cervantes": "Alto Valle Centro", "general roca": "Alto Valle Centro",
-            "cerro policía": "Alto Valle Centro", "el cuy": "Alto Valle Centro", "mencué": "Alto Valle Centro", "bajada colorada": "Alto Valle Centro", "naupa huen": "Alto Valle Centro", "lonco vaca": "Alto Valle Centro", "aguada guzmán": "Alto Valle Centro",
-            "chichinales": "Alto Valle Este", "villa regina": "Alto Valle Este", "general enrique godoy": "Alto Valle Este", "general e godoy": "Alto Valle Este", "mainqué": "Alto Valle Este", "ingeniero luis a. huergo": "Alto Valle Este", "ing. huergo": "Alto Valle Este", "valle azul": "Alto Valle Este",
-            "barda del medio": "Alto Valle Oeste", "catriel": "Alto Valle Oeste", "colonia catriel rural - peñas blancas": "Alto Valle Oeste", "cinco saltos": "Alto Valle Oeste", "cipolletti": "Alto Valle Oeste", "las perlas": "Alto Valle Oeste", "contralmirante cordero": "Alto Valle Oeste", "general fernández oro": "Alto Valle Oeste", "gral. fernandez oro": "Alto Valle Oeste", "campo grande": "Alto Valle Oeste", "peñas blancas": "Alto Valle Oeste",
-            "los menucos": "Línea Sur", "maquinchao": "Línea Sur", "sierra colorada": "Línea Sur", "ingeniero jacobacci": "Línea Sur", "ing. jacobacci": "Línea Sur", "ramos mexía": "Línea Sur", "mtro. ramos mexía": "Línea Sur", "comicó": "Línea Sur", "prahuaniyeu": "Línea Sur", "rincón treneta": "Línea Sur", "quetrequile": "Línea Sur", "pilquiniyeu": "Línea Sur", "el caín": "Línea Sur", "colán conhue": "Línea Sur", "yaminué": "Línea Sur", "laguna blanca": "Línea Sur", "aguada de guerra": "Línea Sur", "clemente onelli": "Línea Sur",
-            "el bolsón": "Circuito Andino", "san carlos de bariloche": "Circuito Andino", "bariloche": "Circuito Andino", "ñorquinco": "Circuito Andino", "pilcaniyeu": "Circuito Andino", "comallo": "Circuito Andino", "dina huapi": "Circuito Andino", "el foyel": "Circuito Andino", "el manso": "Circuito Andino", "las bayas": "Circuito Andino", "mamuel choique": "Circuito Andino", "ojos de agua": "Circuito Andino", "río chico": "Circuito Andino", "paso flores": "Circuito Andino", "pilquiniyeu del limay": "Circuito Andino", "villa llanquín": "Circuito Andino", "villa mascardi": "Circuito Andino", "arroyo las minas": "Circuito Andino", "chacay huarruca": "Circuito Andino", "mallín ahogado": "Circuito Andino",
-            "san antonio oeste": "Circuito Atlántico", "anexo san antonio oeste: las grutas": "Circuito Atlántico", "las grutas": "Circuito Atlántico", "puerto sae": "Circuito Atlántico", "sierra grande": "Circuito Atlántico", "valcheta": "Circuito Atlántico", "cona niyeu": "Circuito Atlántico", "aguada cecilio": "Circuito Atlántico", "arroyo los berros": "Circuito Atlántico", "arroyo ventana": "Circuito Atlántico", "nahuel niyeu": "Circuito Atlántico", "sierra paileman": "Circuito Atlántico", "chipauquil": "Circuito Atlántico",
-            "viedma": "Valle Inferior", "general conesa": "Valle Inferior", "gral. conesa": "Valle Inferior", "guardia mitre": "Valle Inferior", "san javier": "Valle Inferior", "cubanea": "Valle Inferior", "gral. e frías": "Valle Inferior", "vicealmirante o'connor": "Valle Inferior",
-            "río colorado": "Valle Medio", "pomona": "Valle Medio", "luis beltrán": "Valle Medio", "lamarque": "Valle Medio", "darwin": "Valle Medio", "coronel belisle": "Valle Medio", "choele choel": "Valle Medio", "chimpay": "Valle Medio", "chelforó": "Valle Medio", "pichi mahuida": "Valle Medio", "benjamín zorrilla": "Valle Medio"
-        };
-
         function normalizarTexto(texto) {
             if (!texto) return "";
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        }
-
-        function autocompletarCircuitoAdmin() {
-            const inputLoc = document.getElementById('admin-locality');
-            const selectCircuito = document.getElementById('admin-circuit');
-            if (!inputLoc || !selectCircuito) return;
-
-            let locNombre = normalizarTexto(inputLoc.value);
-            if (mapaCircuitos[locNombre]) {
-                selectCircuito.value = mapaCircuitos[locNombre];
-            }
-        }
-
-        function onAdminLocalityChange() {
-            autocompletarCircuitoAdmin();
-            loadAdminData();
         }
 
         async function loadAdminData() {
@@ -218,7 +191,6 @@
 
             if (!localidad) return;
 
-            // Busca exactamente por año, localidad y la categoría seleccionada (sin cambiarla de forma imprevista)
             let { data } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
@@ -498,7 +470,6 @@
         }
 
         window.onload = function() {
-            autocompletarCircuitoAdmin();
             loadAdminData();
         };
     </script>
