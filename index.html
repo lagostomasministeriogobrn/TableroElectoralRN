@@ -259,7 +259,8 @@
         function esComisionDeFomento(loc, categoria) {
             const locLower = normalizarTexto(loc);
             if (categoria === 'COF' || categoria === 'VCF') return true;
-            const keywordsFomento = ['cain', 'quetrequile', 'treneta', 'aguada', 'mencue', 'comico', 'chipauquil', 'conaniyeu', 'oregano', 'nahuel niyeu', 'maminici'];
+            // Se añaden variantes rurales y de peñas blancas explícitamente
+            const keywordsFomento = ['cain', 'quetrequile', 'treneta', 'aguada', 'mencue', 'comico', 'chipauquil', 'conaniyeu', 'oregano', 'nahuel niyeu', 'maminici', 'catriel rural', 'penas blancas'];
             return keywordsFomento.some(k => locLower.includes(k));
         }
 
