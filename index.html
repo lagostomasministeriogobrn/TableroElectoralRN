@@ -238,12 +238,15 @@
             "PRES": "Presidente"
         };
 
-        // Identifica automáticamente si una localidad es Municipio o Comisión de Fomento según la categoría o nombre
+        function normalizarTexto(texto) {
+            if (!texto) return "";
+            return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        }
+
         function esComisionDeFomento(loc, categoria) {
-            const locLower = loc.toLowerCase();
+            const locLower = normalizarTexto(loc);
             if (categoria === 'COF' || categoria === 'VCF') return true;
-            // Palabras clave comunes o se puede basar en la categoría seleccionada
-            const keywordsFomento = ['caín', 'quetrequile', 'treneta', 'aguada', 'mencué', 'comicó', 'chipauquil', 'conaniyeu', 'orégano', 'nahuel niyeu', 'maminici'];
+            const keywordsFomento = ['cain', 'quetrequile', 'treneta', 'aguada', 'mencue', 'comico', 'chipauquil', 'conaniyeu', 'oregano', 'nahuel niyeu', 'maminici'];
             return keywordsFomento.some(k => locLower.includes(k));
         }
 
@@ -251,9 +254,10 @@
             const anio = parseInt(document.getElementById('filter-year').value);
             const selectCat = document.getElementById('filter-category');
 
+            // TRAE TODOS LOS DATOS DEL AÑO SIN FILTRAR COLUMNAS PARA ASEGURAR QUE NADA QUEDE FUERA
             let { data } = await supabaseClient
                 .from('resultados_mesas')
-                .select('localidad, categoria, circuito_id')
+                .select('*')
                 .eq('anio', anio);
 
             datosCacheGlobal = data || [];
@@ -282,8 +286,11 @@
             selectLoc.innerHTML = "";
 
             let filtrados = datosCacheGlobal.filter(d => d.categoria === categoriaSeleccionada);
-            if (circuitoSeleccionado.toLowerCase() !== "provincial") {
-                filtrados = filtrados.filter(d => d.circuito_id && d.circuito_id.toLowerCase().trim() === circuitoSeleccionado.toLowerCase().trim());
+            
+            if (normalizarTexto(circuitoSeleccionado) !== "provincial") {
+                filtrados = filtrados.filter(d => {
+                    return d.circuito_id && normalizarTexto(d.circuito_id) === normalizarTexto(circuitoSeleccionado);
+                });
             }
 
             let optGeneral = document.createElement('option');
@@ -294,13 +301,12 @@
             let unicasLoc = [...new Set(filtrados.map(d => d.localidad))].filter(Boolean);
             unicasLoc.sort();
 
-            // Separar en dos arrays: Municipios y Comisiones de Fomento
             let municipios = [];
             let comisiones = [];
 
             unicasLoc.forEach(loc => {
-                let locLower = loc.toLowerCase().trim();
-                if (locLower !== "provincial general" && locLower !== "provincial") {
+                let locNorm = normalizarTexto(loc);
+                if (locNorm !== "provincial general" && locNorm !== "provincial") {
                     if (esComisionDeFomento(loc, categoriaSeleccionada)) {
                         comisiones.push(loc);
                     } else {
@@ -309,7 +315,6 @@
                 }
             });
 
-            // Crear Grupo de Municipios si existen
             if (municipios.length > 0) {
                 let groupMun = document.createElement('optgroup');
                 groupMun.label = "--- Municipios ---";
@@ -322,7 +327,6 @@
                 selectLoc.appendChild(groupMun);
             }
 
-            // Crear Grupo de Comisiones de Fomento si existen
             if (comisiones.length > 0) {
                 let groupFof = document.createElement('optgroup');
                 groupFof.label = "--- Comisiones de Fomento ---";
@@ -344,19 +348,18 @@
             const localidad = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
 
-            let query = supabaseClient
-                .from('resultados_mesas')
-                .select('*')
-                .eq('anio', anio)
-                .ilike('localidad', localidad)
-                .eq('categoria', categoria);
+            // Filtra sobre los datos ya cacheados globalmente para evitar latencia y asegurar consistencia
+            let filtrados = datosCacheGlobal.filter(d => d.categoria === categoria);
 
-            if (circuito.toLowerCase() !== "provincial") {
-                query = query.ilike('circuito_id', circuito);
+            if (normalizarTexto(circuito) !== "provincial") {
+                filtrados = filtrados.filter(d => d.circuito_id && normalizarTexto(d.circuito_id) === normalizarTexto(circuito));
             }
 
-            let { data } = await query;
-            renderizarResultadosUnicos(data || []);
+            if (normalizarTexto(localidad) !== "provincial general") {
+                filtrados = filtrados.filter(d => d.localidad && normalizarTexto(d.localidad) === normalizarTexto(localidad));
+            }
+
+            renderizarResultadosUnicos(filtrados);
         }
 
         function renderizarResultadosUnicos(rawRows) {
@@ -437,7 +440,7 @@
             if (data) {
                 let unicas = [...new Set(data.map(d => d.localidad))].filter(Boolean);
                 unicas.sort().forEach(loc => {
-                    if (loc.toLowerCase() !== "provincial general") {
+                    if (normalizarTexto(loc) !== "provincial general") {
                         let opt = document.createElement('option');
                         opt.value = loc;
                         opt.text = loc;
@@ -469,7 +472,7 @@
             fuerzasUnicas.forEach(fuerza => {
                 htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
                 anios.forEach(anio => {
-                    let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && d.localidad.toLowerCase() === entidad.toLowerCase());
+                    let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && normalizarTexto(d.localidad) === normalizarTexto(entidad));
                     let votos = match ? match.votos.toLocaleString() : "0";
                     htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
                 });
