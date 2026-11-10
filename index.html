@@ -304,7 +304,7 @@
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let circMapeado = mapaCircuitos[normalizarTexto(d.localidad)] || "";
                     let seleccionNorm = normalizarTexto(circuitoSeleccionado);
-                    return circBD === seleccionNorm || normalizarTexto(circcircuitoMapeado) === seleccionNorm;
+                    return circBD === seleccionNorm || normalizarTexto(circMapeado) === seleccionNorm;
                 });
             }
 
