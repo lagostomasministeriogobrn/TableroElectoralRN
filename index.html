@@ -98,7 +98,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Localidad</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Comisionado de Fomento</label>
                     <select id="filter-locality" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial General" selected>Provincial General</option>
                     </select>
@@ -113,6 +113,7 @@
                         <option value="INT">Intendente Municipal</option>
                         <option value="CON">Concejal Municipal</option>
                         <option value="COF">Comisión de Fomento</option>
+                        <option value="VCF">Vocal de Comisión de Fomento</option>
                     </select>
                 </div>
             </section>
@@ -237,6 +238,15 @@
             "PRES": "Presidente"
         };
 
+        // Identifica automáticamente si una localidad es Municipio o Comisión de Fomento según la categoría o nombre
+        function esComisionDeFomento(loc, categoria) {
+            const locLower = loc.toLowerCase();
+            if (categoria === 'COF' || categoria === 'VCF') return true;
+            // Palabras clave comunes o se puede basar en la categoría seleccionada
+            const keywordsFomento = ['caín', 'quetrequile', 'treneta', 'aguada', 'mencué', 'comicó', 'chipauquil', 'conaniyeu', 'orégano', 'nahuel niyeu', 'maminici'];
+            return keywordsFomento.some(k => locLower.includes(k));
+        }
+
         async function actualizarFiltros() {
             const anio = parseInt(document.getElementById('filter-year').value);
             const selectCat = document.getElementById('filter-category');
@@ -271,7 +281,6 @@
 
             selectLoc.innerHTML = "";
 
-            // Filtra estrictamente los registros que pertenecen a la categoría y al circuito seleccionado
             let filtrados = datosCacheGlobal.filter(d => d.categoria === categoriaSeleccionada);
             if (circuitoSeleccionado.toLowerCase() !== "provincial") {
                 filtrados = filtrados.filter(d => d.circuito_id && d.circuito_id.toLowerCase().trim() === circuitoSeleccionado.toLowerCase().trim());
@@ -283,15 +292,48 @@
             selectLoc.appendChild(optGeneral);
 
             let unicasLoc = [...new Set(filtrados.map(d => d.localidad))].filter(Boolean);
-            unicasLoc.sort().forEach(loc => {
+            unicasLoc.sort();
+
+            // Separar en dos arrays: Municipios y Comisiones de Fomento
+            let municipios = [];
+            let comisiones = [];
+
+            unicasLoc.forEach(loc => {
                 let locLower = loc.toLowerCase().trim();
                 if (locLower !== "provincial general" && locLower !== "provincial") {
+                    if (esComisionDeFomento(loc, categoriaSeleccionada)) {
+                        comisiones.push(loc);
+                    } else {
+                        municipios.push(loc);
+                    }
+                }
+            });
+
+            // Crear Grupo de Municipios si existen
+            if (municipios.length > 0) {
+                let groupMun = document.createElement('optgroup');
+                groupMun.label = "--- Municipios ---";
+                municipios.forEach(loc => {
                     let opt = document.createElement('option');
                     opt.value = loc;
                     opt.text = loc;
-                    selectLoc.appendChild(opt);
-                }
-            });
+                    groupMun.appendChild(opt);
+                });
+                selectLoc.appendChild(groupMun);
+            }
+
+            // Crear Grupo de Comisiones de Fomento si existen
+            if (comisiones.length > 0) {
+                let groupFof = document.createElement('optgroup');
+                groupFof.label = "--- Comisiones de Fomento ---";
+                comisiones.forEach(loc => {
+                    let opt = document.createElement('option');
+                    opt.value = loc;
+                    opt.text = loc;
+                    groupFof.appendChild(opt);
+                });
+                selectLoc.appendChild(groupFof);
+            }
 
             cargarDatosPublicos();
         }
@@ -334,7 +376,6 @@
             document.getElementById('stat-participacion').innerText = rawRows[0].porcentaje_participacion || "0.00%";
             document.getElementById('stat-subvalidos').innerText = `Blanco: ${rawRows[0].votos_blanco || 0} | Nulos: ${rawRows[0].votos_nulos || 0}`;
 
-            // CONSOLIDA Y EVITA DUPLICADOS TOMANDO UN REGISTRO ÚNICO POR LISTA ID
             let mapaUnicos = {};
             rawRows.forEach(row => {
                 let idLista = row.lista_id;
