@@ -81,7 +81,8 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+            <!-- FILTROS COMPLETOS CON TIPO DE ELECCIÓN INCLUIDO -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
                     <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
@@ -90,6 +91,14 @@
                         <option value="2025">2025</option>
                         <option value="2023">2023</option>
                         <option value="2019" selected>2019</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
+                    <select id="admin-election-kind" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
+                        <option value="Provincial" selected>Provincial</option>
+                        <option value="General">General (Nacional)</option>
                     </select>
                 </div>
 
@@ -177,6 +186,7 @@
 
         async function loadAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
+            const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
 
@@ -186,6 +196,7 @@
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
+                .eq('tipo_eleccion', tipoEleccion)
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
@@ -302,6 +313,7 @@
 
         async function saveAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
+            const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
             const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = document.getElementById('admin-election-type').value;
@@ -321,10 +333,12 @@
             const btn = document.getElementById('btn-save-top');
             if(btn) btn.innerText = "Guardando en Supabase...";
 
+            // Borrado previo considerando el tipo de elección
             let { error: errDel } = await supabaseClient
                 .from('resultados_mesas')
                 .delete()
                 .eq('anio', anio)
+                .eq('tipo_eleccion', tipoEleccion)
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
@@ -338,6 +352,7 @@
             document.querySelectorAll('.party-row').forEach(row => {
                 rows.push({
                     anio: anio,
+                    tipo_eleccion: tipoEleccion, // Envía explícitamente Provincial o General
                     localidad: localidad,
                     tipo_entidad: tipoEntidad,
                     circuito_id: circuito_id,
@@ -376,11 +391,19 @@
 
         async function resetCloudData() {
             const anio = parseInt(document.getElementById('admin-year').value);
+            const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
 
             if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
-                let { error } = await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('categoria', categoria);
+                let { error } = await supabaseClient
+                    .from('resultados_mesas')
+                    .delete()
+                    .eq('anio', anio)
+                    .eq('tipo_eleccion', tipoEleccion)
+                    .ilike('localidad', localidad)
+                    .eq('categoria', categoria);
+
                 if (error) {
                     alert("❌ Error al borrar: " + error.message);
                     return;
@@ -398,7 +421,7 @@
 
                 let agrupados = {};
                 data.forEach(row => {
-                    let key = `AÑO: ${row.anio} | LOCALIDAD: ${row.localidad} | CATEGORÍA: ${row.categoria} | CIRCUITO: ${row.circuito_id}`;
+                    let key = `AÑO: ${row.anio} (${row.tipo_eleccion || 'Provincial'}) | LOCALIDAD: ${row.localidad} | CAT: ${row.categoria} | CIRC: ${row.circuito_id}`;
                     if (!agrupados[key]) {
                         agrupados[key] = {
                             mesas: row.mesas_procesadas || '0',
