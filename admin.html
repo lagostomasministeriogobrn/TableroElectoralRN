@@ -95,11 +95,11 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Viedma" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, Cipolletti...">
+                    <input type="text" id="admin-locality" value="Viedma" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, El Cuy...">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad (Gestión)</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
                     <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
                         <option value="Municipio" selected>Municipio</option>
                         <option value="Comision de Fomento">Comisión de Fomento</option>
@@ -116,9 +116,6 @@
                         <option value="CON">Concejal Municipal</option>
                         <option value="COF">Comisión de Fomento</option>
                         <option value="VCF">Vocal de Comisión de Fomento</option>
-                        <option value="MCM">Miembro de la Contraloría Municipal</option>
-                        <option value="MTC">Miembro del Tribunal de Cuentas</option>
-                        <option value="END">Representantes del Endecom</option>
                     </select>
                 </div>
 
@@ -168,10 +165,6 @@
         </div>
     </main>
 
-    <footer class="bg-rngreen text-white py-4 text-center text-xs border-t-4 border-rnblue mt-auto">
-        <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Panel Administrativo</p>
-    </footer>
-
     <script>
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
@@ -189,25 +182,25 @@
 
             if (!localidad) return;
 
-            let { data } = await supabaseClient
+            let { data, error } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
+            if (error) {
+                console.error("Error al cargar:", error.message);
+                return;
+            }
+
             if (data && data.length > 0) {
                 let row = data[0];
                 document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
                 document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
                 document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
-                
-                if (row.tipo_entidad) {
-                    document.getElementById('admin-entity-type').value = row.tipo_entidad;
-                }
-                if (row.circuito_id) {
-                    document.getElementById('admin-circuit').value = row.circuito_id;
-                }
+                if (row.tipo_entidad) document.getElementById('admin-entity-type').value = row.tipo_entidad;
+                if (row.circuito_id) document.getElementById('admin-circuit').value = row.circuito_id;
 
                 renderPartiesRows(data);
                 document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
@@ -216,14 +209,14 @@
                 document.getElementById('admin-mesas').value = "0 / 0";
                 document.getElementById('admin-participacion').value = "0.00%";
                 document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos para esta categoría en esta localidad.";
+                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos.";
             }
         }
 
         function renderPartiesRows(data) {
             const container = document.getElementById('admin-parties-container');
             container.innerHTML = "";
-            if (!data.length) { container.innerHTML = `<p class="text-xs text-slate-400 italic">Sin datos cargados para esta selección.</p>`; return; }
+            if (!data.length) { container.innerHTML = `<p class="text-xs text-slate-400 italic">Sin filas cargadas.</p>`; return; }
             let colorPalette = ["#C6E265", "#FFEE55", "#88D9E8", "#B4B5E0", "#00AEEF", "#DA251D", "#444444", "#FBB03B"];
             data.sort((a, b) => b.votos - a.votos).forEach((row, idx) => {
                 container.innerHTML += `
@@ -235,6 +228,19 @@
                         <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
                     </div>`;
             });
+        }
+
+        function addNewPartyRow() {
+            const container = document.getElementById('admin-parties-container');
+            if(container.querySelector('p')) container.innerHTML = "";
+            container.innerHTML += `
+                <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
+                    <input type="color" value="#0072CE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                    <input type="text" value="1" class="w-16 text-xs font-bold text-center border rounded party-id">
+                    <input type="text" value="Nombre de Lista" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
+                    <input type="number" value="0" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
+                    <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
+                </div>`;
         }
 
         async function handleSmartUpload(event) {
@@ -294,25 +300,12 @@
             }
         }
 
-        function addNewPartyRow() {
-            const container = document.getElementById('admin-parties-container');
-            if(container.querySelector('p')) container.innerHTML = "";
-            container.innerHTML += `
-                <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
-                    <input type="color" value="#0072CE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
-                    <input type="text" value="1" class="w-16 text-xs font-bold text-center border rounded party-id">
-                    <input type="text" value="Nombre de Lista" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
-                    <input type="number" value="0" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
-                    <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
-                </div>`;
-        }
-
         async function saveAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito_id = document.getElementById('admin-circuit').value; // Ahora incluye correctamente el circuito elegido
+            const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
             const subValidosText = document.getElementById('admin-subvalidos').value;
@@ -325,15 +318,30 @@
                 localidad = "Provincial General";
             }
 
-            await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('categoria', categoria);
+            const btn = document.getElementById('btn-save-top');
+            if(btn) btn.innerText = "Guardando en Supabase...";
+
+            // 1. Eliminar datos anteriores con verificación de errores real
+            let { error: errDel } = await supabaseClient
+                .from('resultados_mesas')
+                .delete()
+                .eq('anio', anio)
+                .ilike('localidad', localidad)
+                .eq('categoria', categoria);
+
+            if (errDel) {
+                if(btn) btn.innerText = "Guardar en Supabase ☁️";
+                alert("❌ ERROR al limpiar registros previos en Supabase:\n" + errDel.message);
+                return;
+            }
             
             let rows = [];
             document.querySelectorAll('.party-row').forEach(row => {
-                let rowData = {
+                rows.push({
                     anio: anio,
                     localidad: localidad,
-                    tipo_entidad: tipoEntidad, // Envía explícitamente si es Municipio o Fomento
-                    circuito_id: circuito_id, // Envía el circuito seleccionado
+                    tipo_entidad: tipoEntidad,
+                    circuito_id: circuito_id,
                     categoria: categoria,
                     mesa_numero: 1,
                     mesas_procesadas: mesas,
@@ -343,19 +351,28 @@
                     votos: parseInt(row.querySelector('.party-votes').value) || 0,
                     votos_blanco: blanco,
                     votos_nulos: nulos
-                };
-                rows.push(rowData);
+                });
             });
 
-            if (rows.length) {
-                let { error } = await supabaseClient.from('resultados_mesas').insert(rows);
-                if (error) {
-                    alert("Error al guardar en Supabase: " + error.message);
+            if (rows.length > 0) {
+                // 2. Insertar nuevos datos con verificación estricta de la respuesta de Supabase
+                let { data, error: errIns } = await supabaseClient
+                    .from('resultados_mesas')
+                    .insert(rows);
+
+                if(btn) btn.innerText = "Guardar en Supabase ☁️";
+
+                if (errIns) {
+                    alert("❌ ERROR CRÍTICO de Supabase al insertar:\n" + errIns.message + "\n\n(Revisá si la tabla 'resultados_mesas' tiene políticas RLS activas que bloqueen las escrituras).");
+                    document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
                     return;
                 }
+
                 document.getElementById('admin-status').innerText = "✓ ¡Guardado con éxito en Supabase!";
+                alert("¡Los datos de " + localidad + " se guardaron correctamente en la base de datos!");
             } else {
-                document.getElementById('admin-status').innerText = "⚠️ No hay filas para guardar.";
+                if(btn) btn.innerText = "Guardar en Supabase ☁️";
+                alert("⚠️ No hay filas de listas para guardar.");
             }
         }
 
@@ -365,8 +382,13 @@
             const categoria = document.getElementById('admin-election-type').value;
 
             if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
-                await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('categoria', categoria);
+                let { error } = await supabaseClient.from('resultados_mesas').delete().eq('anio', anio).ilike('localidad', localidad).eq('categoria', categoria);
+                if (error) {
+                    alert("❌ Error al borrar: " + error.message);
+                    return;
+                }
                 loadAdminData();
+                alert("Datos eliminados correctamente.");
             }
         }
 
