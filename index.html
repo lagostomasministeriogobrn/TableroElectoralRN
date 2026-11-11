@@ -189,7 +189,6 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // Clasificación directa y flexible basada en lo que guarda el admin
         function esComisionDeFomento(row) {
             let entidad = row.tipo_entidad ? normalizarTexto(row.tipo_entidad) : "";
             return entidad.includes('fomento') || entidad.includes('comision');
@@ -223,8 +222,8 @@
         }
 
         function actualizarLocalidadesPorCircuito() {
+            const circuitoSeleccionado = document.getElementById('filter-circuit').value;
             const selectLoc = document.getElementById('filter-locality');
-            const categoriaSeleccionada = document.getElementById('filter-category').value;
 
             selectLoc.innerHTML = "";
 
@@ -234,24 +233,38 @@
             selectLoc.appendChild(optGeneral);
 
             let mapaEntidadesLocales = {};
-            
-            // CORRECCIÓN CRÍTICA: Extraemos TODAS las localidades del año sin importar la categoría 
-            // para garantizar que aparezcan siempre en el menú desplegable.
+            let circuitoNorm = normalizarTexto(circuitoSeleccionado);
+
             datosCacheGlobal.forEach(d => {
                 if (d.localidad) {
-                    let locNorm = normalizarTexto(d.localidad);
+                    let locTrim = d.localidad.trim();
+                    let locNorm = normalizarTexto(locTrim);
                     if (locNorm !== "provincial general" && locNorm !== "provincial") {
-                        if (!mapaEntidadesLocales[d.localidad]) {
-                            mapaEntidadesLocales[d.localidad] = esComisionDeFomento(d);
-                        } else if (esComisionDeFomento(d)) {
-                            mapaEntidadesLocales[d.localidad] = true;
+                        let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                        
+                        // Validamos pertenencia al circuito seleccionado de forma flexible
+                        let perteneceCircuito = (
+                            circuitoNorm === "provincial" || 
+                            !circBD || 
+                            circBD === circuitoNorm || 
+                            circBD.includes(circuitoNorm) || 
+                            circuitoNorm.includes(circBD) ||
+                            (circuitoNorm.includes("alto valle") && circBD.includes("alto valle"))
+                        );
+
+                        if (perteneceCircuito) {
+                            if (!mapaEntidadesLocales[locTrim]) {
+                                mapaEntidadesLocales[locTrim] = esComisionDeFomento(d);
+                            } else if (esComisionDeFomento(d)) {
+                                mapaEntidadesLocales[locTrim] = true;
+                            }
                         }
                     }
                 }
             });
 
             let unicasLoc = Object.keys(mapaEntidadesLocales);
-            unicasLoc.sort();
+            unicasLoc.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 
             let municipios = [];
             let comisiones = [];
@@ -314,7 +327,7 @@
                 filtrados = filtrados.filter(d => {
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let seleccionNorm = normalizarTexto(circuito);
-                    return circBD === seleccionNorm || circBD.includes(seleccionNorm) || seleccionNorm.includes(circBD);
+                    return !circBD || circBD === seleccionNorm || circBD.includes(seleccionNorm) || seleccionNorm.includes(circBD);
                 });
             }
 
