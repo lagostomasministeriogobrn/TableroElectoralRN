@@ -95,7 +95,6 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <!-- Ya no modifica automáticamente el circuito -->
                     <input type="text" id="admin-locality" value="Viedma" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, Cipolletti...">
                 </div>
 
@@ -125,7 +124,6 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <!-- Selector libre y a voluntad -->
                     <select id="admin-circuit" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial">Provincial</option>
                         <option value="Alto Valle Centro">Alto Valle Centro</option>
@@ -314,7 +312,7 @@
             let localidad = document.getElementById('admin-locality').value.trim();
             const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = document.getElementById('admin-election-type').value;
-            const circuito_id = document.getElementById('admin-circuit').value;
+            const circuito_id = document.getElementById('admin-circuit').value; // Ahora incluye correctamente el circuito elegido
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
             const subValidosText = document.getElementById('admin-subvalidos').value;
@@ -334,8 +332,8 @@
                 let rowData = {
                     anio: anio,
                     localidad: localidad,
-                    tipo_entidad: tipoEntidad,
-                    circuito_id: circuito_id,
+                    tipo_entidad: tipoEntidad, // Envía explícitamente si es Municipio o Fomento
+                    circuito_id: circuito_id, // Envía el circuito seleccionado
                     categoria: categoria,
                     mesa_numero: 1,
                     mesas_procesadas: mesas,
