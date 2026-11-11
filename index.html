@@ -189,7 +189,7 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // Lee de forma directa el tipo de entidad guardado en Supabase
+        // Clasificación directa y flexible basada en lo que guarda el admin
         function esComisionDeFomento(row) {
             let entidad = row.tipo_entidad ? normalizarTexto(row.tipo_entidad) : "";
             return entidad.includes('fomento') || entidad.includes('comision');
@@ -223,21 +223,10 @@
         }
 
         function actualizarLocalidadesPorCircuito() {
-            const circuitoSeleccionado = document.getElementById('filter-circuit').value;
-            const categoriaSeleccionada = document.getElementById('filter-category').value;
             const selectLoc = document.getElementById('filter-locality');
+            const categoriaSeleccionada = document.getElementById('filter-category').value;
 
             selectLoc.innerHTML = "";
-
-            let filtrados = datosCacheGlobal.filter(d => d.categoria === categoriaSeleccionada);
-            
-            if (normalizarTexto(circuitoSeleccionado) !== "provincial") {
-                filtrados = filtrados.filter(d => {
-                    let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                    let seleccionNorm = normalizarTexto(circuitoSeleccionado);
-                    return circBD === seleccionNorm || circBD.includes(seleccionNorm) || seleccionNorm.includes(circBD);
-                });
-            }
 
             let optGeneral = document.createElement('option');
             optGeneral.value = "Provincial General";
@@ -245,7 +234,10 @@
             selectLoc.appendChild(optGeneral);
 
             let mapaEntidadesLocales = {};
-            filtrados.forEach(d => {
+            
+            // CORRECCIÓN CRÍTICA: Extraemos TODAS las localidades del año sin importar la categoría 
+            // para garantizar que aparezcan siempre en el menú desplegable.
+            datosCacheGlobal.forEach(d => {
                 if (d.localidad) {
                     let locNorm = normalizarTexto(d.localidad);
                     if (locNorm !== "provincial general" && locNorm !== "provincial") {
@@ -305,7 +297,6 @@
             const localidadSeleccionada = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
 
-            // Consulta directa a Supabase por cada cambio para reflejar al instante
             let { data, error } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
