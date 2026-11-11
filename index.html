@@ -232,7 +232,7 @@
             "VCF": "Vocal de Comisión de Fomento",
             "MCM": "Miembro de la Contraloría Municipal",
             "MTC": "Miembro del Tribunal de Cuentas",
-            "END": "Representantes главного Endecom",
+            "END": "Representantes del Endecom",
             "SEN": "Senador Nacional",
             "DIP": "Diputado Nacional",
             "PRES": "Presidente"
@@ -243,7 +243,6 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // 100% LITERAL: Obedece estrictamente a lo que guardaste en Supabase (tipo_entidad)
         function esComisionDeFomento(row) {
             let entidad = row.tipo_entidad ? normalizarTexto(row.tipo_entidad) : "";
             return entidad.includes('fomento') || entidad.includes('comision');
@@ -289,7 +288,7 @@
                 filtrados = filtrados.filter(d => {
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let seleccionNorm = normalizarTexto(circuitoSeleccionado);
-                    return circBD === seleccionNorm;
+                    return circBD === seleccionNorm || circBD.includes(seleccionNorm) || seleccionNorm.includes(circBD);
                 });
             }
 
@@ -356,21 +355,37 @@
         async function cargarDatosPublicos() {
             const anio = parseInt(document.getElementById('filter-year').value);
             const circuito = document.getElementById('filter-circuit').value;
-            const localidad = document.getElementById('filter-locality').value;
+            const localidadSeleccionada = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
 
-            let filtrados = datosCacheGlobal.filter(d => d.categoria === categoria);
+            // Consulta directa y segura a Supabase para evitar fallas de sincronización
+            let { data, error } = await supabaseClient
+                .from('resultados_mesas')
+                .select('*')
+                .eq('anio', anio)
+                .eq('categoria', categoria);
+
+            if (error) {
+                console.error("Error al consultar Supabase:", error.message);
+                return;
+            }
+
+            let filtrados = data || [];
 
             if (normalizarTexto(circuito) !== "provincial") {
                 filtrados = filtrados.filter(d => {
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let seleccionNorm = normalizarTexto(circuito);
-                    return circBD === seleccionNorm;
+                    return circBD === seleccionNorm || circBD.includes(seleccionNorm) || seleccionNorm.includes(circBD);
                 });
             }
 
-            if (normalizarTexto(localidad) !== "provincial general") {
-                filtrados = filtrados.filter(d => d.localidad && normalizarTexto(d.localidad) === normalizarTexto(localidad));
+            if (normalizarTexto(localidadSeleccionada) !== "provincial general") {
+                filtrados = filtrados.filter(d => {
+                    let locBD = normalizarTexto(d.localidad);
+                    let locSel = normalizarTexto(localidadSeleccionada);
+                    return locBD === locSel;
+                });
             }
 
             renderizarResultadosUnicos(filtrados);
