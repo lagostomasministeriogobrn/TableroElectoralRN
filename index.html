@@ -429,9 +429,11 @@
         window.onload = async function() {
             await actualizarFiltros();
 
+            // Sincronización en tiempo real vía WebSockets de Supabase
             supabaseClient
                 .channel('public:resultados_mesas')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'resultados_mesas' }, () => {
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'resultados_mesas' }, payload => {
+                    console.log('Cambio detectado en Supabase, actualizando vista pública...', payload);
                     actualizarFiltros();
                 })
                 .subscribe();
