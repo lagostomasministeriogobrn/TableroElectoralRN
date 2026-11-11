@@ -256,7 +256,7 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // UNIVERSAL: Lee directamente lo que gestionaste en el panel
+        // LEE UNIVERSALMENTE LO QUE GESTIONASTE EN EL PANEL
         function esComisionDeFomento(row) {
             if (row.tipo_entidad && normalizarTexto(row.tipo_entidad).includes('fomento')) {
                 return true;
