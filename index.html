@@ -161,54 +161,6 @@
                 </div>
             </section>
         </div>
-
-        <section class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-4">
-            <div class="border-b pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                <div class="flex items-center gap-3">
-                    <img src="daebot.png" alt="DAEBot" class="w-12 h-12 object-contain drop-shadow">
-                    <div>
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-rnblue">Pedile Reportes a DAEBot</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">Generá tablas comparativas inteligentes y descargalas de inmediato en PDF.</p>
-                    </div>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="generarReporteDAEBot()" class="bg-rnblue hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Generar Reporte 📊</button>
-                    <button onclick="descargarReportePDF()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow flex items-center gap-1">Descargar PDF 📄</button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Reporte</label>
-                    <select id="bot-tipo" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
-                        <option value="evolucion_interanual">Evolución Interanual (Histórico)</option>
-                        <option value="reporte_localidad">Detalle por Municipio / Fomento</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                    <select id="bot-categoria" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold">
-                        <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="INT">Intendente Municipal</option>
-                        <option value="CON">Concejal Municipal</option>
-                        <option value="COF">Comisión de Fomento</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Años (Ej: 2023, 2025)</label>
-                    <input type="text" id="bot-anios" value="2023, 2025" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs font-semibold" placeholder="Separados por coma">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Seleccionar Opción</label>
-                    <select id="bot-entidad" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-semibold"></select>
-                </div>
-            </div>
-
-            <div id="bot-resultado-container" class="bg-slate-50 p-4 rounded border text-xs space-y-3 mt-3">
-                <p class="text-slate-400 text-center py-4">Seleccioná los parámetros y hacé clic en <b>Generar Reporte</b> para ver la tabla comparativa de DAEBot.</p>
-            </div>
-        </section>
-
     </main>
 
     <footer class="bg-rngreen text-white py-4 text-center text-xs border-t-4 border-rnblue mt-auto">
@@ -229,13 +181,7 @@
             "INT": "Intendente Municipal",
             "CON": "Concejal Municipal",
             "COF": "Comisión de Fomento",
-            "VCF": "Vocal de Comisión de Fomento",
-            "MCM": "Miembro de la Contraloría Municipal",
-            "MTC": "Miembro del Tribunal de Cuentas",
-            "END": "Representantes del Endecom",
-            "SEN": "Senador Nacional",
-            "DIP": "Diputado Nacional",
-            "PRES": "Presidente"
+            "VCF": "Vocal de Comisión de Fomento"
         };
 
         function normalizarTexto(texto) {
@@ -243,6 +189,7 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
+        // Lee de forma directa el tipo de entidad guardado en Supabase
         function esComisionDeFomento(row) {
             let entidad = row.tipo_entidad ? normalizarTexto(row.tipo_entidad) : "";
             return entidad.includes('fomento') || entidad.includes('comision');
@@ -358,7 +305,7 @@
             const localidadSeleccionada = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
 
-            // Consulta directa y segura a Supabase para evitar fallas de sincronización
+            // Consulta directa a Supabase por cada cambio para reflejar al instante
             let { data, error } = await supabaseClient
                 .from('resultados_mesas')
                 .select('*')
@@ -461,68 +408,8 @@
             });
         }
 
-        async function actualizarOpcionesBotEntidad() {
-            const selectEntidad = document.getElementById('bot-entidad');
-            if(!selectEntidad) return;
-            selectEntidad.innerHTML = "";
-            let { data } = await supabaseClient.from('resultados_mesas').select('localidad');
-            if (data) {
-                let unicas = [...new Set(data.map(d => d.localidad))].filter(Boolean);
-                unicas.sort().forEach(loc => {
-                    if (normalizarTexto(loc) !== "provincial general") {
-                        let opt = document.createElement('option');
-                        opt.value = loc;
-                        opt.text = loc;
-                        selectEntidad.appendChild(opt);
-                    }
-                });
-            }
-        }
-
-        async function generarReporteDAEBot() {
-            const categoria = document.getElementById('bot-categoria').value;
-            const aniosInput = document.getElementById('bot-anios').value;
-            const entidad = document.getElementById('bot-entidad').value;
-            const anios = aniosInput.split(',').map(a => parseInt(a.trim())).filter(Boolean);
-            const container = document.getElementById('bot-resultado-container');
-
-            container.innerHTML = `<div class="text-center py-4 text-slate-500">🤖 DAEBot está procesando la tabla comparativa...</div>`;
-
-            let { data } = await supabaseClient.from('resultados_mesas').select('*').eq('categoria', categoria);
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="text-red-500 p-2">DAEBot: No hay registros suficientes.</div>`;
-                return;
-            }
-
-            let htmlRespuesta = `<h4 class="font-bold text-rnblue mb-2">📈 Reporte DAEBot: <b>${entidad}</b> (${categoria})</h4>`;
-            htmlRespuesta += `<div class="overflow-x-auto"><table id="tabla-reporte-pdf" class="w-full text-left text-xs border bg-white"><tr class="bg-slate-100 font-bold"><th class="p-2">Fuerza Política</th>` + anios.map(a => `<th class="p-2 text-right">Año ${a}</th>`).join('') + `</tr>`;
-            
-            let fuerzasUnicas = [...new Set(data.map(d => d.nombre_lista))].filter(Boolean);
-            fuerzasUnicas.forEach(fuerza => {
-                htmlRespuesta += `<tr class="border-b"><td class="p-2 font-semibold">${fuerza}</td>`;
-                anios.forEach(anio => {
-                    let match = data.find(d => d.anio === anio && d.nombre_lista === fuerza && normalizarTexto(d.localidad) === normalizarTexto(entidad));
-                    let votos = match ? match.votos.toLocaleString() : "0";
-                    htmlRespuesta += `<td class="p-2 text-right font-bold">${votos}</td>`;
-                });
-                htmlRespuesta += `</tr>`;
-            });
-            htmlRespuesta += `</table></div>`;
-            container.innerHTML = htmlRespuesta;
-        }
-
-        function descargarReportePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(14);
-            doc.text("Dirección de Asuntos Electorales - Río Negro", 14, 20);
-            doc.save("Reporte_Electoral.pdf");
-        }
-
         window.onload = async function() {
             await actualizarFiltros();
-            await actualizarOpcionesBotEntidad();
         };
     </script>
 </body>
