@@ -189,7 +189,6 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // SUPEDITACIÓN ESTRICTA: Lee tal cual lo guardaste en el admin en la columna tipo_entidad
         function esComisionDeFomento(row) {
             let entidad = row.tipo_entidad ? normalizarTexto(row.tipo_entidad) : "";
             return entidad.includes('fomento') || entidad.includes('comision');
@@ -237,7 +236,6 @@
             let mapaEntidadesLocales = {};
             let circuitoSeleccionadoNorm = normalizarTexto(circuitoSeleccionado);
 
-            // Criterio estricto: la base manda por completo
             datosCacheGlobal.forEach(d => {
                 if (d.localidad) {
                     let locTrim = d.localidad.trim();
@@ -246,7 +244,6 @@
                     if (locNorm !== "provincial general" && locNorm !== "provincial") {
                         let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                         
-                        // Coincidencia exacta obligatoria con el circuito que asignaste en el admin
                         let coincideCircuito = (
                             circuitoSeleccionadoNorm === "provincial" || 
                             circBD === circuitoSeleccionadoNorm
@@ -328,7 +325,6 @@
 
             let filtrados = data || [];
 
-            // Supeditación estricta al circuito guardado
             if (normalizarTexto(circuito) !== "provincial") {
                 filtrados = filtrados.filter(d => {
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
@@ -357,7 +353,12 @@
                 document.getElementById('stat-participacion').innerText = "0.00%";
                 document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
                 tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">Sin registros computados para esta selección.</td></tr>`;
-                if (chartInstance) chartInstance.destroy();
+                
+                if (chartInstance) {
+                    chartInstance.data.labels = [];
+                    chartInstance.data.datasets[0].data = [];
+                    chartInstance.update('none');
+                }
                 return;
             }
 
@@ -398,24 +399,31 @@
             });
 
             const ctx = document.getElementById('chart-resultados').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
 
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: votosArr,
-                        backgroundColor: bgColors.slice(0, labels.length),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
-            });
+            if (chartInstance) {
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = votosArr;
+                chartInstance.data.datasets[0].backgroundColor = bgColors.slice(0, labels.length);
+                chartInstance.update('none');
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: votosArr,
+                            backgroundColor: bgColors.slice(0, labels.length),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
         }
 
         window.onload = async function() {
@@ -427,10 +435,6 @@
                     actualizarFiltros();
                 })
                 .subscribe();
-
-            setInterval(() => {
-                actualizarFiltros();
-            }, 3000);
         };
     </script>
 </body>
