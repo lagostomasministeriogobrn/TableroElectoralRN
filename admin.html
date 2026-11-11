@@ -321,7 +321,6 @@
             const btn = document.getElementById('btn-save-top');
             if(btn) btn.innerText = "Guardando en Supabase...";
 
-            // 1. Eliminar datos anteriores con verificación de errores real
             let { error: errDel } = await supabaseClient
                 .from('resultados_mesas')
                 .delete()
@@ -355,7 +354,6 @@
             });
 
             if (rows.length > 0) {
-                // 2. Insertar nuevos datos con verificación estricta de la respuesta de Supabase
                 let { data, error: errIns } = await supabaseClient
                     .from('resultados_mesas')
                     .insert(rows);
@@ -363,7 +361,7 @@
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
 
                 if (errIns) {
-                    alert("❌ ERROR CRÍTICO de Supabase al insertar:\n" + errIns.message + "\n\n(Revisá si la tabla 'resultados_mesas' tiene políticas RLS activas que bloqueen las escrituras).");
+                    alert("❌ ERROR CRÍTICO de Supabase al insertar:\n" + errIns.message);
                     document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
                     return;
                 }

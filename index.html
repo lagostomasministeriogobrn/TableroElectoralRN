@@ -243,7 +243,7 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // UNIVERSAL: Lee directamente si guardaste la entidad como fomento en Supabase
+        // UNIVERSAL: Lee de forma estricta el tipo de entidad guardado en Supabase
         function esComisionDeFomento(row) {
             if (row.tipo_entidad && normalizarTexto(row.tipo_entidad).includes('fomento')) {
                 return true;
@@ -290,7 +290,7 @@
 
             let filtrados = datosCacheGlobal.filter(d => d.categoria === categoriaSeleccionada);
             
-            // UNIVERSAL: Filtra por el circuito_id que guardaste explícitamente en la base de datos
+            // FILTRADO UNIVERSAL: Compara el circuito guardado con el selector
             if (normalizarTexto(circuitoSeleccionado) !== "provincial") {
                 filtrados = filtrados.filter(d => {
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
