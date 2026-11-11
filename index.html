@@ -224,6 +224,7 @@
         function actualizarLocalidadesPorCircuito() {
             const circuitoSeleccionado = document.getElementById('filter-circuit').value;
             const selectLoc = document.getElementById('filter-locality');
+            const localidadAnterior = selectLoc.value;
 
             selectLoc.innerHTML = "";
 
@@ -242,7 +243,6 @@
                     if (locNorm !== "provincial general" && locNorm !== "provincial") {
                         let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                         
-                        // Validamos pertenencia al circuito seleccionado de forma flexible
                         let perteneceCircuito = (
                             circuitoNorm === "provincial" || 
                             !circBD || 
@@ -299,6 +299,12 @@
                     groupFof.appendChild(opt);
                 });
                 selectLoc.appendChild(groupFof);
+            }
+
+            // Mantenemos la localidad seleccionada si sigue existiendo en la lista
+            let opcionesDisponibles = Array.from(selectLoc.options).map(o => o.value);
+            if (opcionesDisponibles.includes(localidadAnterior)) {
+                selectLoc.value = localidadAnterior;
             }
 
             cargarDatosPublicos();
@@ -414,6 +420,15 @@
 
         window.onload = async function() {
             await actualizarFiltros();
+
+            // SINCRONIZACIÓN EN TIEMPO REAL CON SUPABASE
+            supabaseClient
+                .channel('public:resultados_mesas')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'resultados_mesas' }, payload => {
+                    console.log('Cambio detectado en Supabase, actualizando tablero...', payload);
+                    actualizarFiltros();
+                })
+                .subscribe();
         };
     </script>
 </body>
