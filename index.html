@@ -232,7 +232,7 @@
             "VCF": "Vocal de Comisión de Fomento",
             "MCM": "Miembro de la Contraloría Municipal",
             "MTC": "Miembro del Tribunal de Cuentas",
-            "END": "Representantes del Endecom",
+            "END": "Representantes главного Endecom",
             "SEN": "Senador Nacional",
             "DIP": "Diputado Nacional",
             "PRES": "Presidente"
@@ -243,15 +243,10 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        // UNIVERSAL: Lee de forma estricta el tipo de entidad guardado en Supabase
+        // 100% LITERAL: Obedece estrictamente a lo que guardaste en Supabase (tipo_entidad)
         function esComisionDeFomento(row) {
-            if (row.tipo_entidad && normalizarTexto(row.tipo_entidad).includes('fomento')) {
-                return true;
-            }
-            if (row.categoria === 'COF' || row.categoria === 'VCF') {
-                return true;
-            }
-            return false;
+            let entidad = row.tipo_entidad ? normalizarTexto(row.tipo_entidad) : "";
+            return entidad.includes('fomento') || entidad.includes('comision');
         }
 
         async function actualizarFiltros() {
@@ -290,7 +285,6 @@
 
             let filtrados = datosCacheGlobal.filter(d => d.categoria === categoriaSeleccionada);
             
-            // FILTRADO UNIVERSAL: Compara el circuito guardado con el selector
             if (normalizarTexto(circuitoSeleccionado) !== "provincial") {
                 filtrados = filtrados.filter(d => {
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
