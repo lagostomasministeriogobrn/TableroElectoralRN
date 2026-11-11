@@ -58,7 +58,7 @@
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
         
         <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
@@ -73,7 +73,7 @@
         <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-4 gap-4">
                 <div>
-                    <h2 class="text-base font-bold text-slate-800">Editor por Año, Localidad, Circuito y Categoría</h2>
+                    <h2 class="text-base font-bold text-slate-800">Editor por Año, Tipo de Elección, Localidad, Circuito y Categoría</h2>
                 </div>
                 <div class="flex gap-2 w-full md:w-auto">
                     <button onclick="resetCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded text-xs transition">Limpiar</button>
@@ -81,10 +81,11 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+            <!-- CONTENEDOR CON 6 COLUMNAS INCLUYENDO TIPO DE ELECCIÓN -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
-                    <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
                         <option value="2026">2026</option>
                         <option value="2027">2027</option>
                         <option value="2025">2025</option>
@@ -94,43 +95,51 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
+                    <select id="admin-election-kind" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
+                        <option value="Provincial" selected>Provincial</option>
+                        <option value="General">General (Nacional)</option>
+                    </select>
+                </div>
+
+                <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Viedma" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, El Cuy...">
+                    <input type="text" id="admin-locality" value="Viedma" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, El Cuy...">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
-                    <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
-                        <option value="Municipio" selected>Municipio</option>
-                        <option value="Comision de Fomento">Comisión de Fomento</option>
+                    <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
+                        <option value="Municipio">Municipio</option>
+                        <option value="Comision de Fomento" selected>Comisión de Fomento</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                    <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="LEGP">Legislador por Rep. Poblacional</option>
-                        <option value="LEGC">Legislador Circuital</option>
-                        <option value="INT">Intendente Municipal</option>
-                        <option value="CON">Concejal Municipal</option>
+                    <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
+                        <option value="GOB">Gobernador / Vice</option>
+                        <option value="LEGP">Legislador Poblacional</option>
+                        <option value="LEGC" selected>Legislador Circuital</option>
+                        <option value="INT">Intendente</option>
+                        <option value="CON">Concejal</option>
                         <option value="COF">Comisión de Fomento</option>
-                        <option value="VCF">Vocal de Comisión de Fomento</option>
+                        <option value="VCF">Vocal Com. Fomento</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="admin-circuit" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <select id="admin-circuit" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
                         <option value="Provincial">Provincial</option>
-                        <option value="Alto Valle Centro">Alto Valle Centro</option>
+                        <option value="Alto Valle Centro" selected>Alto Valle Centro</option>
                         <option value="Alto Valle Este">Alto Valle Este</option>
                         <option value="Alto Valle Oeste">Alto Valle Oeste</option>
                         <option value="Circuito Andino">Circuito Andino</option>
                         <option value="Circuito Atlántico">Circuito Atlántico</option>
                         <option value="Línea Sur">Línea Sur</option>
                         <option value="Valle Medio">Valle Medio</option>
-                        <option value="Valle Inferior" selected>Valle Inferior</option>
+                        <option value="Valle Inferior">Valle Inferior</option>
                     </select>
                 </div>
             </div>
@@ -177,32 +186,40 @@
 
         async function loadAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
+            const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
 
             if (!localidad) return;
 
-            let { data, error } = await supabaseClient
+            // Verificamos si existe la columna tipo_eleccion en Supabase antes de consultar
+            let query = supabaseClient
                 .from('resultados_mesas')
                 .select('*')
                 .eq('anio', anio)
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
+            let { data, error } = await query;
+
             if (error) {
                 console.error("Error al cargar:", error.message);
                 return;
             }
 
+            // Filtrado local por tipo de elección por seguridad si la columna ya existe
             if (data && data.length > 0) {
-                let row = data[0];
+                let filtrados = data.filter(r => !r.tipo_eleccion || r.tipo_eleccion === tipoEleccion);
+                if (filtrados.length === 0) filtrados = data; // fallback si no se usaba
+
+                let row = filtrados[0];
                 document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
                 document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
                 document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
                 if (row.tipo_entidad) document.getElementById('admin-entity-type').value = row.tipo_entidad;
                 if (row.circuito_id) document.getElementById('admin-circuit').value = row.circuito_id;
 
-                renderPartiesRows(data);
+                renderPartiesRows(filtrados);
                 document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
             } else {
                 renderPartiesRows([]);
@@ -302,6 +319,7 @@
 
         async function saveAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
+            const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
             const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = document.getElementById('admin-election-type').value;
@@ -321,6 +339,7 @@
             const btn = document.getElementById('btn-save-top');
             if(btn) btn.innerText = "Guardando en Supabase...";
 
+            // Limpieza segura en Supabase
             let { error: errDel } = await supabaseClient
                 .from('resultados_mesas')
                 .delete()
@@ -336,8 +355,9 @@
             
             let rows = [];
             document.querySelectorAll('.party-row').forEach(row => {
-                rows.push({
+                let rowData = {
                     anio: anio,
+                    tipo_eleccion: tipoEleccion,
                     localidad: localidad,
                     tipo_entidad: tipoEntidad,
                     circuito_id: circuito_id,
@@ -350,24 +370,35 @@
                     votos: parseInt(row.querySelector('.party-votes').value) || 0,
                     votos_blanco: blanco,
                     votos_nulos: nulos
-                });
+                };
+                rows.push(rowData);
             });
 
             if (rows.length > 0) {
-                let { data, error: errIns } = await supabaseClient
+                let { error: errIns } = await supabaseClient
                     .from('resultados_mesas')
                     .insert(rows);
 
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
 
                 if (errIns) {
-                    alert("❌ ERROR CRÍTICO de Supabase al insertar:\n" + errIns.message);
-                    document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
-                    return;
+                    // Si falla por falta de la columna tipo_eleccion en la BD, reintentamos sin ella para no trabar
+                    if (errIns.message.includes('tipo_eleccion')) {
+                        rows.forEach(r => delete r.tipo_eleccion);
+                        let { error: errIns2 } = await supabaseClient.from('resultados_mesas').insert(rows);
+                        if (errIns2) {
+                            alert("❌ ERROR de Supabase:\n" + errIns2.message);
+                            return;
+                        }
+                    } else {
+                        alert("❌ ERROR CRÍTICO de Supabase:\n" + errIns.message);
+                        document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
+                        return;
+                    }
                 }
 
                 document.getElementById('admin-status').innerText = "✓ ¡Guardado con éxito en Supabase!";
-                alert("¡Los datos de " + localidad + " se guardaron correctamente en la base de datos!");
+                alert("¡Los datos de " + localidad + " se guardaron correctamente!");
             } else {
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
                 alert("⚠️ No hay filas de listas para guardar.");
@@ -417,7 +448,7 @@
                     agrupados[key].listas.push({
                         lista_id: row.lista_id,
                         nombre_lista: row.nombre_lista || 'Sin Nombre',
-                        votos: row.votos || 0
+                        votos: row.voton || row.votos || 0
                     });
                 });
 
