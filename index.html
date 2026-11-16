@@ -67,11 +67,14 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
                     <select id="filter-year" onchange="actualizarFiltros(true)" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="2026">2026</option>
                         <option value="2027">2027</option>
+                        <option value="2026">2026</option>
                         <option value="2025">2025</option>
                         <option value="2023">2023</option>
+                        <option value="2021">2021</option>
                         <option value="2019" selected>2019</option>
+                        <option value="2017">2017</option>
+                        <option value="2015">2015</option>
                     </select>
                 </div>
 
@@ -206,7 +209,6 @@
                 const anio = parseInt(document.getElementById('filter-year').value);
                 const selectCat = document.getElementById('filter-category');
 
-                // Descarga paginada completa para superar el límite de 1.000 filas del servidor de Supabase
                 let todasLasFilas = [];
                 let desde = 0;
                 const paso = 1000;
@@ -239,7 +241,6 @@
                 const filasOrdenadas = [...todasLasFilas].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
                 const nuevoHash = JSON.stringify(filasOrdenadas);
 
-                // Si no hubo cambios en los datos, no se toca el DOM ni el gráfico
                 if (!forzar && nuevoHash === ultimoHashDatos) {
                     return;
                 }
@@ -499,4 +500,3 @@
     </script>
 </body>
 </html>
-```[cite: 10]
