@@ -206,20 +206,37 @@
                 const anio = parseInt(document.getElementById('filter-year').value);
                 const selectCat = document.getElementById('filter-category');
 
-                // Agregamos .range(0, 9999) para evitar el tope de 1.000 filas de Supabase
-                let { data, error } = await supabaseClient
-                    .from('resultados_mesas')
-                    .select('*')
-                    .eq('anio', anio)
-                    .range(0, 9999);
+                // Descarga paginada completa para superar el límite de 1.000 filas del servidor de Supabase
+                let todasLasFilas = [];
+                let desde = 0;
+                const paso = 1000;
+                let seguirBuscando = true;
 
-                if (error) {
-                    console.error("Error al sincronizar:", error.message);
-                    return;
+                while (seguirBuscando) {
+                    let { data, error } = await supabaseClient
+                        .from('resultados_mesas')
+                        .select('*')
+                        .eq('anio', anio)
+                        .range(desde, desde + paso - 1);
+
+                    if (error) {
+                        console.error("Error al sincronizar:", error.message);
+                        return;
+                    }
+
+                    if (data && data.length > 0) {
+                        todasLasFilas = todasLasFilas.concat(data);
+                        if (data.length < paso) {
+                            seguirBuscando = false;
+                        } else {
+                            desde += paso;
+                        }
+                    } else {
+                        seguirBuscando = false;
+                    }
                 }
 
-                const filas = data || [];
-                const filasOrdenadas = [...filas].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
+                const filasOrdenadas = [...todasLasFilas].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
                 const nuevoHash = JSON.stringify(filasOrdenadas);
 
                 // Si no hubo cambios en los datos, no se toca el DOM ni el gráfico
@@ -228,7 +245,7 @@
                 }
 
                 ultimoHashDatos = nuevoHash;
-                datosCacheGlobal = filas;
+                datosCacheGlobal = todasLasFilas;
 
                 let categoriaActual = selectCat.value;
                 let unicasCat = [...new Set(datosCacheGlobal.map(d => d.categoria))].filter(Boolean);
@@ -482,3 +499,4 @@
     </script>
 </body>
 </html>
+```[cite: 10]
