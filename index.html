@@ -188,8 +188,13 @@
             "INT": "Intendente Municipal",
             "CON": "Concejal Municipal",
             "COF": "Comisión de Fomento",
-            "VCF": "Vocal de Comisión de Fomento"
+            "VCF": "Vocal de Comisión de Fomento",
+            "PRE": "Presidente",
+            "SEN": "Senador Nacional",
+            "DIP": "Diputado Nacional"
         };
+
+        const codigosNacionales = ["PRE", "SEN", "DIP"];
 
         function normalizarTexto(texto) {
             if (!texto) return "";
@@ -207,6 +212,7 @@
 
             try {
                 const anio = parseInt(document.getElementById('filter-year').value);
+                const tipoEleccion = document.getElementById('filter-election-kind').value;
                 const selectCat = document.getElementById('filter-category');
 
                 let todasLasFilas = [];
@@ -238,19 +244,34 @@
                     }
                 }
 
-                const filasOrdenadas = [...todasLasFilas].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
-                const nuevoHash = JSON.stringify(filasOrdenadas);
+                // Filtramos estrictamente según el Tipo de Elección (Provincial vs General)
+                const filasFiltradasPorTipo = todasLasFilas.filter(d => {
+                    if (d.tipo_eleccion) {
+                        return d.tipo_eleccion === tipoEleccion;
+                    }
+                    // Respaldo si hay filas viejas sin columna tipo_eleccion
+                    if (tipoEleccion === "General") {
+                        return codigosNacionales.includes(d.categoria);
+                    }
+                    return !codigosNacionales.includes(d.categoria);
+                });
+
+                const filasOrdenadas = [...filasFiltradasPorTipo].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
+                const nuevoHash = JSON.stringify({ tipoEleccion, filas: filasOrdenadas });
 
                 if (!forzar && nuevoHash === ultimoHashDatos) {
                     return;
                 }
 
                 ultimoHashDatos = nuevoHash;
-                datosCacheGlobal = todasLasFilas;
+                datosCacheGlobal = filasFiltradasPorTipo;
 
                 let categoriaActual = selectCat.value;
                 let unicasCat = [...new Set(datosCacheGlobal.map(d => d.categoria))].filter(Boolean);
-                if (unicasCat.length === 0) unicasCat = ["GOB", "LEGP", "LEGC"];
+                
+                if (unicasCat.length === 0) {
+                    unicasCat = tipoEleccion === "General" ? ["PRE", "SEN", "DIP"] : ["GOB", "LEGP", "LEGC"];
+                }
 
                 const opcionesCatActuales = Array.from(selectCat.options).map(o => o.value).join('|');
                 const opcionesCatNuevas = unicasCat.join('|');

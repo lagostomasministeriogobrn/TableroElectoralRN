@@ -98,7 +98,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
-                    <select id="admin-election-kind" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
+                    <select id="admin-election-kind" onchange="cambiarTipoEleccionAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="General">General (Nacional)</option>
                     </select>
@@ -185,6 +185,42 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let localidadCargadaOriginal = "";
+
+        const categoriasPorTipo = {
+            "Provincial": [
+                { value: "GOB", text: "Gobernador / Vice" },
+                { value: "LEGP", text: "Legislador Poblacional" },
+                { value: "LEGC", text: "Legislador Circuital" },
+                { value: "INT", text: "Intendente" },
+                { value: "CON", text: "Concejal" },
+                { value: "COF", text: "Comisión de Fomento" },
+                { value: "VCF", text: "Vocal Com. Fomento" }
+            ],
+            "General": [
+                { value: "PRE", text: "Presidente" },
+                { value: "SEN", text: "Senador Nacional" },
+                { value: "DIP", text: "Diputado Nacional" }
+            ]
+        };
+
+        function actualizarOpcionesCategoriaAdmin() {
+            const tipoEleccion = document.getElementById('admin-election-kind').value;
+            const selectCat = document.getElementById('admin-election-type');
+            const opciones = categoriasPorTipo[tipoEleccion] || categoriasPorTipo["Provincial"];
+
+            selectCat.innerHTML = "";
+            opciones.forEach(op => {
+                let opt = document.createElement('option');
+                opt.value = op.value;
+                opt.text = op.text;
+                selectCat.appendChild(opt);
+            });
+        }
+
+        function cambiarTipoEleccionAdmin() {
+            actualizarOpcionesCategoriaAdmin();
+            loadAdminData();
+        }
 
         function normalizarTexto(texto) {
             if (!texto) return "";
@@ -542,6 +578,7 @@
         }
 
         window.onload = function() {
+            actualizarOpcionesCategoriaAdmin();
             loadAdminData();
         };
     </script>
