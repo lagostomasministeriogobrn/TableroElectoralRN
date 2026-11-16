@@ -104,7 +104,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Viedma" oninput="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, El Cuy...">
+                    <input type="text" id="admin-locality" value="Viedma" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, El Cuy...">
                 </div>
 
                 <div>
@@ -192,7 +192,6 @@
 
             if (!localidad) return;
 
-            // Verificamos si existe la columna tipo_eleccion en Supabase antes de consultar
             let query = supabaseClient
                 .from('resultados_mesas')
                 .select('*')
@@ -207,10 +206,9 @@
                 return;
             }
 
-            // Filtrado local por tipo de elección por seguridad si la columna ya existe
             if (data && data.length > 0) {
                 let filtrados = data.filter(r => !r.tipo_eleccion || r.tipo_eleccion === tipoEleccion);
-                if (filtrados.length === 0) filtrados = data; // fallback si no se usaba
+                if (filtrados.length === 0) filtrados = data;
 
                 let row = filtrados[0];
                 document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
@@ -339,7 +337,6 @@
             const btn = document.getElementById('btn-save-top');
             if(btn) btn.innerText = "Guardando en Supabase...";
 
-            // Limpieza segura en Supabase
             let { error: errDel } = await supabaseClient
                 .from('resultados_mesas')
                 .delete()
@@ -382,7 +379,6 @@
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
 
                 if (errIns) {
-                    // Si falla por falta de la columna tipo_eleccion en la BD, reintentamos sin ella para no trabar
                     if (errIns.message.includes('tipo_eleccion')) {
                         rows.forEach(r => delete r.tipo_eleccion);
                         let { error: errIns2 } = await supabaseClient.from('resultados_mesas').insert(rows);
