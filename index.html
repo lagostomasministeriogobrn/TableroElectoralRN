@@ -206,10 +206,12 @@
                 const anio = parseInt(document.getElementById('filter-year').value);
                 const selectCat = document.getElementById('filter-category');
 
+                // Agregamos .range(0, 9999) para evitar el tope de 1.000 filas de Supabase
                 let { data, error } = await supabaseClient
                     .from('resultados_mesas')
                     .select('*')
-                    .eq('anio', anio);
+                    .eq('anio', anio)
+                    .range(0, 9999);
 
                 if (error) {
                     console.error("Error al sincronizar:", error.message);
@@ -217,11 +219,10 @@
                 }
 
                 const filas = data || [];
-                // Ordenamos los registros por id/lista para que el hash sea estable
                 const filasOrdenadas = [...filas].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
                 const nuevoHash = JSON.stringify(filasOrdenadas);
 
-                // SI NADA CAMBIÓ EN LA BASE DE DATOS, NO TOCAMOS NADA EN PANTALLA (CERO PARPADEO)
+                // Si no hubo cambios en los datos, no se toca el DOM ni el gráfico
                 if (!forzar && nuevoHash === ultimoHashDatos) {
                     return;
                 }
@@ -229,7 +230,6 @@
                 ultimoHashDatos = nuevoHash;
                 datosCacheGlobal = filas;
 
-                // Actualizamos categorías manteniendo la selección actual
                 let categoriaActual = selectCat.value;
                 let unicasCat = [...new Set(datosCacheGlobal.map(d => d.categoria))].filter(Boolean);
                 if (unicasCat.length === 0) unicasCat = ["GOB", "LEGP", "LEGC"];
@@ -461,7 +461,6 @@
         window.onload = async function() {
             await actualizarFiltros(true);
 
-            // 1. Escucha en tiempo real de Supabase
             supabaseClient
                 .channel('public:resultados_mesas')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'resultados_mesas' }, () => {
@@ -469,7 +468,6 @@
                 })
                 .subscribe();
 
-            // 2. Sincronización instantánea al volver a esta pestaña desde el panel admin
             window.addEventListener('focus', () => actualizarFiltros(false));
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
@@ -477,7 +475,6 @@
                 }
             });
 
-            // 3. Verificación silenciosa cada 3s (solo actualiza si los datos cambiaron en Supabase)
             setInterval(() => {
                 actualizarFiltros(false);
             }, 3000);
