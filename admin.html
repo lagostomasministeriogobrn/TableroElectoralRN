@@ -81,7 +81,6 @@
                 </div>
             </div>
 
-            <!-- CONTENEDOR CON 6 COLUMNAS INCLUYENDO TIPO DE ELECCIÓN -->
             <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
@@ -104,7 +103,10 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
-                    <input type="text" id="admin-locality" value="Viedma" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, El Cuy...">
+                    <div class="flex gap-1">
+                        <input type="text" id="admin-locality" value="Viedma" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Arroyo Ventana...">
+                        <button type="button" onclick="loadAdminData()" title="Buscar datos de esta localidad" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
+                    </div>
                 </div>
 
                 <div>
@@ -179,6 +181,9 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Guarda el nombre original cargado desde la BD para poder renombrar sin dejar duplicados
+        let localidadCargadaOriginal = "";
+
         function normalizarTexto(texto) {
             if (!texto) return "";
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -211,6 +216,8 @@
                 if (filtrados.length === 0) filtrados = data;
 
                 let row = filtrados[0];
+                localidadCargadaOriginal = row.localidad || localidad;
+                document.getElementById('admin-locality').value = localidadCargadaOriginal;
                 document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
                 document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
                 document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
@@ -218,13 +225,14 @@
                 if (row.circuito_id) document.getElementById('admin-circuit').value = row.circuito_id;
 
                 renderPartiesRows(filtrados);
-                document.getElementById('admin-status').innerText = "✓ Datos cargados desde Supabase.";
+                document.getElementById('admin-status').innerText = `✓ Datos de "${localidadCargadaOriginal}" cargados (podés editar el nombre y guardar).`;
             } else {
+                localidadCargadaOriginal = "";
                 renderPartiesRows([]);
                 document.getElementById('admin-mesas').value = "0 / 0";
                 document.getElementById('admin-participacion').value = "0.00%";
                 document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos.";
+                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos para esta búsqueda.";
             }
         }
 
@@ -337,6 +345,16 @@
             const btn = document.getElementById('btn-save-top');
             if(btn) btn.innerText = "Guardando en Supabase...";
 
+            // Si renombraste una localidad existente (ej. "Arrroyo Ventana" -> "Arroyo Ventana"), borramos también el nombre anterior
+            if (localidadCargadaOriginal && normalizarTexto(localidadCargadaOriginal) !== normalizarTexto(localidad)) {
+                await supabaseClient
+                    .from('resultados_mesas')
+                    .delete()
+                    .eq('anio', anio)
+                    .ilike('localidad', localidadCargadaOriginal)
+                    .eq('categoria', categoria);
+            }
+
             let { error: errDel } = await supabaseClient
                 .from('resultados_mesas')
                 .delete()
@@ -393,7 +411,8 @@
                     }
                 }
 
-                document.getElementById('admin-status').innerText = "✓ ¡Guardado con éxito en Supabase!";
+                localidadCargadaOriginal = localidad;
+                document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito como "${localidad}"!`;
                 alert("¡Los datos de " + localidad + " se guardaron correctamente!");
             } else {
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
@@ -418,6 +437,7 @@
                     alert("❌ Error al borrar: " + error.message);
                     return;
                 }
+                localidadCargadaOriginal = "";
                 loadAdminData();
                 alert("Datos eliminados correctamente.");
             }
