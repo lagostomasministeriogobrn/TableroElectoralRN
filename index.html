@@ -375,19 +375,31 @@
 
             let filtrados = datosCacheGlobal.filter(d => d.categoria === categoria);
 
-            if (normalizarTexto(circuito) !== "provincial") {
-                filtrados = filtrados.filter(d => {
-                    let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                    let seleccionNorm = normalizarTexto(circuito);
-                    return circBD === seleccionNorm;
-                });
-            }
+            const circNorm = normalizarTexto(circuito);
+            const locNorm = normalizarTexto(localidadSeleccionada);
 
-            if (normalizarTexto(localidadSeleccionada) !== "provincial general") {
+            if (circNorm === "provincial" && locNorm === "provincial general") {
                 filtrados = filtrados.filter(d => {
-                    let locBD = normalizarTexto(d.localidad);
-                    let locSel = normalizarTexto(localidadSeleccionada);
-                    return locBD === locSel;
+                    let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    return (c === "provincial" || c === "") && (l === "provincial general" || l === "provincial");
+                });
+            } else if (circNorm !== "provincial" && locNorm === "provincial general") {
+                filtrados = filtrados.filter(d => {
+                    let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    return c === circNorm && (l === "provincial general" || l === "provincial");
+                });
+            } else {
+                if (circNorm !== "provincial") {
+                    filtrados = filtrados.filter(d => {
+                        let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                        return c === circNorm;
+                    });
+                }
+                filtrados = filtrados.filter(d => {
+                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    return l === locNorm;
                 });
             }
 
