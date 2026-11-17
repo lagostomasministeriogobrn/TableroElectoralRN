@@ -103,7 +103,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Comisión / Paraje Rural</label>
-                    <select id="filter-locality" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
+                    <select id="filter-locality" onchange="actualizarCategoriasDisponibles()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial General" selected>Provincial General</option>
                     </select>
                 </div>
@@ -111,14 +111,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
                     <select id="filter-category" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="GOB" selected>Gobernador / Vice</option>
-                        <option value="LEGP">Legislador por Rep. Poblacional</option>
-                        <option value="LEGC">Legislador Circuital</option>
-                        <option value="INT">Intendente Municipal</option>
-                        <option value="CON">Concejal Municipal</option>
-                        <option value="TDC">Miembro del Tribunal de Cuentas</option>
-                        <option value="COF">Comisión de Fomento</option>
-                        <option value="VCF">Vocal de Comisión de Fomento</option>
+                        <option value="">Cargando...</option>
                     </select>
                 </div>
             </section>
@@ -196,6 +189,7 @@
             "DIP": "Diputado Nacional"
         };
 
+        const ordenCategorias = ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC", "COF", "VCF", "PRE", "SEN", "DIP"];
         const codigosNacionales = ["PRE", "SEN", "DIP"];
 
         function normalizarTexto(texto) {
@@ -210,6 +204,37 @@
             return 'municipio';
         }
 
+        function filtrarPorTerritorioSeleccionado() {
+            const circuito = document.getElementById('filter-circuit').value;
+            const localidadSeleccionada = document.getElementById('filter-locality').value;
+
+            const circNorm = normalizarTexto(circuito);
+            const locNorm = normalizarTexto(localidadSeleccionada);
+
+            if (circNorm === "provincial" && locNorm === "provincial general") {
+                return datosCacheGlobal.filter(d => {
+                    let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    return (c === "provincial" || c === "") && (l === "provincial general" || l === "provincial");
+                });
+            }
+
+            if (circNorm !== "provincial" && locNorm === "provincial general") {
+                return datosCacheGlobal.filter(d => {
+                    let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    return c === circNorm && (l === "provincial general" || l === "provincial");
+                });
+            }
+
+            return datosCacheGlobal.filter(d => {
+                let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                let okCirc = circNorm === "provincial" || c === circNorm;
+                return okCirc && l === locNorm;
+            });
+        }
+
         async function actualizarFiltros(forzar = false) {
             if (sincronizando && !forzar) return;
             sincronizando = true;
@@ -217,7 +242,6 @@
             try {
                 const anio = parseInt(document.getElementById('filter-year').value);
                 const tipoEleccion = document.getElementById('filter-election-kind').value;
-                const selectCat = document.getElementById('filter-category');
 
                 let todasLasFilas = [];
                 let desde = 0;
@@ -267,29 +291,6 @@
 
                 ultimoHashDatos = nuevoHash;
                 datosCacheGlobal = filasFiltradasPorTipo;
-
-                let categoriaActual = selectCat.value;
-                let unicasCat = [...new Set(datosCacheGlobal.map(d => d.categoria))].filter(Boolean);
-                
-                if (unicasCat.length === 0) {
-                    unicasCat = tipoEleccion === "General" ? ["PRE", "SEN", "DIP"] : ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC"];
-                }
-
-                const opcionesCatActuales = Array.from(selectCat.options).map(o => o.value).join('|');
-                const opcionesCatNuevas = unicasCat.join('|');
-
-                if (opcionesCatActuales !== opcionesCatNuevas) {
-                    selectCat.innerHTML = "";
-                    unicasCat.forEach(catCode => {
-                        let opt = document.createElement('option');
-                        opt.value = catCode;
-                        opt.text = nombresCategorias[catCode] || catCode;
-                        selectCat.appendChild(opt);
-                    });
-                    if (unicasCat.includes(categoriaActual)) {
-                        selectCat.value = categoriaActual;
-                    }
-                }
 
                 actualizarLocalidadesPorCircuito();
                 marcarHoraSincronizacion();
@@ -405,44 +406,55 @@
                 selectLoc.value = localidadAnterior;
             }
 
+            actualizarCategoriasDisponibles();
+        }
+
+        function actualizarCategoriasDisponibles() {
+            const selectCat = document.getElementById('filter-category');
+            const categoriaAnterior = selectCat.value;
+
+            const filasTerritorio = filtrarPorTerritorioSeleccionado();
+            let unicasCat = [...new Set(filasTerritorio.map(d => d.categoria))].filter(Boolean);
+
+            unicasCat.sort((a, b) => {
+                let idxA = ordenCategorias.indexOf(a);
+                let idxB = ordenCategorias.indexOf(b);
+                if (idxA === -1) idxA = 999;
+                if (idxB === -1) idxB = 999;
+                return idxA - idxB;
+            });
+
+            selectCat.innerHTML = "";
+
+            if (unicasCat.length === 0) {
+                let opt = document.createElement('option');
+                opt.value = "";
+                opt.text = "Sin categorías cargadas";
+                selectCat.appendChild(opt);
+            } else {
+                unicasCat.forEach(catCode => {
+                    let opt = document.createElement('option');
+                    opt.value = catCode;
+                    opt.text = nombresCategorias[catCode] || catCode;
+                    selectCat.appendChild(opt);
+                });
+
+                if (unicasCat.includes(categoriaAnterior)) {
+                    selectCat.value = categoriaAnterior;
+                }
+            }
+
             cargarDatosPublicos();
         }
 
         function cargarDatosPublicos() {
-            const circuito = document.getElementById('filter-circuit').value;
-            const localidadSeleccionada = document.getElementById('filter-locality').value;
             const categoria = document.getElementById('filter-category').value;
-
-            let filtrados = datosCacheGlobal.filter(d => d.categoria === categoria);
-
-            const circNorm = normalizarTexto(circuito);
-            const locNorm = normalizarTexto(localidadSeleccionada);
-
-            if (circNorm === "provincial" && locNorm === "provincial general") {
-                filtrados = filtrados.filter(d => {
-                    let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    return (c === "provincial" || c === "") && (l === "provincial general" || l === "provincial");
-                });
-            } else if (circNorm !== "provincial" && locNorm === "provincial general") {
-                filtrados = filtrados.filter(d => {
-                    let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    return c === circNorm && (l === "provincial general" || l === "provincial");
-                });
-            } else {
-                if (circNorm !== "provincial") {
-                    filtrados = filtrados.filter(d => {
-                        let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                        return c === circNorm;
-                    });
-                }
-                filtrados = filtrados.filter(d => {
-                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    return l === locNorm;
-                });
+            if (!categoria) {
+                renderizarResultadosUnicos([]);
+                return;
             }
 
+            const filtrados = filtrarPorTerritorioSeleccionado().filter(d => d.categoria === categoria);
             renderizarResultadosUnicos(filtrados);
         }
 
