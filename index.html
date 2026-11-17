@@ -83,6 +83,7 @@
                     <select id="filter-election-kind" onchange="cambiarTipoEleccionPublico()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
                         <option value="Provincial" selected>Provincial</option>
                         <option value="General">General (Nacional)</option>
+                        <option value="PASO">PASO (Nacional)</option>
                     </select>
                 </div>
 
@@ -213,6 +214,10 @@
         const ordenCategorias = ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC", "COF", "VCF", "PRE", "SEN", "DIP"];
         const codigosNacionales = ["PRE", "SEN", "DIP"];
 
+        function esEleccionNacional(tipo) {
+            return tipo === "General" || tipo === "PASO";
+        }
+
         function normalizarTexto(texto) {
             if (!texto) return "";
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -224,8 +229,8 @@
             const selectCirc = document.getElementById('filter-circuit');
             const valorPrevio = selectCirc.value;
 
-            const lista = tipoEleccion === "General" ? departamentosRioNegro : circuitosProvinciales;
-            labelCirc.innerText = tipoEleccion === "General" ? "Departamento" : "Circuito Electoral";
+            const lista = esEleccionNacional(tipoEleccion) ? departamentosRioNegro : circuitosProvinciales;
+            labelCirc.innerText = esEleccionNacional(tipoEleccion) ? "Departamento" : "Circuito Electoral";
 
             selectCirc.innerHTML = "";
             lista.forEach(item => {
@@ -334,6 +339,9 @@
                     if (d.tipo_eleccion) {
                         return d.tipo_eleccion === tipoEleccion;
                     }
+                    if (tipoEleccion === "PASO") {
+                        return false;
+                    }
                     if (tipoEleccion === "General") {
                         return codigosNacionales.includes(d.categoria);
                     }
@@ -378,7 +386,6 @@
             optGeneral.text = "Provincial General";
             selectLoc.appendChild(optGeneral);
 
-            // Si está seleccionado "Provincial", no listar todos los municipios/parajes/comisiones
             if (circuitoSeleccionadoNorm === "provincial") {
                 selectLoc.value = "Provincial General";
                 actualizarCategoriasDisponibles();
