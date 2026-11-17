@@ -102,7 +102,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Comisionado de Fomento</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Comisión / Paraje Rural</label>
                     <select id="filter-locality" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
                         <option value="Provincial General" selected>Provincial General</option>
                     </select>
@@ -203,9 +203,11 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
-        function esComisionDeFomento(row) {
+        function obtenerTipoEntidadNormalizado(row) {
             let entidad = row.tipo_entidad ? normalizarTexto(row.tipo_entidad) : "";
-            return entidad.includes('fomento') || entidad.includes('comision');
+            if (entidad.includes('paraje')) return 'paraje';
+            if (entidad.includes('fomento') || entidad.includes('comision')) return 'comision';
+            return 'municipio';
         }
 
         async function actualizarFiltros(forzar = false) {
@@ -326,10 +328,11 @@
                         );
 
                         if (coincideCircuito) {
+                            const tipo = obtenerTipoEntidadNormalizado(d);
                             if (!mapaEntidadesLocales[locTrim]) {
-                                mapaEntidadesLocales[locTrim] = esComisionDeFomento(d);
-                            } else if (esComisionDeFomento(d)) {
-                                mapaEntidadesLocales[locTrim] = true;
+                                mapaEntidadesLocales[locTrim] = tipo;
+                            } else if (tipo !== 'municipio') {
+                                mapaEntidadesLocales[locTrim] = tipo;
                             }
                         }
                     }
@@ -341,10 +344,14 @@
 
             let municipios = [];
             let comisiones = [];
+            let parajes = [];
 
             unicasLoc.forEach(loc => {
-                if (mapaEntidadesLocales[loc]) {
+                const tipo = mapaEntidadesLocales[loc];
+                if (tipo === 'comision') {
                     comisiones.push(loc);
+                } else if (tipo === 'paraje') {
+                    parajes.push(loc);
                 } else {
                     municipios.push(loc);
                 }
@@ -379,6 +386,18 @@
                     groupFof.appendChild(opt);
                 });
                 selectLoc.appendChild(groupFof);
+            }
+
+            if (parajes.length > 0) {
+                let groupPar = document.createElement('optgroup');
+                groupPar.label = "--- Parajes Rurales ---";
+                parajes.forEach(loc => {
+                    let opt = document.createElement('option');
+                    opt.value = loc;
+                    opt.text = loc;
+                    groupPar.appendChild(opt);
+                });
+                selectLoc.appendChild(groupPar);
             }
 
             let opcionesDisponibles = Array.from(selectLoc.options).map(o => o.value);
