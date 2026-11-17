@@ -225,6 +225,19 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
+        function esNombreTotalGeneral(locNorm, circNorm = "") {
+            return (
+                locNorm === "provincial general" ||
+                locNorm === "provincial" ||
+                (circNorm && (
+                    locNorm === circNorm ||
+                    locNorm === `general ${circNorm}` ||
+                    locNorm === `circuito ${circNorm}` ||
+                    locNorm === `departamento ${circNorm}`
+                ))
+            );
+        }
+
         function actualizarDivisionTerritorialPublico() {
             const tipoEleccion = document.getElementById('filter-election-kind').value;
             const labelCirc = document.getElementById('label-filter-circuit');
@@ -261,6 +274,11 @@
             return 'municipio';
         }
 
+        // Devuelve los registros aplicables al territorio elegido:
+        // - Si es "Provincial" + "Provincial General": busca el registro provincial general.
+        // - Si es un Circuito/Departamento específico + "Provincial General" (Total del Circuito/Depto):
+        //     1) Si hay un total cargado explícitamente para ese circuito/depto, usa ese.
+        //     2) Si no hay total explícito, devuelve TODAS las filas de las localidades de ese circuito/depto para sumarlas.
         function filtrarPorTerritorioSeleccionado() {
             const circuito = document.getElementById('filter-circuit').value || "Provincial";
             const localidadSeleccionada = document.getElementById('filter-locality').value || "Provincial General";
@@ -277,19 +295,22 @@
             }
 
             if (circNorm !== "provincial" && locNorm === "provincial general") {
-                return datosCacheGlobal.filter(d => {
+                const filasCircuito = datosCacheGlobal.filter(d => {
                     let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    let esGeneralCircuito = (
-                        l === "provincial general" ||
-                        l === "provincial" ||
-                        l === circNorm ||
-                        l === `general ${circNorm}` ||
-                        l === `circuito ${circNorm}` ||
-                        l === `departamento ${circNorm}`
-                    );
-                    return c === circNorm && esGeneralCircuito;
+                    return c === circNorm;
                 });
+
+                const explicitosGeneral = filasCircuito.filter(d => {
+                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    return esNombreTotalGeneral(l, circNorm);
+                });
+
+                if (explicitosGeneral.length > 0) {
+                    return explicitosGeneral;
+                }
+
+                // Fallback automático: devolver todas las localidades de ese circuito para sumarlas
+                return filasCircuito;
             }
 
             return datosCacheGlobal.filter(d => {
@@ -377,6 +398,7 @@
 
         function actualizarLocalidadesPorCircuito() {
             const circuitoSeleccionado = document.getElementById('filter-circuit').value || "Provincial";
+            const tipoEleccion = document.getElementById('filter-election-kind').value;
             const selectLoc = document.getElementById('filter-locality');
             const localidadAnterior = selectLoc.value;
             let circuitoSeleccionadoNorm = normalizarTexto(circuitoSeleccionado);
@@ -385,7 +407,9 @@
 
             let optGeneral = document.createElement('option');
             optGeneral.value = "Provincial General";
-            optGeneral.text = "Provincial General";
+            optGeneral.text = circuitoSeleccionadoNorm === "provincial"
+                ? "Provincial General"
+                : (esEleccionNacional(tipoEleccion) ? `Total ${circuitoSeleccionado}` : `Total ${circuitoSeleccionado}`);
             selectLoc.appendChild(optGeneral);
 
             if (circuitoSeleccionadoNorm === "provincial") {
@@ -402,14 +426,12 @@
                     let locNorm = normalizarTexto(locTrim);
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     
-                    if (locNorm !== "provincial general" && locNorm !== "provincial" && locNorm !== circBD) {
-                        if (circBD === circuitoSeleccionadoNorm) {
-                            const tipo = obtenerTipoEntidadNormalizado(d);
-                            if (!mapaEntidadesLocales[locTrim]) {
-                                mapaEntidadesLocales[locTrim] = tipo;
-                            } else if (tipo !== 'municipio') {
-                                mapaEntidadesLocales[locTrim] = tipo;
-                            }
+                    if (!esNombreTotalGeneral(locNorm, circBD) && circBD === circuitoSeleccionadoNorm) {
+                        const tipo = obtenerTipoEntidadNormalizado(d);
+                        if (!mapaEntidadesLocales[locTrim]) {
+                            mapaEntidadesLocales[locTrim] = tipo;
+                        } else if (tipo !== 'municipio') {
+                            mapaEntidadesLocales[locTrim] = tipo;
                         }
                     }
                 }
@@ -548,20 +570,90 @@
                 return;
             }
 
-            document.getElementById('stat-mesas').innerText = rawRows[0].mesas_procesadas || "0 / 0";
-            document.getElementById('stat-participacion').innerText = rawRows[0].porcentaje_participacion || "0.00%";
-            document.getElementById('stat-subvalidos').innerText = `Blanco: ${rawRows[0].votos_blanco || 0} | Nulos: ${rawRows[0].votos_nulos || 0}`;
+            // Detectar si estamos sumando múltiples localidades (agregación por circuito/depto)
+            const localidadesDistintas = [...new Set(rawRows.map(r => normalizarTexto(r.localidad)))];
 
-            let mapaUnicos = {};
-            rawRows.forEach(row => {
-                let idLista = row.lista_id;
-                mapaUnicos[idLista] = {
-                    nombre: row.nombre_lista || `Lista ${idLista}`,
-                    votos: row.votos || 0
-                };
-            });
+            if (localidadesDistintas.length <= 1) {
+                // Caso 1: Una sola localidad o un total general ya consolidado
+                document.getElementById('stat-mesas').innerText = rawRows[0].mesas_procesadas || "0 / 0";
+                document.getElementById('stat-participacion').innerText = rawRows[0].porcentaje_participacion || "0.00%";
+                document.getElementById('stat-subvalidos').innerText = `Blanco: ${(rawRows[0].votos_blanco || 0).toLocaleString()} | Nulos: ${(rawRows[0].votos_nulos || 0).toLocaleString()}`;
 
-            let data = Object.values(mapaUnicos);
+                let mapaUnicos = {};
+                rawRows.forEach(row => {
+                    let keyLista = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
+                    mapaUnicos[keyLista] = {
+                        nombre: row.nombre_lista || `Lista ${row.lista_id}`,
+                        votos: row.votos || 0
+                    };
+                });
+
+                dibujarTablaYGrafico(Object.values(mapaUnicos));
+            } else {
+                // Caso 2: Suma automática de todas las localidades de un circuito/departamento
+                let metaPorLocalidad = {};
+                let sumaListas = {};
+
+                rawRows.forEach(row => {
+                    const locKey = normalizarTexto(row.localidad);
+                    if (!metaPorLocalidad[locKey]) {
+                        metaPorLocalidad[locKey] = {
+                            mesas: row.mesas_procesadas || "0 / 0",
+                            part: parseFloat(String(row.porcentaje_participacion || "0").replace("%", "").replace(",", ".")) || 0,
+                            blanco: parseInt(row.votos_blanco) || 0,
+                            nulos: parseInt(row.votos_nulos) || 0
+                        };
+                    }
+
+                    const listaKey = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
+                    if (!sumaListas[listaKey]) {
+                        sumaListas[listaKey] = {
+                            nombre: row.nombre_lista || `Lista ${row.lista_id}`,
+                            votos: 0
+                        };
+                    }
+                    sumaListas[listaKey].votos += (parseInt(row.votos) || 0);
+                });
+
+                // Sumar mesas, blancos, nulos y promediar participación ponderada por votos
+                let mesasEscrutadasSum = 0;
+                let mesasTotalesSum = 0;
+                let blancoTotal = 0;
+                let nulosTotal = 0;
+                let partSum = 0;
+                let partCount = 0;
+
+                Object.values(metaPorLocalidad).forEach(m => {
+                    blancoTotal += m.blanco;
+                    nulosTotal += m.nulos;
+                    if (m.part > 0) {
+                        partSum += m.part;
+                        partCount++;
+                    }
+                    const partesMesas = String(m.mesas).split("/");
+                    if (partesMesas.length === 2) {
+                        mesasEscrutadasSum += parseInt(partesMesas[0]) || 0;
+                        mesasTotalesSum += parseInt(partesMesas[1]) || 0;
+                    } else {
+                        const n = parseInt(partesMesas[0]) || 0;
+                        mesasEscrutadasSum += n;
+                        mesasTotalesSum += n;
+                    }
+                });
+
+                const partPromedio = partCount > 0 ? (partSum / partCount).toFixed(2) + "%" : "0.00%";
+                document.getElementById('stat-mesas').innerText = `${mesasEscrutadasSum} / ${mesasTotalesSum}`;
+                document.getElementById('stat-participacion').innerText = partPromedio;
+                document.getElementById('stat-subvalidos').innerText = `Blanco: ${blancoTotal.toLocaleString()} | Nulos: ${nulosTotal.toLocaleString()}`;
+
+                dibujarTablaYGrafico(Object.values(sumaListas));
+            }
+        }
+
+        function dibujarTablaYGrafico(data) {
+            const tbody = document.getElementById('table-results-body');
+            tbody.innerHTML = "";
+
             let totalValidos = data.reduce((acc, r) => acc + r.votos, 0);
             data.sort((a, b) => b.votos - a.votos);
 
