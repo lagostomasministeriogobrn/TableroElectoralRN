@@ -223,7 +223,14 @@
                 return datosCacheGlobal.filter(d => {
                     let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    return c === circNorm && (l === "provincial general" || l === "provincial");
+                    let esGeneralCircuito = (
+                        l === "provincial general" ||
+                        l === "provincial" ||
+                        l === circNorm ||
+                        l === `general ${circNorm}` ||
+                        l === `circuito ${circNorm}`
+                    );
+                    return c === circNorm && esGeneralCircuito;
                 });
             }
 
@@ -319,10 +326,9 @@
                 if (d.localidad) {
                     let locTrim = d.localidad.trim();
                     let locNorm = normalizarTexto(locTrim);
+                    let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     
-                    if (locNorm !== "provincial general" && locNorm !== "provincial") {
-                        let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                        
+                    if (locNorm !== "provincial general" && locNorm !== "provincial" && locNorm !== circBD) {
                         let coincideCircuito = (
                             circuitoSeleccionadoNorm === "provincial" || 
                             circBD === circuitoSeleccionadoNorm
