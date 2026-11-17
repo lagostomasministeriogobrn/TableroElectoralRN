@@ -29,147 +29,225 @@
 </head>
 <body class="bg-rnlight text-slate-800 font-sans min-h-screen flex flex-col">
 
-    <header class="bg-rngreen text-white shadow-md border-b-4 border-rnblue">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center space-x-4 mb-2 md:mb-0">
-                <div class="flex h-11 w-24 rounded overflow-hidden shadow border border-white/20 flex-shrink-0 bg-black">
-                    <div class="w-1/2 bg-black flex items-center justify-center relative">
+    <!-- Pantalla de Bloqueo por Contraseña -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl border-t-4 border-rngreen max-w-sm w-full p-6 space-y-5">
+            <div class="flex items-center space-x-3 border-b pb-4">
+                <div class="flex h-10 w-20 rounded overflow-hidden shadow border border-slate-200 flex-shrink-0 bg-black">
+                    <div class="w-1/2 bg-black flex items-center justify-center">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
                             <g fill="white">
-                                <circle cx="28" cy="22" r="2.2"/><circle cx="38" cy="16" r="2.2"/><circle cx="50" cy="14" r="2.2"/><circle cx="62" cy="16" r="2.2"/><circle cx="72" cy="22" r="2.2"/>
-                                <circle cx="78" cy="32" r="2.2"/><circle cx="80" cy="45" r="2.2"/><circle cx="78" cy="58" r="2.2"/><circle cx="72" cy="68" r="2.2"/>
-                                <circle cx="62" cy="74" r="2.2"/><circle cx="50" cy="76" r="2.2"/><circle cx="38" cy="74" r="2.2"/><circle cx="28" cy="68" r="2.2"/>
-                                <circle cx="22" cy="58" r="2.2"/><circle cx="20" cy="45" r="2.2"/><circle cx="22" cy="32" r="2.2"/>
+                                <circle cx="28" cy="22" r="2.5"/><circle cx="38" cy="16" r="2.5"/><circle cx="50" cy="14" r="2.5"/><circle cx="62" cy="16" r="2.5"/><circle cx="72" cy="22" r="2.5"/>
+                                <circle cx="78" cy="32" r="2.5"/><circle cx="80" cy="45" r="2.5"/><circle cx="78" cy="58" r="2.5"/><circle cx="72" cy="68" r="2.5"/>
+                                <circle cx="62" cy="74" r="2.5"/><circle cx="50" cy="76" r="2.5"/><circle cx="38" cy="74" r="2.5"/><circle cx="28" cy="68" r="2.5"/>
+                                <circle cx="22" cy="58" r="2.5"/><circle cx="20" cy="45" r="2.5"/><circle cx="22" cy="32" r="2.5"/>
                             </g>
                         </svg>
                     </div>
                     <div class="w-1/2 bg-rngreen flex items-center justify-center">
-                        <span class="text-white font-black text-sm tracking-wider">RN</span>
+                        <span class="text-white font-black text-xs tracking-wider">RN</span>
                     </div>
                 </div>
                 <div>
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-green-100 block">Dirección de Asuntos Electorales</span>
-                    <h1 class="text-lg md:text-xl font-semibold tracking-tight">Panel Administrativo Oficial</h1>
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400 block">Acceso Restringido</span>
+                    <h2 class="text-base font-bold text-slate-800">Panel Administrativo</h2>
                 </div>
             </div>
-            <div class="flex items-center space-x-3 text-sm">
-                <button onclick="descargarPDFAutomatico()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs transition shadow flex items-center gap-1">📥 Descargar PDF Automático</button>
-                <a href="index.html" target="_blank" class="bg-white text-rngreen font-bold px-3 py-1.5 rounded text-xs hover:bg-green-50 transition shadow">Ver Tablero Público ↗</a>
-            </div>
+
+            <form onsubmit="verificarPassword(event)" class="space-y-4">
+                <div>
+                    <label for="admin-password-input" class="block text-xs font-semibold text-slate-600 mb-1">Contraseña de Operador</label>
+                    <input type="password" id="admin-password-input" autofocus required placeholder="Ingresá la clave..." class="w-full border border-slate-300 rounded px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none">
+                    <p id="login-error" class="text-xs text-red-600 font-semibold mt-1.5 hidden">❌ Contraseña incorrecta. Intentá nuevamente.</p>
+                </div>
+
+                <div class="flex items-center justify-between gap-2 pt-1">
+                    <a href="index.html" class="text-xs text-slate-500 hover:text-slate-700 font-semibold">← Volver al tablero</a>
+                    <button type="submit" class="bg-rngreen hover:bg-green-600 text-white font-bold px-5 py-2 rounded text-xs transition shadow">Ingresar</button>
+                </div>
+            </form>
         </div>
-    </header>
+    </div>
 
-    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
-        
-        <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV y Excel Oficial (.xls / .xlsx)</h3>
-                <p class="text-xs text-slate-600 mt-1">Soporta CSV provinciales y planillas Excel simples o multi-categoría de la Cámara Nacional Electoral.</p>
+    <!-- Contenido Protegido del Panel -->
+    <div id="protected-admin-app" class="hidden flex-col min-h-screen">
+        <header class="bg-rngreen text-white shadow-md border-b-4 border-rnblue">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-4 mb-2 md:mb-0">
+                    <div class="flex h-11 w-24 rounded overflow-hidden shadow border border-white/20 flex-shrink-0 bg-black">
+                        <div class="w-1/2 bg-black flex items-center justify-center relative">
+                            <svg class="w-full h-full" viewBox="0 0 100 100">
+                                <g fill="white">
+                                    <circle cx="28" cy="22" r="2.2"/><circle cx="38" cy="16" r="2.2"/><circle cx="50" cy="14" r="2.2"/><circle cx="62" cy="16" r="2.2"/><circle cx="72" cy="22" r="2.2"/>
+                                    <circle cx="78" cy="32" r="2.2"/><circle cx="80" cy="45" r="2.2"/><circle cx="78" cy="58" r="2.2"/><circle cx="72" cy="68" r="2.2"/>
+                                    <circle cx="62" cy="74" r="2.2"/><circle cx="50" cy="76" r="2.2"/><circle cx="38" cy="74" r="2.2"/><circle cx="28" cy="68" r="2.2"/>
+                                    <circle cx="22" cy="58" r="2.2"/><circle cx="20" cy="45" r="2.2"/><circle cx="22" cy="32" r="2.2"/>
+                                </g>
+                            </svg>
+                        </div>
+                        <div class="w-1/2 bg-rngreen flex items-center justify-center">
+                            <span class="text-white font-black text-sm tracking-wider">RN</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold tracking-widest text-green-100 block">Dirección de Asuntos Electorales</span>
+                        <h1 class="text-lg md:text-xl font-semibold tracking-tight">Panel Administrativo Oficial</h1>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-sm">
+                    <button onclick="descargarPDFAutomatico()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs transition shadow flex items-center gap-1">📥 Descargar PDF Automático</button>
+                    <a href="index.html" target="_blank" class="bg-white text-rngreen font-bold px-3 py-1.5 rounded text-xs hover:bg-green-50 transition shadow">Ver Tablero Público ↗</a>
+                    <button onclick="cerrarSesionAdmin()" class="bg-black/25 hover:bg-black/40 text-white font-bold px-3 py-1.5 rounded text-xs transition">🔒 Cerrar Sesión</button>
+                </div>
             </div>
-            <div>
-                <input type="file" id="file-uploader" accept=".csv, .xls, .xlsx, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
-            </div>
-        </div>
+        </header>
 
-        <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-4 gap-4">
+        <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
+            
+            <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h2 class="text-base font-bold text-slate-800">Editor por Año, Tipo de Elección, Localidad, Circuito/Departamento y Categoría</h2>
+                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV y Excel Oficial (.xls / .xlsx)</h3>
+                    <p class="text-xs text-slate-600 mt-1">Soporta CSV provinciales y planillas Excel simples o multi-categoría de la Cámara Nacional Electoral.</p>
                 </div>
-                <div class="flex flex-wrap gap-2 w-full md:w-auto">
-                    <button onclick="resetCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded text-xs transition">Limpiar Categoría</button>
-                    <button onclick="eliminarLocalidadCompleta()" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-2 rounded text-xs transition">Eliminar Localidad</button>
-                    <button id="btn-save-top" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Guardar en Supabase ☁️</button>
+                <div>
+                    <input type="file" id="file-uploader" accept=".csv, .xls, .xlsx, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
-                    <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
-                        <option value="2027">2027</option>
-                        <option value="2026">2026</option>
-                        <option value="2025">2025</option>
-                        <option value="2023">2023</option>
-                        <option value="2021">2021</option>
-                        <option value="2019" selected>2019</option>
-                        <option value="2017">2017</option>
-                        <option value="2015">2015</option>
-                    </select>
+            <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-4 gap-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">Editor por Año, Tipo de Elección, Localidad, Circuito/Departamento y Categoría</h2>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <button onclick="resetCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded text-xs transition">Limpiar Categoría</button>
+                        <button onclick="eliminarLocalidadCompleta()" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-2 rounded text-xs transition">Eliminar Localidad</button>
+                        <button id="btn-save-top" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Guardar en Supabase ☁️</button>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
-                    <select id="admin-election-kind" onchange="cambiarTipoEleccionAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
-                        <option value="Provincial" selected>Provincial</option>
-                        <option value="General">General (Nacional)</option>
-                        <option value="PASO">PASO (Nacional)</option>
-                    </select>
+                <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
+                        <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
+                            <option value="2027">2027</option>
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2023">2023</option>
+                            <option value="2021">2021</option>
+                            <option value="2019" selected>2019</option>
+                            <option value="2017">2017</option>
+                            <option value="2015">2015</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
+                        <select id="admin-election-kind" onchange="cambiarTipoEleccionAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
+                            <option value="Provincial" selected>Provincial</option>
+                            <option value="General">General (Nacional)</option>
+                            <option value="PASO">PASO (Nacional)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Paraje</label>
+                        <div class="flex gap-1">
+                            <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General...">
+                            <button type="button" onclick="loadAdminData()" title="Buscar datos de esta localidad" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
+                        <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
+                            <option value="Municipio" selected>Municipio</option>
+                            <option value="Comision de Fomento">Comisión de Fomento</option>
+                            <option value="Paraje Rural">Paraje Rural</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
+                        <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
+                            <option value="GOB">Gobernador / Vice</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label id="label-admin-circuit" class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
+                        <select id="admin-circuit" onchange="onCircuitChangeAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
+                            <option value="Provincial" selected>Provincial</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Paraje</label>
-                    <div class="flex gap-1">
-                        <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General...">
-                        <button type="button" onclick="loadAdminData()" title="Buscar datos de esta localidad" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Mesas Procesadas</label>
+                        <input type="text" id="admin-mesas" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="0 / 0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">% Participación</label>
+                        <input type="text" id="admin-participacion" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="0.00%">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Sub-válidos (Blanco / Nulos)</label>
+                        <input type="text" id="admin-subvalidos" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="Blanco: 0 | Nulos: 0">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
-                    <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
-                        <option value="Municipio" selected>Municipio</option>
-                        <option value="Comision de Fomento">Comisión de Fomento</option>
-                        <option value="Paraje Rural">Paraje Rural</option>
-                    </select>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Listas Oficiales, Votos y Porcentajes</h3>
+                        <button onclick="addNewPartyRow()" class="bg-rnblue hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded text-xs transition">+ Agregar Fila Manual</button>
+                    </div>
+                    <div id="admin-parties-container" class="space-y-3"></div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                    <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
-                        <option value="GOB">Gobernador / Vice</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label id="label-admin-circuit" class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="admin-circuit" onchange="onCircuitChangeAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
-                        <option value="Provincial" selected>Provincial</option>
-                    </select>
+                <div class="flex justify-between items-center pt-4 border-t">
+                    <span id="admin-status" class="text-xs font-bold text-slate-600">Listo.</span>
+                    <button onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded text-sm shadow">Guardar en Supabase ☁️</button>
                 </div>
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mesas Procesadas</label>
-                    <input type="text" id="admin-mesas" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="0 / 0">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">% Participación</label>
-                    <input type="text" id="admin-participacion" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="0.00%">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Sub-válidos (Blanco / Nulos)</label>
-                    <input type="text" id="admin-subvalidos" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm bg-white font-semibold" value="Blanco: 0 | Nulos: 0">
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Listas Oficiales, Votos y Porcentajes</h3>
-                    <button onclick="addNewPartyRow()" class="bg-rnblue hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded text-xs transition">+ Agregar Fila Manual</button>
-                </div>
-                <div id="admin-parties-container" class="space-y-3"></div>
-            </div>
-
-            <div class="flex justify-between items-center pt-4 border-t">
-                <span id="admin-status" class="text-xs font-bold text-slate-600">Listo.</span>
-                <button onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded text-sm shadow">Guardar en Supabase ☁️</button>
-            </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script>
+        const ADMIN_PASS = "rn2026";
+        const SESSION_KEY = "dae_rn_admin_auth";
+
+        function desbloquearPanel() {
+            document.getElementById('login-overlay').classList.add('hidden');
+            const app = document.getElementById('protected-admin-app');
+            app.classList.remove('hidden');
+            app.classList.add('flex');
+            actualizarOpcionesCategoriaAdmin();
+            actualizarDivisionTerritorialAdmin();
+            loadAdminData();
+        }
+
+        function verificarPassword(event) {
+            event.preventDefault();
+            const input = document.getElementById('admin-password-input');
+            const errorMsg = document.getElementById('login-error');
+
+            if (input.value === ADMIN_PASS) {
+                sessionStorage.setItem(SESSION_KEY, "ok");
+                errorMsg.classList.add('hidden');
+                desbloquearPanel();
+            } else {
+                errorMsg.classList.remove('hidden');
+                input.value = "";
+                input.focus();
+            }
+        }
+
+        function cerrarSesionAdmin() {
+            sessionStorage.removeItem(SESSION_KEY);
+            location.reload();
+        }
+
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -312,7 +390,6 @@
         function parsearListaId(nroRaw, fallbackIdx) {
             const str = String(nroRaw ?? "").trim();
             if (!str) return fallbackIdx;
-            // Si viene como "132-502", extrae el primer número (132)
             const match = str.match(/(\d+)/);
             return match ? parseInt(match[1], 10) : fallbackIdx;
         }
@@ -469,7 +546,7 @@
             let headerRowIdx = -1;
             let colNro = 0;
             let colNombre = 1;
-            let columnasCategorias = []; // [{ colIdx, code, label }]
+            let columnasCategorias = [];
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i].map(c => String(c).trim());
@@ -533,7 +610,6 @@
                 return;
             }
 
-            // Construir resultados separados por cada columna de categoría detectada
             let resultadosPorCategoria = {};
             columnasCategorias.forEach(cat => {
                 resultadosPorCategoria[cat.code] = {
@@ -566,7 +642,6 @@
                     } else if (nombreNorm.includes("nulo") || nombreNorm.includes("recurrido") || nombreNorm.includes("impugnado")) {
                         bucket.nulos += votos;
                     } else if (cellStr !== "") {
-                        // Solo agrega el partido si presentó candidato en esa categoría (celda no vacía)
                         const listaId = parsearListaId(nroRaw, bucket.parties.length + 1);
                         bucket.parties.push({
                             lista_id: listaId,
@@ -577,7 +652,6 @@
                 });
             }
 
-            // Actualizar selectores del formulario con lo detectado
             if (anioDetectado) {
                 const selYear = document.getElementById('admin-year');
                 if (Array.from(selYear.options).some(o => o.value === anioDetectado)) {
@@ -611,7 +685,6 @@
             if (mesasDetectadas) document.getElementById('admin-mesas').value = mesasDetectadas;
             if (participacionDetectada) document.getElementById('admin-participacion').value = participacionDetectada;
 
-            // Cargar la primera categoría en la vista del editor
             const primeraCat = columnasCategorias[0].code;
             const datosPrimera = resultadosPorCategoria[primeraCat];
             const selCat = document.getElementById('admin-election-type');
@@ -621,7 +694,6 @@
             document.getElementById('admin-subvalidos').value = `Blanco: ${datosPrimera.blanco} | Nulos: ${datosPrimera.nulos}`;
             renderPartiesRows(datosPrimera.parties);
 
-            // Si el archivo trae múltiples categorías juntas (ej: Presidente + Diputados + Mercosur), ofrecer guardado masivo directo
             if (columnasCategorias.length > 1) {
                 const listaNombres = columnasCategorias.map(c => `• ${c.label} (${c.code})`).join("\n");
                 const deptoActual = document.getElementById('admin-circuit').value;
@@ -967,9 +1039,9 @@
         }
 
         window.onload = function() {
-            actualizarOpcionesCategoriaAdmin();
-            actualizarDivisionTerritorialAdmin();
-            loadAdminData();
+            if (sessionStorage.getItem(SESSION_KEY) === "ok") {
+                desbloquearPanel();
+            }
         };
     </script>
 </body>
