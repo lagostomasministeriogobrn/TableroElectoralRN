@@ -177,9 +177,11 @@
             "TDC": "Miembro del Tribunal de Cuentas",
             "COF": "Comisión de Fomento",
             "VCF": "Vocal de Comisión de Fomento",
-            "PRE": "Presidente",
+            "PRE": "Presidente / Vice",
             "SEN": "Senador Nacional",
-            "DIP": "Diputado Nacional"
+            "DIP": "Diputado Nacional",
+            "PMN": "Parlamentario Mercosur (DN)",
+            "PMR": "Parlamentario Mercosur (DR)"
         };
 
         const circuitosProvinciales = [
@@ -211,8 +213,8 @@
             "Veinticinco de Mayo"
         ];
 
-        const ordenCategorias = ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC", "COF", "VCF", "PRE", "SEN", "DIP"];
-        const codigosNacionales = ["PRE", "SEN", "DIP"];
+        const ordenCategorias = ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC", "COF", "VCF", "PRE", "SEN", "DIP", "PMN", "PMR"];
+        const codigosNacionales = ["PRE", "SEN", "DIP", "PMN", "PMR"];
 
         function esEleccionNacional(tipo) {
             return tipo === "General" || tipo === "PASO";

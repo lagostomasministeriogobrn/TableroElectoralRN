@@ -64,7 +64,7 @@
         <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de CSV y Excel Oficial (.xls / .xlsx)</h3>
-                <p class="text-xs text-slate-600 mt-1">Sube archivos CSV provinciales o planillas Excel de la Cámara Nacional Electoral (.xls / .xlsx).</p>
+                <p class="text-xs text-slate-600 mt-1">Soporta CSV provinciales y planillas Excel simples o multi-categoría de la Cámara Nacional Electoral.</p>
             </div>
             <div>
                 <input type="file" id="file-uploader" accept=".csv, .xls, .xlsx, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
@@ -177,9 +177,11 @@
         let localidadCargadaOriginal = "";
 
         const categoriasNacionales = [
-            { value: "PRE", text: "Presidente" },
+            { value: "PRE", text: "Presidente / Vice" },
             { value: "SEN", text: "Senador Nacional" },
-            { value: "DIP", text: "Diputado Nacional" }
+            { value: "DIP", text: "Diputado Nacional" },
+            { value: "PMN", text: "Parlamentario Mercosur (DN)" },
+            { value: "PMR", text: "Parlamentario Mercosur (DR)" }
         ];
 
         const categoriasPorTipo = {
@@ -289,6 +291,32 @@
             return n === "provincial general" || n === "provincial" || n === "provincia";
         }
 
+        function mapearHeaderCategoria(textoColumna) {
+            const h = normalizarTexto(textoColumna);
+            if (!h) return null;
+            if (h.includes("presidente")) return "PRE";
+            if (h.includes("senador")) return "SEN";
+            if (h.includes("diputado")) return "DIP";
+            if (h.includes("mercosur")) {
+                if (h.includes("dr") || h.includes("regional") || h.includes("distrito")) return "PMR";
+                return "PMN";
+            }
+            if (h.includes("gobernador")) return "GOB";
+            if (h.includes("poblacional")) return "LEGP";
+            if (h.includes("circuital")) return "LEGC";
+            if (h.includes("intendente")) return "INT";
+            if (h.includes("concejal")) return "CON";
+            return null;
+        }
+
+        function parsearListaId(nroRaw, fallbackIdx) {
+            const str = String(nroRaw ?? "").trim();
+            if (!str) return fallbackIdx;
+            // Si viene como "132-502", extrae el primer número (132)
+            const match = str.match(/(\d+)/);
+            return match ? parseInt(match[1], 10) : fallbackIdx;
+        }
+
         async function loadAdminData() {
             const anio = parseInt(document.getElementById('admin-year').value);
             const tipoEleccion = document.getElementById('admin-election-kind').value;
@@ -387,7 +415,46 @@
                 </div>`;
         }
 
-        function procesarExcelCNE(arrayBuffer) {
+        async function guardarBloqueCategoriaEnSupabase({ anio, tipoEleccion, localidad, tipoEntidad, circuito_id, categoria, mesas, participacion, blanco, nulos, parties }) {
+            let delQuery = supabaseClient
+                .from('resultados_mesas')
+                .delete()
+                .eq('anio', anio)
+                .eq('tipo_eleccion', tipoEleccion)
+                .ilike('localidad', localidad)
+                .eq('categoria', categoria);
+
+            if (esTotalGeneral(localidad)) {
+                delQuery = delQuery.ilike('circuito_id', circuito_id);
+            }
+
+            let { error: errDel } = await delQuery;
+            if (errDel) throw new Error(errDel.message);
+
+            const rows = parties.map(p => ({
+                anio,
+                tipo_eleccion: tipoEleccion,
+                localidad,
+                tipo_entidad: tipoEntidad,
+                circuito_id,
+                categoria,
+                mesa_numero: 1,
+                mesas_procesadas: mesas,
+                porcentaje_participacion: participacion,
+                lista_id: p.lista_id,
+                nombre_lista: p.nombre_lista,
+                votos: p.votos,
+                votos_blanco: blanco,
+                votos_nulos: nulos
+            }));
+
+            if (rows.length > 0) {
+                let { error: errIns } = await supabaseClient.from('resultados_mesas').insert(rows);
+                if (errIns) throw new Error(errIns.message);
+            }
+        }
+
+        async function procesarExcelCNE(arrayBuffer) {
             const workbook = XLSX.read(arrayBuffer, { type: 'array' });
             const firstSheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[firstSheetName];
@@ -397,13 +464,12 @@
             let seccionDetectada = "";
             let participacionDetectada = "";
             let mesasDetectadas = "";
-            let categoriaDetectada = "";
             let tipoDetectado = null;
 
             let headerRowIdx = -1;
             let colNro = 0;
             let colNombre = 1;
-            let colVotos = 2;
+            let columnasCategorias = []; // [{ colIdx, code, label }]
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i].map(c => String(c).trim());
@@ -449,50 +515,69 @@
                     colNombre = idxAgrup;
                     const idxNro = row.findIndex(c => normalizarTexto(c) === "nro" || normalizarTexto(c) === "lista");
                     colNro = idxNro !== -1 ? idxNro : 0;
-                    colVotos = idxAgrup + 1;
 
-                    const catHeader = normalizarTexto(row[colVotos] || "");
-                    if (catHeader.includes("diputado")) categoriaDetectada = "DIP";
-                    else if (catHeader.includes("senador")) categoriaDetectada = "SEN";
-                    else if (catHeader.includes("presidente")) categoriaDetectada = "PRE";
-                    else if (catHeader.includes("gobernador")) categoriaDetectada = "GOB";
+                    for (let c = idxAgrup + 1; c < row.length; c++) {
+                        if (row[c]) {
+                            const code = mapearHeaderCategoria(row[c]);
+                            if (code) {
+                                columnasCategorias.push({ colIdx: c, code: code, label: row[c] });
+                            }
+                        }
+                    }
                     break;
                 }
             }
 
-            if (headerRowIdx === -1) {
-                alert("No se encontró la tabla de agrupación política y votos en el archivo Excel.");
+            if (headerRowIdx === -1 || columnasCategorias.length === 0) {
+                alert("No se encontraron columnas de categorías válidas en el archivo Excel.");
                 return;
             }
 
-            let rawParties = [];
-            let blancoVotos = 0;
-            let nulosVotos = 0;
+            // Construir resultados separados por cada columna de categoría detectada
+            let resultadosPorCategoria = {};
+            columnasCategorias.forEach(cat => {
+                resultadosPorCategoria[cat.code] = {
+                    code: cat.code,
+                    label: cat.label,
+                    parties: [],
+                    blanco: 0,
+                    nulos: 0
+                };
+            });
 
             for (let i = headerRowIdx + 1; i < rows.length; i++) {
                 const nroRaw = String(rows[i][colNro] ?? "").trim();
                 const nombreRaw = String(rows[i][colNombre] ?? "").trim();
-                const votosRaw = parseInt(String(rows[i][colVotos] ?? "0").replace(/\./g, "").replace(/,/g, "")) || 0;
-
                 if (!nombreRaw) continue;
-                const nombreNorm = normalizarTexto(nombreRaw);
 
+                const nombreNorm = normalizarTexto(nombreRaw);
                 if (nombreNorm.includes("totales") || nombreNorm === "total") {
                     break;
-                } else if (nombreNorm.includes("blanco")) {
-                    blancoVotos += votosRaw;
-                } else if (nombreNorm.includes("nulo") || nombreNorm.includes("recurrido") || nombreNorm.includes("impugnado")) {
-                    nulosVotos += votosRaw;
-                } else {
-                    const listaId = parseInt(nroRaw) || (rawParties.length + 1);
-                    rawParties.push({
-                        lista_id: listaId,
-                        nombre_lista: nombreRaw,
-                        votos: votosRaw
-                    });
                 }
+
+                columnasCategorias.forEach(cat => {
+                    const cellRaw = rows[i][cat.colIdx];
+                    const cellStr = String(cellRaw ?? "").trim();
+                    const votos = parseInt(cellStr.replace(/\./g, "").replace(/,/g, "")) || 0;
+                    const bucket = resultadosPorCategoria[cat.code];
+
+                    if (nombreNorm.includes("blanco")) {
+                        bucket.blanco += votos;
+                    } else if (nombreNorm.includes("nulo") || nombreNorm.includes("recurrido") || nombreNorm.includes("impugnado")) {
+                        bucket.nulos += votos;
+                    } else if (cellStr !== "") {
+                        // Solo agrega el partido si presentó candidato en esa categoría (celda no vacía)
+                        const listaId = parsearListaId(nroRaw, bucket.parties.length + 1);
+                        bucket.parties.push({
+                            lista_id: listaId,
+                            nombre_lista: nombreRaw,
+                            votos: votos
+                        });
+                    }
+                });
             }
 
+            // Actualizar selectores del formulario con lo detectado
             if (anioDetectado) {
                 const selYear = document.getElementById('admin-year');
                 if (Array.from(selYear.options).some(o => o.value === anioDetectado)) {
@@ -500,22 +585,13 @@
                 }
             }
 
-            if (!tipoDetectado && ["PRE", "SEN", "DIP"].includes(categoriaDetectada)) {
+            if (!tipoDetectado) {
                 tipoDetectado = "General";
             }
 
-            if (tipoDetectado) {
-                document.getElementById('admin-election-kind').value = tipoDetectado;
-                actualizarOpcionesCategoriaAdmin();
-                actualizarDivisionTerritorialAdmin();
-            }
-
-            if (categoriaDetectada) {
-                const selCat = document.getElementById('admin-election-type');
-                if (Array.from(selCat.options).some(o => o.value === categoriaDetectada)) {
-                    selCat.value = categoriaDetectada;
-                }
-            }
+            document.getElementById('admin-election-kind').value = tipoDetectado;
+            actualizarOpcionesCategoriaAdmin();
+            actualizarDivisionTerritorialAdmin();
 
             if (seccionDetectada) {
                 const seccionNorm = normalizarTexto(seccionDetectada);
@@ -534,10 +610,52 @@
 
             if (mesasDetectadas) document.getElementById('admin-mesas').value = mesasDetectadas;
             if (participacionDetectada) document.getElementById('admin-participacion').value = participacionDetectada;
-            document.getElementById('admin-subvalidos').value = `Blanco: ${blancoVotos} | Nulos: ${nulosVotos}`;
 
-            renderPartiesRows(rawParties);
-            document.getElementById('admin-status').innerText = `✓ Excel CNE importado (${rawParties.length} fuerzas). Verificá Tipo/Departamento y guardá.`;
+            // Cargar la primera categoría en la vista del editor
+            const primeraCat = columnasCategorias[0].code;
+            const datosPrimera = resultadosPorCategoria[primeraCat];
+            const selCat = document.getElementById('admin-election-type');
+            if (Array.from(selCat.options).some(o => o.value === primeraCat)) {
+                selCat.value = primeraCat;
+            }
+            document.getElementById('admin-subvalidos').value = `Blanco: ${datosPrimera.blanco} | Nulos: ${datosPrimera.nulos}`;
+            renderPartiesRows(datosPrimera.parties);
+
+            // Si el archivo trae múltiples categorías juntas (ej: Presidente + Diputados + Mercosur), ofrecer guardado masivo directo
+            if (columnasCategorias.length > 1) {
+                const listaNombres = columnasCategorias.map(c => `• ${c.label} (${c.code})`).join("\n");
+                const deptoActual = document.getElementById('admin-circuit').value;
+                const anioActual = parseInt(document.getElementById('admin-year').value);
+                const localidadActual = document.getElementById('admin-locality').value.trim() || "Provincial General";
+
+                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para ${deptoActual} (${anioActual}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
+                    try {
+                        for (const cat of columnasCategorias) {
+                            const bloque = resultadosPorCategoria[cat.code];
+                            await guardarBloqueCategoriaEnSupabase({
+                                anio: anioActual,
+                                tipoEleccion: tipoDetectado,
+                                localidad: localidadActual,
+                                tipoEntidad: document.getElementById('admin-entity-type').value,
+                                circuito_id: deptoActual,
+                                categoria: cat.code,
+                                mesas: document.getElementById('admin-mesas').value.trim(),
+                                participacion: document.getElementById('admin-participacion').value.trim(),
+                                blanco: bloque.blanco,
+                                nulos: bloque.nulos,
+                                parties: bloque.parties
+                            });
+                        }
+                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de ${deptoActual} (${anioActual}) se guardaron en Supabase!`;
+                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de ${deptoActual} (${anioActual}) en Supabase.`);
+                    } catch (err) {
+                        alert("❌ Error al guardar las categorías en lote: " + err.message);
+                    }
+                    return;
+                }
+            }
+
+            document.getElementById('admin-status').innerText = `✓ Excel CNE importado (${columnasCategorias.length} categoría/s detectada/s).`;
         }
 
         async function handleSmartUpload(event) {
@@ -548,9 +666,9 @@
 
             if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async function(e) {
                     try {
-                        procesarExcelCNE(e.target.result);
+                        await procesarExcelCNE(e.target.result);
                     } catch (err) {
                         alert("Error al leer el archivo Excel: " + err.message);
                     }
@@ -636,80 +754,58 @@
             const btn = document.getElementById('btn-save-top');
             if(btn) btn.innerText = "Guardando en Supabase...";
 
-            if (localidadCargadaOriginal && normalizarTexto(localidadCargadaOriginal) !== normalizarTexto(localidad)) {
-                let delOld = supabaseClient
-                    .from('resultados_mesas')
-                    .delete()
-                    .eq('anio', anio)
-                    .eq('tipo_eleccion', tipoEleccion)
-                    .ilike('localidad', localidadCargadaOriginal)
-                    .eq('categoria', categoria);
-                if (esTotalGeneral(localidadCargadaOriginal)) {
-                    delOld = delOld.ilike('circuito_id', circuito_id);
+            try {
+                if (localidadCargadaOriginal && normalizarTexto(localidadCargadaOriginal) !== normalizarTexto(localidad)) {
+                    let delOld = supabaseClient
+                        .from('resultados_mesas')
+                        .delete()
+                        .eq('anio', anio)
+                        .eq('tipo_eleccion', tipoEleccion)
+                        .ilike('localidad', localidadCargadaOriginal)
+                        .eq('categoria', categoria);
+                    if (esTotalGeneral(localidadCargadaOriginal)) {
+                        delOld = delOld.ilike('circuito_id', circuito_id);
+                    }
+                    await delOld;
                 }
-                await delOld;
-            }
 
-            let delQuery = supabaseClient
-                .from('resultados_mesas')
-                .delete()
-                .eq('anio', anio)
-                .eq('tipo_eleccion', tipoEleccion)
-                .ilike('localidad', localidad)
-                .eq('categoria', categoria);
+                let parties = [];
+                document.querySelectorAll('.party-row').forEach(row => {
+                    parties.push({
+                        lista_id: parseInt(row.querySelector('.party-id').value) || 0,
+                        nombre_lista: row.querySelector('.party-name').value.trim(),
+                        votos: parseInt(row.querySelector('.party-votes').value) || 0
+                    });
+                });
 
-            if (esTotalGeneral(localidad)) {
-                delQuery = delQuery.ilike('circuito_id', circuito_id);
-            }
-
-            let { error: errDel } = await delQuery;
-
-            if (errDel) {
-                if(btn) btn.innerText = "Guardar en Supabase ☁️";
-                alert("❌ ERROR al limpiar registros previos en Supabase:\n" + errDel.message);
-                return;
-            }
-            
-            let rows = [];
-            document.querySelectorAll('.party-row').forEach(row => {
-                let rowData = {
-                    anio: anio,
-                    tipo_eleccion: tipoEleccion,
-                    localidad: localidad,
-                    tipo_entidad: tipoEntidad,
-                    circuito_id: circuito_id,
-                    categoria: categoria,
-                    mesa_numero: 1,
-                    mesas_procesadas: mesas,
-                    porcentaje_participacion: participacion,
-                    lista_id: parseInt(row.querySelector('.party-id').value) || 0,
-                    nombre_lista: row.querySelector('.party-name').value.trim(),
-                    votos: parseInt(row.querySelector('.party-votes').value) || 0,
-                    votos_blanco: blanco,
-                    votos_nulos: nulos
-                };
-                rows.push(rowData);
-            });
-
-            if (rows.length > 0) {
-                let { error: errIns } = await supabaseClient
-                    .from('resultados_mesas')
-                    .insert(rows);
-
-                if(btn) btn.innerText = "Guardar en Supabase ☁️";
-
-                if (errIns) {
-                    alert("❌ ERROR CRÍTICO de Supabase:\n" + errIns.message + "\n\nSi menciona 'tipo_eleccion', ejecutá en Supabase SQL Editor:\nALTER TABLE resultados_mesas ADD COLUMN IF NOT EXISTS tipo_eleccion TEXT DEFAULT 'Provincial';");
-                    document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
+                if (parties.length === 0) {
+                    if(btn) btn.innerText = "Guardar en Supabase ☁️";
+                    alert("⚠️ No hay filas de listas para guardar.");
                     return;
                 }
 
+                await guardarBloqueCategoriaEnSupabase({
+                    anio,
+                    tipoEleccion,
+                    localidad,
+                    tipoEntidad,
+                    circuito_id,
+                    categoria,
+                    mesas,
+                    participacion,
+                    blanco,
+                    nulos,
+                    parties
+                });
+
+                if(btn) btn.innerText = "Guardar en Supabase ☁️";
                 localidadCargadaOriginal = localidad;
                 document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito: "${localidad}" (${tipoEleccion} - ${circuito_id})!`;
                 alert(`¡Los datos de ${localidad} (${tipoEleccion} - ${circuito_id}) se guardaron correctamente!`);
-            } else {
+            } catch (err) {
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
-                alert("⚠️ No hay filas de listas para guardar.");
+                alert("❌ ERROR CRÍTICO de Supabase:\n" + err.message);
+                document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
             }
         }
 
