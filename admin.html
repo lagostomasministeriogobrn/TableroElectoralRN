@@ -107,7 +107,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Municipio</label>
                     <div class="flex gap-1">
-                        <input type="text" id="admin-locality" value="Viedma" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Arroyo Ventana...">
+                        <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General...">
                         <button type="button" onclick="loadAdminData()" title="Buscar datos de esta localidad" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
                     </div>
                 </div>
@@ -115,8 +115,8 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Entidad</label>
                     <select id="admin-entity-type" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold text-rnblue">
-                        <option value="Municipio">Municipio</option>
-                        <option value="Comision de Fomento" selected>Comisión de Fomento</option>
+                        <option value="Municipio" selected>Municipio</option>
+                        <option value="Comision de Fomento">Comisión de Fomento</option>
                     </select>
                 </div>
 
@@ -135,9 +135,9 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="admin-circuit" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
-                        <option value="Provincial">Provincial</option>
-                        <option value="Alto Valle Centro" selected>Alto Valle Centro</option>
+                    <select id="admin-circuit" onchange="onCircuitChangeAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
+                        <option value="Provincial" selected>Provincial</option>
+                        <option value="Alto Valle Centro">Alto Valle Centro</option>
                         <option value="Alto Valle Este">Alto Valle Este</option>
                         <option value="Alto Valle Oeste">Alto Valle Oeste</option>
                         <option value="Circuito Andino">Circuito Andino</option>
@@ -222,9 +222,22 @@
             loadAdminData();
         }
 
+        function onCircuitChangeAdmin() {
+            const locNorm = normalizarTexto(document.getElementById('admin-locality').value);
+            // Solo recarga al cambiar circuito si estamos viendo "Provincial General" (totales por circuito/provincia)
+            if (locNorm === "provincial general" || locNorm === "provincial") {
+                loadAdminData();
+            }
+        }
+
         function normalizarTexto(texto) {
             if (!texto) return "";
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        }
+
+        function esTotalGeneral(loc) {
+            const n = normalizarTexto(loc);
+            return n === "provincial general" || n === "provincial" || n === "provincia";
         }
 
         async function loadAdminData() {
@@ -232,8 +245,14 @@
             const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
+            const circuitoSeleccionado = document.getElementById('admin-circuit').value;
 
             if (!localidad) return;
+
+            if (esTotalGeneral(localidad)) {
+                localidad = "Provincial General";
+                document.getElementById('admin-locality').value = localidad;
+            }
 
             let query = supabaseClient
                 .from('resultados_mesas')
@@ -241,6 +260,11 @@
                 .eq('anio', anio)
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
+
+            // Si es "Provincial General", filtramos estrictamente por el Circuito Electoral elegido
+            if (esTotalGeneral(localidad)) {
+                query = query.ilike('circuito_id', circuitoSeleccionado);
+            }
 
             let { data, error } = await query;
 
@@ -260,17 +284,21 @@
                 document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
                 document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
                 if (row.tipo_entidad) document.getElementById('admin-entity-type').value = row.tipo_entidad;
-                if (row.circuito_id) document.getElementById('admin-circuit').value = row.circuito_id;
+                
+                // Solo actualizamos el circuito desde la BD si es una localidad puntual (no "Provincial General")
+                if (!esTotalGeneral(localidad) && row.circuito_id) {
+                    document.getElementById('admin-circuit').value = row.circuito_id;
+                }
 
                 renderPartiesRows(filtrados);
-                document.getElementById('admin-status').innerText = `✓ Datos de "${localidadCargadaOriginal}" cargados (podés editar el nombre y guardar).`;
+                document.getElementById('admin-status').innerText = `✓ Datos de "${localidadCargadaOriginal}" (${circuitoSeleccionado}) cargados.`;
             } else {
                 localidadCargadaOriginal = "";
                 renderPartiesRows([]);
                 document.getElementById('admin-mesas').value = "0 / 0";
                 document.getElementById('admin-participacion').value = "0.00%";
                 document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
-                document.getElementById('admin-status').innerText = "ℹ️ Sin datos previos para esta búsqueda.";
+                document.getElementById('admin-status').innerText = `ℹ️ Sin datos previos para "${localidad}" en circuito "${circuitoSeleccionado}".`;
             }
         }
 
@@ -376,28 +404,40 @@
 
             if (!localidad) { alert("Por favor ingresa una localidad."); return; }
 
-            if (normalizarTexto(localidad) === "provincial" || normalizarTexto(localidad) === "provincia") {
+            if (esTotalGeneral(localidad)) {
                 localidad = "Provincial General";
+                document.getElementById('admin-locality').value = localidad;
             }
 
             const btn = document.getElementById('btn-save-top');
             if(btn) btn.innerText = "Guardando en Supabase...";
 
             if (localidadCargadaOriginal && normalizarTexto(localidadCargadaOriginal) !== normalizarTexto(localidad)) {
-                await supabaseClient
+                let delOld = supabaseClient
                     .from('resultados_mesas')
                     .delete()
                     .eq('anio', anio)
                     .ilike('localidad', localidadCargadaOriginal)
                     .eq('categoria', categoria);
+                if (esTotalGeneral(localidadCargadaOriginal)) {
+                    delOld = delOld.ilike('circuito_id', circuito_id);
+                }
+                await delOld;
             }
 
-            let { error: errDel } = await supabaseClient
+            let delQuery = supabaseClient
                 .from('resultados_mesas')
                 .delete()
                 .eq('anio', anio)
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
+
+            // Si es "Provincial General", solo borra el del circuito seleccionado para no pisar otros circuitos
+            if (esTotalGeneral(localidad)) {
+                delQuery = delQuery.ilike('circuito_id', circuito_id);
+            }
+
+            let { error: errDel } = await delQuery;
 
             if (errDel) {
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
@@ -449,8 +489,8 @@
                 }
 
                 localidadCargadaOriginal = localidad;
-                document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito como "${localidad}"!`;
-                alert("¡Los datos de " + localidad + " se guardaron correctamente!");
+                document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito: "${localidad}" (${circuito_id})!`;
+                alert(`¡Los datos de ${localidad} (${circuito_id}) se guardaron correctamente!`);
             } else {
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
                 alert("⚠️ No hay filas de listas para guardar.");
@@ -461,14 +501,21 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             let localidad = document.getElementById('admin-locality').value.trim();
             const categoria = document.getElementById('admin-election-type').value;
+            const circuito_id = document.getElementById('admin-circuit').value;
 
-            if (confirm(`¿Estás seguro de borrar todos los datos para ${localidad} (${categoria}) del año ${anio}?`)) {
-                let { error } = await supabaseClient
+            if (confirm(`¿Estás seguro de borrar los datos para ${localidad} (${circuito_id} - ${categoria}) del año ${anio}?`)) {
+                let delQuery = supabaseClient
                     .from('resultados_mesas')
                     .delete()
                     .eq('anio', anio)
                     .ilike('localidad', localidad)
                     .eq('categoria', categoria);
+
+                if (esTotalGeneral(localidad)) {
+                    delQuery = delQuery.ilike('circuito_id', circuito_id);
+                }
+
+                let { error } = await delQuery;
 
                 if (error) {
                     alert("❌ Error al borrar: " + error.message);
