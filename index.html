@@ -235,8 +235,10 @@
                 selectCirc.appendChild(opt);
             });
 
-            if (lista.includes(valorPrevio)) {
+            if (valorPrevio && lista.includes(valorPrevio)) {
                 selectCirc.value = valorPrevio;
+            } else {
+                selectCirc.value = "Provincial";
             }
         }
 
@@ -253,8 +255,8 @@
         }
 
         function filtrarPorTerritorioSeleccionado() {
-            const circuito = document.getElementById('filter-circuit').value;
-            const localidadSeleccionada = document.getElementById('filter-locality').value;
+            const circuito = document.getElementById('filter-circuit').value || "Provincial";
+            const localidadSeleccionada = document.getElementById('filter-locality').value || "Provincial General";
 
             const circNorm = normalizarTexto(circuito);
             const locNorm = normalizarTexto(localidadSeleccionada);
@@ -364,12 +366,26 @@
         }
 
         function actualizarLocalidadesPorCircuito() {
-            const circuitoSeleccionado = document.getElementById('filter-circuit').value;
+            const circuitoSeleccionado = document.getElementById('filter-circuit').value || "Provincial";
             const selectLoc = document.getElementById('filter-locality');
             const localidadAnterior = selectLoc.value;
+            let circuitoSeleccionadoNorm = normalizarTexto(circuitoSeleccionado);
+
+            selectLoc.innerHTML = "";
+
+            let optGeneral = document.createElement('option');
+            optGeneral.value = "Provincial General";
+            optGeneral.text = "Provincial General";
+            selectLoc.appendChild(optGeneral);
+
+            // Si está seleccionado "Provincial", no listar todos los municipios/parajes/comisiones
+            if (circuitoSeleccionadoNorm === "provincial") {
+                selectLoc.value = "Provincial General";
+                actualizarCategoriasDisponibles();
+                return;
+            }
 
             let mapaEntidadesLocales = {};
-            let circuitoSeleccionadoNorm = normalizarTexto(circuitoSeleccionado);
 
             datosCacheGlobal.forEach(d => {
                 if (d.localidad) {
@@ -378,12 +394,7 @@
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     
                     if (locNorm !== "provincial general" && locNorm !== "provincial" && locNorm !== circBD) {
-                        let coincideCircuito = (
-                            circuitoSeleccionadoNorm === "provincial" || 
-                            circBD === circuitoSeleccionadoNorm
-                        );
-
-                        if (coincideCircuito) {
+                        if (circBD === circuitoSeleccionadoNorm) {
                             const tipo = obtenerTipoEntidadNormalizado(d);
                             if (!mapaEntidadesLocales[locTrim]) {
                                 mapaEntidadesLocales[locTrim] = tipo;
@@ -412,13 +423,6 @@
                     municipios.push(loc);
                 }
             });
-
-            selectLoc.innerHTML = "";
-
-            let optGeneral = document.createElement('option');
-            optGeneral.value = "Provincial General";
-            optGeneral.text = "Provincial General";
-            selectLoc.appendChild(optGeneral);
 
             if (municipios.length > 0) {
                 let groupMun = document.createElement('optgroup');
@@ -457,8 +461,10 @@
             }
 
             let opcionesDisponibles = Array.from(selectLoc.options).map(o => o.value);
-            if (opcionesDisponibles.includes(localidadAnterior)) {
+            if (localidadAnterior && opcionesDisponibles.includes(localidadAnterior)) {
                 selectLoc.value = localidadAnterior;
+            } else {
+                selectLoc.value = "Provincial General";
             }
 
             actualizarCategoriasDisponibles();
@@ -490,4 +496,135 @@
                 unicasCat.forEach(catCode => {
                     let opt = document.createElement('option');
                     opt.value = catCode;
-                    opt.text
+                    opt.text = nombresCategorias[catCode] || catCode;
+                    selectCat.appendChild(opt);
+                });
+
+                if (categoriaAnterior && unicasCat.includes(categoriaAnterior)) {
+                    selectCat.value = categoriaAnterior;
+                } else {
+                    selectCat.value = unicasCat[0];
+                }
+            }
+
+            cargarDatosPublicos();
+        }
+
+        function cargarDatosPublicos() {
+            const categoria = document.getElementById('filter-category').value;
+            if (!categoria) {
+                renderizarResultadosUnicos([]);
+                return;
+            }
+
+            const filtrados = filtrarPorTerritorioSeleccionado().filter(d => d.categoria === categoria);
+            renderizarResultadosUnicos(filtrados);
+        }
+
+        function renderizarResultadosUnicos(rawRows) {
+            const tbody = document.getElementById('table-results-body');
+            tbody.innerHTML = "";
+
+            if (!rawRows || rawRows.length === 0) {
+                document.getElementById('stat-mesas').innerText = "0 / 0";
+                document.getElementById('stat-participacion').innerText = "0.00%";
+                document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
+                tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">Sin registros computados para esta selección.</td></tr>`;
+                
+                if (chartInstance) {
+                    chartInstance.data.labels = [];
+                    chartInstance.data.datasets[0].data = [];
+                    chartInstance.update('none');
+                }
+                return;
+            }
+
+            document.getElementById('stat-mesas').innerText = rawRows[0].mesas_procesadas || "0 / 0";
+            document.getElementById('stat-participacion').innerText = rawRows[0].porcentaje_participacion || "0.00%";
+            document.getElementById('stat-subvalidos').innerText = `Blanco: ${rawRows[0].votos_blanco || 0} | Nulos: ${rawRows[0].votos_nulos || 0}`;
+
+            let mapaUnicos = {};
+            rawRows.forEach(row => {
+                let idLista = row.lista_id;
+                mapaUnicos[idLista] = {
+                    nombre: row.nombre_lista || `Lista ${idLista}`,
+                    votos: row.votos || 0
+                };
+            });
+
+            let data = Object.values(mapaUnicos);
+            let totalValidos = data.reduce((acc, r) => acc + r.votos, 0);
+            data.sort((a, b) => b.votos - a.votos);
+
+            let labels = [];
+            let votosArr = [];
+            let bgColors = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#B4B5E0", "#88D9E8", "#444444", "#9C27B0", "#FF9800", "#795548"];
+
+            data.forEach((row, index) => {
+                let pct = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
+                if (index < 8) {
+                    labels.push(row.nombre);
+                    votosArr.push(row.votos);
+                }
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="py-2 font-semibold text-slate-700">${row.nombre}</td>
+                        <td class="py-2 text-right font-bold">${row.votos.toLocaleString()}</td>
+                        <td class="py-2 text-right font-bold text-rnblue">${pct}%</td>
+                    </tr>`;
+            });
+
+            const ctx = document.getElementById('chart-resultados').getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = votosArr;
+                chartInstance.data.datasets[0].backgroundColor = bgColors.slice(0, labels.length);
+                chartInstance.update('none');
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: votosArr,
+                            backgroundColor: bgColors.slice(0, labels.length),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        window.onload = async function() {
+            actualizarDivisionTerritorialPublico();
+            await actualizarFiltros(true);
+
+            supabaseClient
+                .channel('public:resultados_mesas')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'resultados_mesas' }, () => {
+                    actualizarFiltros(false);
+                })
+                .subscribe();
+
+            window.addEventListener('focus', () => actualizarFiltros(false));
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    actualizarFiltros(false);
+                }
+            });
+
+            setInterval(() => {
+                actualizarFiltros(false);
+            }, 3000);
+        };
+    </script>
+</body>
+</html>
