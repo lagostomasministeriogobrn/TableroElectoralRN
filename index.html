@@ -116,6 +116,7 @@
                         <option value="LEGC">Legislador Circuital</option>
                         <option value="INT">Intendente Municipal</option>
                         <option value="CON">Concejal Municipal</option>
+                        <option value="TDC">Miembro del Tribunal de Cuentas</option>
                         <option value="COF">Comisión de Fomento</option>
                         <option value="VCF">Vocal de Comisión de Fomento</option>
                     </select>
@@ -187,6 +188,7 @@
             "LEGC": "Legislador Circuital",
             "INT": "Intendente Municipal",
             "CON": "Concejal Municipal",
+            "TDC": "Miembro del Tribunal de Cuentas",
             "COF": "Comisión de Fomento",
             "VCF": "Vocal de Comisión de Fomento",
             "PRE": "Presidente",
@@ -244,12 +246,10 @@
                     }
                 }
 
-                // Filtramos estrictamente según el Tipo de Elección (Provincial vs General)
                 const filasFiltradasPorTipo = todasLasFilas.filter(d => {
                     if (d.tipo_eleccion) {
                         return d.tipo_eleccion === tipoEleccion;
                     }
-                    // Respaldo si hay filas viejas sin columna tipo_eleccion
                     if (tipoEleccion === "General") {
                         return codigosNacionales.includes(d.categoria);
                     }
@@ -270,7 +270,7 @@
                 let unicasCat = [...new Set(datosCacheGlobal.map(d => d.categoria))].filter(Boolean);
                 
                 if (unicasCat.length === 0) {
-                    unicasCat = tipoEleccion === "General" ? ["PRE", "SEN", "DIP"] : ["GOB", "LEGP", "LEGC"];
+                    unicasCat = tipoEleccion === "General" ? ["PRE", "SEN", "DIP"] : ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC"];
                 }
 
                 const opcionesCatActuales = Array.from(selectCat.options).map(o => o.value).join('|');

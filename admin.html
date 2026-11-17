@@ -128,6 +128,7 @@
                         <option value="LEGC" selected>Legislador Circuital</option>
                         <option value="INT">Intendente</option>
                         <option value="CON">Concejal</option>
+                        <option value="TDC">Miembro del Tribunal de Cuentas</option>
                         <option value="COF">Comisión de Fomento</option>
                         <option value="VCF">Vocal Com. Fomento</option>
                     </select>
@@ -193,6 +194,7 @@
                 { value: "LEGC", text: "Legislador Circuital" },
                 { value: "INT", text: "Intendente" },
                 { value: "CON", text: "Concejal" },
+                { value: "TDC", text: "Miembro del Tribunal de Cuentas" },
                 { value: "COF", text: "Comisión de Fomento" },
                 { value: "VCF", text: "Vocal Com. Fomento" }
             ],
@@ -224,7 +226,6 @@
 
         function onCircuitChangeAdmin() {
             const locNorm = normalizarTexto(document.getElementById('admin-locality').value);
-            // Solo recarga al cambiar circuito si estamos viendo "Provincial General" (totales por circuito/provincia)
             if (locNorm === "provincial general" || locNorm === "provincial") {
                 loadAdminData();
             }
@@ -261,7 +262,6 @@
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
-            // Si es "Provincial General", filtramos estrictamente por el Circuito Electoral elegido
             if (esTotalGeneral(localidad)) {
                 query = query.ilike('circuito_id', circuitoSeleccionado);
             }
@@ -285,7 +285,6 @@
                 document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
                 if (row.tipo_entidad) document.getElementById('admin-entity-type').value = row.tipo_entidad;
                 
-                // Solo actualizamos el circuito desde la BD si es una localidad puntual (no "Provincial General")
                 if (!esTotalGeneral(localidad) && row.circuito_id) {
                     document.getElementById('admin-circuit').value = row.circuito_id;
                 }
@@ -432,7 +431,6 @@
                 .ilike('localidad', localidad)
                 .eq('categoria', categoria);
 
-            // Si es "Provincial General", solo borra el del circuito seleccionado para no pisar otros circuitos
             if (esTotalGeneral(localidad)) {
                 delQuery = delQuery.ilike('circuito_id', circuito_id);
             }
