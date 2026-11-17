@@ -238,6 +238,13 @@
             );
         }
 
+        function coincideDivisionTerritorial(circBDNorm, seleccionNorm) {
+            if (!circBDNorm || !seleccionNorm) return false;
+            if (circBDNorm === seleccionNorm) return true;
+            // Tolerar variantes como "Departamento Avellaneda" o "00002 - AVELLANEDA"
+            return circBDNorm.includes(seleccionNorm) || seleccionNorm.includes(circBDNorm);
+        }
+
         function actualizarDivisionTerritorialPublico() {
             const tipoEleccion = document.getElementById('filter-election-kind').value;
             const labelCirc = document.getElementById('label-filter-circuit');
@@ -274,11 +281,6 @@
             return 'municipio';
         }
 
-        // Devuelve los registros aplicables al territorio elegido:
-        // - Si es "Provincial" + "Provincial General": busca el registro provincial general.
-        // - Si es un Circuito/Departamento específico + "Provincial General" (Total del Circuito/Depto):
-        //     1) Si hay un total cargado explícitamente para ese circuito/depto, usa ese.
-        //     2) Si no hay total explícito, devuelve TODAS las filas de las localidades de ese circuito/depto para sumarlas.
         function filtrarPorTerritorioSeleccionado() {
             const circuito = document.getElementById('filter-circuit').value || "Provincial";
             const localidadSeleccionada = document.getElementById('filter-locality').value || "Provincial General";
@@ -297,7 +299,9 @@
             if (circNorm !== "provincial" && locNorm === "provincial general") {
                 const filasCircuito = datosCacheGlobal.filter(d => {
                     let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
-                    return c === circNorm;
+                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    // También contemplar si alguien guardó el nombre del departamento en el campo localidad con circuito_id = "Provincial"
+                    return coincideDivisionTerritorial(c, circNorm) || ((c === "provincial" || c === "") && l === circNorm);
                 });
 
                 const explicitosGeneral = filasCircuito.filter(d => {
@@ -309,14 +313,13 @@
                     return explicitosGeneral;
                 }
 
-                // Fallback automático: devolver todas las localidades de ese circuito para sumarlas
                 return filasCircuito;
             }
 
             return datosCacheGlobal.filter(d => {
                 let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                 let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                let okCirc = circNorm === "provincial" || c === circNorm;
+                let okCirc = circNorm === "provincial" || coincideDivisionTerritorial(c, circNorm);
                 return okCirc && l === locNorm;
             });
         }
@@ -359,16 +362,18 @@
                 }
 
                 const filasFiltradasPorTipo = todasLasFilas.filter(d => {
-                    if (d.tipo_eleccion) {
-                        return d.tipo_eleccion === tipoEleccion;
-                    }
+                    const esCatNac = codigosNacionales.includes(d.categoria);
+
                     if (tipoEleccion === "PASO") {
-                        return false;
+                        return d.tipo_eleccion === "PASO";
                     }
                     if (tipoEleccion === "General") {
-                        return codigosNacionales.includes(d.categoria);
+                        if (d.tipo_eleccion === "PASO") return false;
+                        return d.tipo_eleccion === "General" || esCatNac;
                     }
-                    return !codigosNacionales.includes(d.categoria);
+                    // Provincial
+                    if (esCatNac) return false;
+                    return !d.tipo_eleccion || d.tipo_eleccion === "Provincial";
                 });
 
                 const filasOrdenadas = [...filasFiltradasPorTipo].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
@@ -398,7 +403,6 @@
 
         function actualizarLocalidadesPorCircuito() {
             const circuitoSeleccionado = document.getElementById('filter-circuit').value || "Provincial";
-            const tipoEleccion = document.getElementById('filter-election-kind').value;
             const selectLoc = document.getElementById('filter-locality');
             const localidadAnterior = selectLoc.value;
             let circuitoSeleccionadoNorm = normalizarTexto(circuitoSeleccionado);
@@ -409,7 +413,7 @@
             optGeneral.value = "Provincial General";
             optGeneral.text = circuitoSeleccionadoNorm === "provincial"
                 ? "Provincial General"
-                : (esEleccionNacional(tipoEleccion) ? `Total ${circuitoSeleccionado}` : `Total ${circuitoSeleccionado}`);
+                : `Total ${circuitoSeleccionado}`;
             selectLoc.appendChild(optGeneral);
 
             if (circuitoSeleccionadoNorm === "provincial") {
@@ -426,7 +430,7 @@
                     let locNorm = normalizarTexto(locTrim);
                     let circBD = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     
-                    if (!esNombreTotalGeneral(locNorm, circBD) && circBD === circuitoSeleccionadoNorm) {
+                    if (!esNombreTotalGeneral(locNorm, circBD) && coincideDivisionTerritorial(circBD, circuitoSeleccionadoNorm)) {
                         const tipo = obtenerTipoEntidadNormalizado(d);
                         if (!mapaEntidadesLocales[locTrim]) {
                             mapaEntidadesLocales[locTrim] = tipo;
@@ -570,11 +574,9 @@
                 return;
             }
 
-            // Detectar si estamos sumando múltiples localidades (agregación por circuito/depto)
             const localidadesDistintas = [...new Set(rawRows.map(r => normalizarTexto(r.localidad)))];
 
             if (localidadesDistintas.length <= 1) {
-                // Caso 1: Una sola localidad o un total general ya consolidado
                 document.getElementById('stat-mesas').innerText = rawRows[0].mesas_procesadas || "0 / 0";
                 document.getElementById('stat-participacion').innerText = rawRows[0].porcentaje_participacion || "0.00%";
                 document.getElementById('stat-subvalidos').innerText = `Blanco: ${(rawRows[0].votos_blanco || 0).toLocaleString()} | Nulos: ${(rawRows[0].votos_nulos || 0).toLocaleString()}`;
@@ -590,7 +592,6 @@
 
                 dibujarTablaYGrafico(Object.values(mapaUnicos));
             } else {
-                // Caso 2: Suma automática de todas las localidades de un circuito/departamento
                 let metaPorLocalidad = {};
                 let sumaListas = {};
 
@@ -615,7 +616,6 @@
                     sumaListas[listaKey].votos += (parseInt(row.votos) || 0);
                 });
 
-                // Sumar mesas, blancos, nulos y promediar participación ponderada por votos
                 let mesasEscrutadasSum = 0;
                 let mesasTotalesSum = 0;
                 let blancoTotal = 0;
