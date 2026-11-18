@@ -4,26 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero Electoral Oficial - Río Negro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
                     colors: {
                         rnblue: '#0063BE',
                         rngreen: '#39C937',
-                        rnlight: '#F8FAFC',
+                        rnlight: '#F1F5F9',
                     }
                 }
             }
         }
     </script>
     <style>
-        .custom-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        .card-elevated {
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-elevated:hover {
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.09), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+        }
+
+        /* Animaciones de DAEBot */
+        @keyframes botFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes botWaveLeft {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-14deg); }
+        }
+        @keyframes botWaveRight {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(14deg); }
+        }
+        @keyframes botQuestionFloat {
+            0%, 100% { transform: translateY(0px) scale(1); opacity: 0.95; }
+            50% { transform: translateY(-4px) scale(1.08); opacity: 1; }
+        }
+        @keyframes botBlink {
+            0%, 92%, 100% { transform: scaleY(1); }
+            96% { transform: scaleY(0.1); }
+        }
+
+        .daebot-float {
+            animation: botFloat 3.2s ease-in-out infinite;
+        }
+        .daebot-arm-l {
+            transform-origin: 42px 92px;
+            animation: botWaveLeft 2.8s ease-in-out infinite;
+        }
+        .daebot-arm-r {
+            transform-origin: 118px 92px;
+            animation: botWaveRight 2.8s ease-in-out infinite;
+        }
+        .daebot-q-center {
+            animation: botQuestionFloat 2.4s ease-in-out infinite;
+        }
+        .daebot-q-side {
+            animation: botQuestionFloat 2.4s ease-in-out 0.4s infinite;
+        }
+        .daebot-eye {
+            transform-origin: center;
+            animation: botBlink 4.5s infinite;
+        }
 
         @keyframes pptRevealContent {
             0% {
@@ -65,21 +122,19 @@
         }
     </style>
 </head>
-<body class="bg-rnlight text-slate-800 font-sans min-h-screen flex flex-col">
+<body class="bg-rnlight text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
     <!-- Diapositiva de Bienvenida en Verde #39C937 -->
     <div id="welcome-slide" class="fixed inset-0 z-50 flex flex-col justify-between bg-[#39C937] text-white overflow-hidden">
-        <!-- Franja superior institucional -->
         <div class="w-full h-2.5 flex shadow-sm">
             <div class="w-1/3 bg-[#0063BE]"></div>
             <div class="w-1/3 bg-white"></div>
             <div class="w-1/3 bg-black"></div>
         </div>
 
-        <!-- Contenido central de la diapositiva -->
         <div class="max-w-4xl mx-auto px-6 text-center flex flex-col items-center justify-center my-auto space-y-6">
             <div class="ppt-reveal-content flex items-center justify-center">
-                <div class="flex h-20 w-40 rounded-lg overflow-hidden shadow-2xl border-2 border-white/50 bg-black">
+                <div class="flex h-20 w-40 rounded-xl overflow-hidden shadow-2xl border-2 border-white/50 bg-black">
                     <div class="w-1/2 bg-black flex items-center justify-center">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
                             <g fill="white">
@@ -118,16 +173,16 @@
             </div>
         </div>
 
-        <!-- Pie de diapositiva -->
         <div class="pb-5 text-center text-[11px] text-white font-semibold tracking-wider">
             Gobierno de la Provincia de Río Negro
         </div>
     </div>
 
-    <header class="bg-rngreen text-white shadow-md border-b-4 border-rnblue">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center space-x-4 mb-2 md:mb-0">
-                <div class="flex h-11 w-24 rounded overflow-hidden shadow border border-white/25 flex-shrink-0 bg-black">
+    <!-- Header Institucional -->
+    <header class="bg-gradient-to-r from-[#2fb82d] via-[#39C937] to-[#28a826] text-white shadow-lg border-b-4 border-rnblue">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-4">
+                <div class="flex h-12 w-24 rounded-lg overflow-hidden shadow-md border border-white/30 flex-shrink-0 bg-black">
                     <div class="w-1/2 bg-black flex items-center justify-center relative">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
                             <g fill="white">
@@ -138,122 +193,367 @@
                             </g>
                         </svg>
                     </div>
-                    <div class="w-1/2 bg-rngreen flex items-center justify-center">
+                    <div class="w-1/2 bg-[#39C937] flex items-center justify-center">
                         <span class="text-white font-black text-sm tracking-wider">RN</span>
                     </div>
                 </div>
                 <div>
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-white/90 block">Dirección de Asuntos Electorales</span>
-                    <h1 class="text-lg md:text-xl font-semibold tracking-tight">Tablero Electoral Oficial</h1>
+                    <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-white/95 block">Dirección de Asuntos Electorales</span>
+                    <h1 class="text-xl md:text-2xl font-extrabold tracking-tight drop-shadow-sm">Tablero Electoral Oficial</h1>
                 </div>
             </div>
             <div class="flex items-center space-x-3 text-sm">
-                <span id="sync-badge" class="text-[11px] bg-black/20 text-white px-2.5 py-1 rounded font-medium">● En vivo</span>
-                <a href="admin.html" target="_blank" class="bg-white text-rngreen font-bold px-3 py-1.5 rounded text-xs hover:bg-green-50 transition shadow">Panel de Administración ⚙️</a>
+                <span id="sync-badge" class="text-[11px] bg-black/20 backdrop-blur-sm border border-white/15 text-white px-3 py-1.5 rounded-full font-semibold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> En vivo
+                </span>
+                <a href="admin.html" target="_blank" class="bg-white text-slate-800 hover:text-rnblue font-bold px-3.5 py-1.5 rounded-lg text-xs hover:bg-slate-50 transition shadow-sm">
+                    Panel de Administración ⚙️
+                </a>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
         
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <section class="lg:col-span-1 bg-white p-5 rounded border border-slate-200 custom-shadow space-y-4 h-fit">
-                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Filtros de Cómputos</h2>
+            <!-- Columna Izquierda: Filtros + DAEBot Generador de Reportes -->
+            <div class="lg:col-span-3 space-y-5">
                 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
-                    <select id="filter-year" onchange="actualizarFiltros(true)" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="2027">2027</option>
-                        <option value="2026">2026</option>
-                        <option value="2025">2025</option>
-                        <option value="2023">2023</option>
-                        <option value="2021">2021</option>
-                        <option value="2019" selected>2019</option>
-                        <option value="2017">2017</option>
-                        <option value="2015">2015</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Elección</label>
-                    <select id="filter-election-kind" onchange="cambiarTipoEleccionPublico()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold text-rnblue">
-                        <option value="Provincial" selected>Provincial</option>
-                        <option value="General">General (Nacional)</option>
-                        <option value="PASO">PASO (Nacional)</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label id="label-filter-circuit" class="block text-xs font-semibold text-slate-600 mb-1">Circuito Electoral</label>
-                    <select id="filter-circuit" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="Provincial" selected>Provincial</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio / Comisión / Paraje Rural</label>
-                    <select id="filter-locality" onchange="actualizarCategoriasDisponibles()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="Provincial General" selected>Provincial General</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                    <select id="filter-category" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-semibold">
-                        <option value="">Cargando...</option>
-                    </select>
-                </div>
-            </section>
-
-            <section class="lg:col-span-3 space-y-6">
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded border border-slate-200 custom-shadow">
-                        <span class="text-xs text-slate-500 font-semibold block">Mesas Escrutadas</span>
-                        <h3 id="stat-mesas" class="text-xl font-black text-rnblue mt-1">0 / 0</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded border border-slate-200 custom-shadow">
-                        <span class="text-xs text-slate-500 font-semibold block">Participación Ciudadana</span>
-                        <h3 id="stat-participacion" class="text-xl font-black text-rngreen mt-1">0.00%</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded border border-slate-200 custom-shadow">
-                        <span class="text-xs text-slate-500 font-semibold block">Votos Blancos / Nulos</span>
-                        <h3 id="stat-subvalidos" class="text-sm font-bold text-slate-700 mt-2">Blanco: 0 | Nulos: 0</h3>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow flex flex-col items-center">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 w-full text-left">Distribución de Porcentajes</h3>
-                        <div class="w-full max-w-[230px] h-56 relative">
-                            <canvas id="chart-resultados"></canvas>
+                <!-- Panel Lateral de Filtros -->
+                <aside class="bg-white rounded-xl border border-slate-200/80 card-elevated overflow-hidden">
+                    <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-rngreen text-sm">🎛️</span>
+                            <h2 class="text-xs font-extrabold uppercase tracking-wider">Filtros de Cómputos</h2>
                         </div>
-                        <div id="chart-custom-legend" class="w-full mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs"></div>
+                        <span class="text-[10px] bg-white/10 text-slate-300 px-2 py-0.5 rounded font-semibold">Río Negro</span>
                     </div>
 
-                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow overflow-x-auto max-h-[480px]">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Detalle por Fuerza Política</h3>
-                        <table class="w-full text-left text-xs">
-                            <thead>
-                                <tr class="border-b text-slate-400 font-bold sticky top-0 bg-white">
-                                    <th class="pb-2">Fuerza / Lista</th>
-                                    <th class="pb-2 text-right">Votos</th>
-                                    <th class="pb-2 text-right">%</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-results-body">
-                                <tr><td colspan="3" class="py-4 text-center text-slate-400">Sin datos para mostrar.</td></tr>
-                            </tbody>
-                        </table>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Año Electoral</label>
+                            <select id="filter-year" onchange="onPrimaryFilterChanged()" class="w-full bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-rnblue focus:border-rnblue focus:outline-none transition cursor-pointer">
+                                <option value="2027">2027</option>
+                                <option value="2026">2026</option>
+                                <option value="2025">2025</option>
+                                <option value="2023">2023</option>
+                                <option value="2021">2021</option>
+                                <option value="2019" selected>2019</option>
+                                <option value="2017">2017</option>
+                                <option value="2015">2015</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Tipo de Elección</label>
+                            <select id="filter-election-kind" onchange="cambiarTipoEleccionPublico()" class="w-full bg-blue-50/70 hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-sm font-bold text-rnblue focus:ring-2 focus:ring-rnblue focus:outline-none transition cursor-pointer">
+                                <option value="Provincial" selected>Provincial</option>
+                                <option value="General">General (Nacional)</option>
+                                <option value="PASO">PASO (Nacional)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label id="label-filter-circuit" class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Circuito Electoral</label>
+                            <select id="filter-circuit" onchange="actualizarLocalidadesPorCircuito()" class="w-full bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none transition cursor-pointer">
+                                <option value="Provincial" selected>Provincial</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Municipio / Comisión / Paraje</label>
+                            <select id="filter-locality" onchange="actualizarCategoriasDisponibles()" class="w-full bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none transition cursor-pointer">
+                                <option value="Provincial General" selected>Provincial General</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Categoría</label>
+                            <select id="filter-category" onchange="cargarDatosPublicos()" class="w-full bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none transition cursor-pointer">
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
                     </div>
+                </aside>
+
+                <!-- Módulo DAEBot: Generador de Reportes Simples o Comparativos -->
+                <aside class="bg-white rounded-xl border border-blue-200/90 card-elevated overflow-hidden">
+                    <div class="bg-gradient-to-br from-[#0052cc] via-[#0063BE] to-[#003d99] p-4 text-white relative overflow-hidden">
+                        <div class="flex items-center gap-3">
+                            <!-- Robotito 3D SVG animado -->
+                            <div class="w-20 h-24 flex-shrink-0 daebot-float drop-shadow-lg">
+                                <svg viewBox="0 0 160 190" class="w-full h-full overflow-visible">
+                                    <defs>
+                                        <linearGradient id="botWhiteGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#FFFFFF"/>
+                                            <stop offset="100%" stop-color="#DCE8F8"/>
+                                        </linearGradient>
+                                        <linearGradient id="botGreenGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#4CE04A"/>
+                                            <stop offset="100%" stop-color="#1E8E1C"/>
+                                        </linearGradient>
+                                        <linearGradient id="botLimeBelt" x1="0" y1="0" x2="1" y2="0">
+                                            <stop offset="0%" stop-color="#9BE82C"/>
+                                            <stop offset="50%" stop-color="#C9F74A"/>
+                                            <stop offset="100%" stop-color="#84D41E"/>
+                                        </linearGradient>
+                                        <radialGradient id="visorGloss" cx="68%" cy="28%" r="55%">
+                                            <stop offset="0%" stop-color="#4B5563" stop-opacity="0.7"/>
+                                            <stop offset="60%" stop-color="#111827" stop-opacity="0.95"/>
+                                            <stop offset="100%" stop-color="#030712" stop-opacity="1"/>
+                                        </radialGradient>
+                                    </defs>
+
+                                    <g class="daebot-q-side" fill="url(#botGreenGrad)" stroke="#14532D" stroke-width="0.8">
+                                        <text x="38" y="34" font-family="Inter, sans-serif" font-weight="900" font-size="22" transform="rotate(-14 38 34)">?</text>
+                                    </g>
+                                    <g class="daebot-q-center" fill="url(#botGreenGrad)" stroke="#14532D" stroke-width="0.8">
+                                        <text x="71" y="28" font-family="Inter, sans-serif" font-weight="900" font-size="30">?</text>
+                                    </g>
+                                    <g class="daebot-q-side" fill="url(#botGreenGrad)" stroke="#14532D" stroke-width="0.8">
+                                        <text x="108" y="35" font-family="Inter, sans-serif" font-weight="900" font-size="22" transform="rotate(14 108 35)">?</text>
+                                    </g>
+
+                                    <rect x="24" y="54" width="13" height="28" rx="6.5" fill="url(#botGreenGrad)"/>
+                                    <rect x="123" y="54" width="13" height="28" rx="6.5" fill="url(#botGreenGrad)"/>
+
+                                    <rect x="33" y="38" width="94" height="54" rx="24" fill="url(#botWhiteGrad)"/>
+                                    <rect x="42" y="45" width="76" height="40" rx="18" fill="url(#visorGloss)"/>
+
+                                    <rect class="daebot-eye" x="62" y="57" width="6.5" height="11" rx="3.25" fill="#FFFFFF"/>
+                                    <rect class="daebot-eye" x="91.5" y="57" width="6.5" height="11" rx="3.25" fill="#FFFFFF"/>
+                                    <path d="M 73 72 Q 80 79 87 72 Z" fill="#FFFFFF"/>
+
+                                    <g class="daebot-arm-l">
+                                        <path d="M 52 96 L 26 108" stroke="url(#botGreenGrad)" stroke-width="13" stroke-linecap="round"/>
+                                        <path d="M 33 105 L 22 110" stroke="url(#botWhiteGrad)" stroke-width="13" stroke-linecap="round"/>
+                                        <circle cx="19" cy="111" r="8" fill="url(#botWhiteGrad)"/>
+                                    </g>
+
+                                    <g class="daebot-arm-r">
+                                        <path d="M 108 96 L 134 86" stroke="url(#botGreenGrad)" stroke-width="13" stroke-linecap="round"/>
+                                        <path d="M 127 89 L 138 84" stroke="url(#botWhiteGrad)" stroke-width="13" stroke-linecap="round"/>
+                                        <circle cx="141" cy="82" r="8" fill="url(#botWhiteGrad)"/>
+                                    </g>
+
+                                    <rect x="58" y="132" width="15" height="24" rx="6" fill="url(#botWhiteGrad)"/>
+                                    <rect x="87" y="132" width="15" height="24" rx="6" fill="url(#botWhiteGrad)"/>
+
+                                    <rect x="52" y="151" width="23" height="14" rx="7" fill="url(#botGreenGrad)"/>
+                                    <rect x="85" y="151" width="23" height="14" rx="7" fill="url(#botGreenGrad)"/>
+
+                                    <rect x="51" y="92" width="58" height="46" rx="20" fill="url(#botGreenGrad)"/>
+                                    <rect x="51" y="119" width="58" height="8" rx="3" fill="url(#botLimeBelt)"/>
+
+                                    <g fill="#FFFFFF" transform="translate(80, 106) scale(0.24)">
+                                        <circle cx="0" cy="-34" r="3.4"/>
+                                        <circle cx="13" cy="-31.4" r="3.4"/>
+                                        <circle cx="24" cy="-24" r="3.4"/>
+                                        <circle cx="31.4" cy="-13" r="3.4"/>
+                                        <circle cx="34" cy="0" r="3.4"/>
+                                        <circle cx="31.4" cy="13" r="3.4"/>
+                                        <circle cx="24" cy="24" r="3.4"/>
+                                        <circle cx="13" cy="31.4" r="3.4"/>
+                                        <circle cx="0" cy="34" r="3.4"/>
+                                        <circle cx="-13" cy="31.4" r="3.4"/>
+                                        <circle cx="-24" cy="24" r="3.4"/>
+                                        <circle cx="-31.4" cy="13" r="3.4"/>
+                                        <circle cx="-34" cy="0" r="3.4"/>
+                                        <circle cx="-31.4" cy="-13" r="3.4"/>
+                                        <circle cx="-24" cy="-24" r="3.4"/>
+                                        <circle cx="-13" cy="-31.4" r="3.4"/>
+                                    </g>
+                                </svg>
+                            </div>
+
+                            <div class="min-w-0">
+                                <span class="inline-block text-[10px] uppercase font-extrabold tracking-widest bg-rngreen text-slate-950 px-2 py-0.5 rounded-full mb-1">
+                                    Asistente Oficial
+                                </span>
+                                <h3 class="text-sm font-black leading-tight text-white">
+                                    Pedile tu reporte a DAEBot
+                                </h3>
+                                <p class="text-[11px] text-blue-100 mt-1 leading-snug">
+                                    Descargá un informe simple o compará dos elecciones al instante.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controles del Generador de Reportes -->
+                    <div class="p-4 space-y-3.5 bg-gradient-to-b from-blue-50/40 to-white">
+                        <div>
+                            <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Tipo de Reporte</label>
+                            <select id="daebot-report-mode" onchange="toggleModoComparativo()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none cursor-pointer">
+                                <option value="simple" selected>📄 Reporte Simple (Elección actual)</option>
+                                <option value="comparativo">⚖️ Reporte Comparativo (Entre años)</option>
+                            </select>
+                        </div>
+
+                        <!-- Selectores 100% libres cuando elige Comparativo -->
+                        <div id="daebot-compare-box" class="hidden space-y-2.5 p-3 rounded-lg bg-blue-50/80 border border-blue-200">
+                            <div class="grid grid-cols-11 items-center gap-1.5">
+                                <div class="col-span-5">
+                                    <label class="block text-[10px] uppercase font-bold text-rnblue mb-1">Año 1</label>
+                                    <select id="daebot-year-a" class="w-full bg-white border border-blue-200 rounded-lg px-2 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none cursor-pointer">
+                                        <option value="2027">2027</option>
+                                        <option value="2026">2026</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2023">2023</option>
+                                        <option value="2021">2021</option>
+                                        <option value="2019" selected>2019</option>
+                                        <option value="2017">2017</option>
+                                        <option value="2015">2015</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-span-1 text-center pt-4 text-[11px] font-black text-slate-400">
+                                    vs
+                                </div>
+
+                                <div class="col-span-5">
+                                    <label class="block text-[10px] uppercase font-bold text-green-700 mb-1">Año 2</label>
+                                    <select id="daebot-year-b" class="w-full bg-white border border-blue-200 rounded-lg px-2 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none cursor-pointer">
+                                        <option value="2027">2027</option>
+                                        <option value="2026">2026</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2023" selected>2023</option>
+                                        <option value="2021">2021</option>
+                                        <option value="2019">2019</option>
+                                        <option value="2017">2017</option>
+                                        <option value="2015">2015</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-500 leading-tight">
+                                Compara ambos años elegidos para el territorio y categoría seleccionados arriba.
+                            </p>
+                        </div>
+
+                        <button id="btn-daebot-generate" onclick="generarReporteDAEBot()" class="w-full bg-rngreen hover:bg-[#2fb82d] text-white font-extrabold py-2.5 px-4 rounded-lg text-xs shadow-sm transition flex items-center justify-center gap-2">
+                            <span>🤖 Generar Reporte PDF</span>
+                        </button>
+                        <p id="daebot-status" class="text-[11px] text-center font-semibold text-slate-500 hidden"></p>
+                    </div>
+                </aside>
+
+            </div>
+
+            <!-- Área Principal de Resultados -->
+            <section class="lg:col-span-9 space-y-5">
+
+                <!-- Encabezado Dinámico de la Consulta -->
+                <div class="bg-white rounded-xl border border-slate-200/80 card-elevated p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-rnblue">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <span id="context-badge-year" class="bg-rnblue text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-md">2019</span>
+                            <span id="context-badge-kind" class="bg-green-100 text-green-800 text-[11px] font-bold px-2.5 py-0.5 rounded-md">Provincial</span>
+                            <span id="context-badge-territory" class="text-xs font-semibold text-slate-500">Provincial · Provincial General</span>
+                        </div>
+                        <h2 id="context-title-category" class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Gobernador / Vice</h2>
+                    </div>
+
+                    <div id="winner-pill" class="hidden sm:flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 max-w-xs">
+                        <span id="winner-dot" class="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-rnblue"></span>
+                        <div class="min-w-0">
+                            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">1° Fuerza</span>
+                            <span id="winner-name" class="text-xs font-extrabold text-slate-800 block truncate">—</span>
+                        </div>
+                        <span id="winner-pct" class="text-sm font-black text-rnblue ml-auto pl-2">0%</span>
+                    </div>
+                </div>
+                
+                <!-- Tarjetas de Indicadores (KPIs) -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- KPI 1: Mesas -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200/80 card-elevated border-t-4 border-t-rnblue">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Mesas Escrutadas</span>
+                            <span class="w-8 h-8 rounded-lg bg-blue-50 text-rnblue flex items-center justify-center text-sm">🗳️</span>
+                        </div>
+                        <div class="mt-2 flex items-baseline justify-between">
+                            <h3 id="stat-mesas" class="text-2xl font-black text-slate-900">0 / 0</h3>
+                            <span id="stat-mesas-pct" class="text-xs font-extrabold text-rnblue bg-blue-50 px-2 py-0.5 rounded-full">0%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3">
+                            <div id="bar-mesas" class="h-full bg-rnblue rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 2: Participación -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200/80 card-elevated border-t-4 border-t-rngreen">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Participación</span>
+                            <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-sm">👥</span>
+                        </div>
+                        <div class="mt-2 flex items-baseline justify-between">
+                            <h3 id="stat-participacion" class="text-2xl font-black text-green-600">0.00%</h3>
+                            <span class="text-[11px] font-semibold text-slate-400">sobre padrón</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3">
+                            <div id="bar-participacion" class="h-full bg-rngreen rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3: Votos Blancos / Nulos / Afirmativos -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200/80 card-elevated border-t-4 border-t-slate-700">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Resumen de Votos</span>
+                            <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-sm">📊</span>
+                        </div>
+                        <div class="mt-2">
+                            <div class="flex items-baseline justify-between">
+                                <span class="text-xs font-semibold text-slate-500">Afirmativos:</span>
+                                <span id="stat-afirmativos" class="text-lg font-black text-slate-900">0</span>
+                            </div>
+                            <p id="stat-subvalidos" class="text-xs font-semibold text-slate-500 mt-1.5 pt-1.5 border-t border-slate-100">
+                                Blanco: 0 | Nulos: 0
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico + Tabla de Resultados -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+                    
+                    <!-- Tarjeta del Gráfico de Dona -->
+                    <div class="md:col-span-5 bg-white p-5 rounded-xl border border-slate-200/80 card-elevated flex flex-col items-center">
+                        <div class="w-full flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-600">Distribución de Porcentajes</h3>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Votos Válidos</span>
+                        </div>
+
+                        <div class="w-full max-w-[240px] h-56 relative my-1">
+                            <canvas id="chart-resultados"></canvas>
+                            <div id="donut-center-info" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-6">
+                                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Afirmativos</span>
+                                <span id="donut-center-total" class="text-base font-black text-slate-800 leading-tight">0</span>
+                            </div>
+                        </div>
+
+                        <div id="chart-custom-legend" class="w-full mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs"></div>
+                    </div>
+
+                    <!-- Tarjeta de Detalle por Fuerza Política -->
+                    <div class="md:col-span-7 bg-white p-5 rounded-xl border border-slate-200/80 card-elevated overflow-hidden">
+                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-600">Detalle por Fuerza Política</h3>
+                            <span id="badge-total-listas" class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">0 listas</span>
+                        </div>
+
+                        <div id="table-results-body" class="space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
+                            <p class="py-8 text-center text-xs text-slate-400">Sin datos para mostrar.</p>
+                        </div>
+                    </div>
+
                 </div>
             </section>
         </div>
     </main>
 
-    <footer class="bg-rngreen text-white py-4 text-center text-xs border-t-4 border-rnblue mt-auto">
-        <p class="font-medium tracking-wide">Dirección de Asuntos Electorales - Provincia de Río Negro &copy; Tablero Oficial</p>
+    <footer class="bg-slate-900 text-slate-300 py-4 text-center text-xs border-t-4 border-rngreen mt-10">
+        <p class="font-semibold tracking-wide">Dirección de Asuntos Electorales — Provincia de Río Negro &copy; Tablero Oficial</p>
     </footer>
 
     <script>
@@ -281,6 +581,21 @@
         let datosCacheGlobal = [];
         let ultimoHashDatos = "";
         let sincronizando = false;
+
+        let estadoActualReporte = {
+            anio: "2019",
+            tipoEleccion: "Provincial",
+            circuito: "Provincial",
+            localidad: "Provincial General",
+            localidadTexto: "Provincial General",
+            categoria: "GOB",
+            categoriaTexto: "Gobernador / Vice",
+            mesas: "0 / 0",
+            participacion: "0.00%",
+            blanco: 0,
+            nulos: 0,
+            listas: []
+        };
 
         const nombresCategorias = {
             "GOB": "Gobernador / Vice",
@@ -358,6 +673,71 @@
             return circBDNorm.includes(seleccionNorm) || seleccionNorm.includes(circBDNorm);
         }
 
+        function formatearMesasLimpio(mesasRaw) {
+            const s = String(mesasRaw || "0 / 0").trim();
+            if (!s.includes("/")) {
+                const n = parseFloat(s.replace(",", "."));
+                if (!isNaN(n)) return Math.round(n).toLocaleString('es-AR');
+                return s;
+            }
+            return s;
+        }
+
+        function formatearParticipacionLimpio(partRaw) {
+            const s = String(partRaw || "0.00%").trim();
+            const num = parseFloat(s.replace("%", "").replace(",", "."));
+            if (isNaN(num)) return s;
+            return num.toFixed(2) + "%";
+        }
+
+        function onPrimaryFilterChanged() {
+            actualizarFiltros(true);
+        }
+
+        function toggleModoComparativo() {
+            const mode = document.getElementById('daebot-report-mode').value;
+            const box = document.getElementById('daebot-compare-box');
+            if (mode === 'comparativo') {
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        function actualizarBannerContexto() {
+            const anio = document.getElementById('filter-year').value;
+            const tipoEleccion = document.getElementById('filter-election-kind').value;
+            const circuito = document.getElementById('filter-circuit').value || "Provincial";
+            const selectLoc = document.getElementById('filter-locality');
+            const locText = selectLoc.options[selectLoc.selectedIndex]?.text || "Provincial General";
+            const catCode = document.getElementById('filter-category').value;
+            const catText = nombresCategorias[catCode] || catCode || "Sin categoría";
+
+            document.getElementById('context-badge-year').innerText = anio;
+            document.getElementById('context-badge-kind').innerText = tipoEleccion === "General" ? "General (Nacional)" : (tipoEleccion === "PASO" ? "PASO (Nacional)" : "Provincial");
+            document.getElementById('context-badge-territory').innerText = `${circuito} · ${locText}`;
+            document.getElementById('context-title-category').innerText = catText;
+        }
+
+        function actualizarBarrasKPI(mesasText, partText) {
+            const partes = String(mesasText).split("/");
+            let pctMesas = 0;
+            if (partes.length === 2) {
+                const escr = parseFloat(partes[0]) || 0;
+                const tot = parseFloat(partes[1]) || 0;
+                pctMesas = tot > 0 ? Math.min(100, (escr / tot) * 100) : 0;
+            } else {
+                const val = parseFloat(String(mesasText).replace(",", ".")) || 0;
+                pctMesas = Math.max(0, Math.min(100, val));
+            }
+            document.getElementById('stat-mesas-pct').innerText = pctMesas.toFixed(0) + "%";
+            document.getElementById('bar-mesas').style.width = pctMesas + "%";
+
+            const partNum = parseFloat(String(partText).replace("%", "").replace(",", ".")) || 0;
+            const partClamped = Math.max(0, Math.min(100, partNum));
+            document.getElementById('bar-participacion').style.width = partClamped + "%";
+        }
+
         function actualizarDivisionTerritorialPublico() {
             const tipoEleccion = document.getElementById('filter-election-kind').value;
             const labelCirc = document.getElementById('label-filter-circuit');
@@ -394,15 +774,12 @@
             return 'municipio';
         }
 
-        function filtrarPorTerritorioSeleccionado() {
-            const circuito = document.getElementById('filter-circuit').value || "Provincial";
-            const localidadSeleccionada = document.getElementById('filter-locality').value || "Provincial General";
-
+        function filtrarFilasDeCache(cacheRows, circuito, localidadSeleccionada) {
             const circNorm = normalizarTexto(circuito);
             const locNorm = normalizarTexto(localidadSeleccionada);
 
             if (circNorm === "provincial" && locNorm === "provincial general") {
-                return datosCacheGlobal.filter(d => {
+                return cacheRows.filter(d => {
                     let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let l = d.localidad ? normalizarTexto(d.localidad) : "";
                     return (c === "provincial" || c === "") && (l === "provincial general" || l === "provincial");
@@ -410,7 +787,7 @@
             }
 
             if (circNorm !== "provincial" && locNorm === "provincial general") {
-                const filasCircuito = datosCacheGlobal.filter(d => {
+                const filasCircuito = cacheRows.filter(d => {
                     let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let l = d.localidad ? normalizarTexto(d.localidad) : "";
                     return coincideDivisionTerritorial(c, circNorm) || ((c === "provincial" || c === "") && l === circNorm);
@@ -428,12 +805,154 @@
                 return filasCircuito;
             }
 
-            return datosCacheGlobal.filter(d => {
+            return cacheRows.filter(d => {
                 let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                 let l = d.localidad ? normalizarTexto(d.localidad) : "";
                 let okCirc = circNorm === "provincial" || coincideDivisionTerritorial(c, circNorm);
                 return okCirc && l === locNorm;
             });
+        }
+
+        function filtrarPorTerritorioSeleccionado() {
+            const circuito = document.getElementById('filter-circuit').value || "Provincial";
+            const localidadSeleccionada = document.getElementById('filter-locality').value || "Provincial General";
+            return filtrarFilasDeCache(datosCacheGlobal, circuito, localidadSeleccionada);
+        }
+
+        async function consultarAnioTipoEnSupabase(anio, tipoEleccion) {
+            let todasLasFilas = [];
+            let desde = 0;
+            const paso = 1000;
+            let seguirBuscando = true;
+
+            while (seguirBuscando) {
+                let { data, error } = await supabaseClient
+                    .from('resultados_mesas')
+                    .select('*')
+                    .eq('anio', parseInt(anio, 10))
+                    .range(desde, desde + paso - 1);
+
+                if (error) throw new Error(error.message);
+
+                if (data && data.length > 0) {
+                    todasLasFilas = todasLasFilas.concat(data);
+                    if (data.length < paso) {
+                        seguirBuscando = false;
+                    } else {
+                        desde += paso;
+                    }
+                } else {
+                    seguirBuscando = false;
+                }
+            }
+
+            return todasLasFilas.filter(d => {
+                const esCatNac = codigosNacionales.includes(d.categoria);
+                if (tipoEleccion === "PASO") {
+                    return d.tipo_eleccion === "PASO";
+                }
+                if (tipoEleccion === "General") {
+                    if (d.tipo_eleccion === "PASO") return false;
+                    return d.tipo_eleccion === "General" || esCatNac;
+                }
+                if (esCatNac) return false;
+                return !d.tipo_eleccion || d.tipo_eleccion === "Provincial";
+            });
+        }
+
+        function consolidarBloqueResultados(rawRows) {
+            if (!rawRows || rawRows.length === 0) {
+                return {
+                    mesas: "0 / 0",
+                    participacion: "0.00%",
+                    blanco: 0,
+                    nulos: 0,
+                    listas: []
+                };
+            }
+
+            const localidadesDistintas = [...new Set(rawRows.map(r => normalizarTexto(r.localidad)))];
+
+            if (localidadesDistintas.length <= 1) {
+                const mesasTxt = formatearMesasLimpio(rawRows[0].mesas_procesadas);
+                const partTxt = formatearParticipacionLimpio(rawRows[0].porcentaje_participacion);
+                let mapaUnicos = {};
+                rawRows.forEach(row => {
+                    let keyLista = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
+                    mapaUnicos[keyLista] = {
+                        lista_id: row.lista_id,
+                        nombre: row.nombre_lista || `Lista ${row.lista_id}`,
+                        votos: row.votos || 0
+                    };
+                });
+                const listas = Object.values(mapaUnicos).sort((a, b) => b.votos - a.votos);
+                return {
+                    mesas: mesasTxt,
+                    participacion: partTxt,
+                    blanco: rawRows[0].votos_blanco || 0,
+                    nulos: rawRows[0].votos_nulos || 0,
+                    listas
+                };
+            }
+
+            let metaPorLocalidad = {};
+            let sumaListas = {};
+
+            rawRows.forEach(row => {
+                const locKey = normalizarTexto(row.localidad);
+                if (!metaPorLocalidad[locKey]) {
+                    metaPorLocalidad[locKey] = {
+                        mesas: row.mesas_procesadas || "0 / 0",
+                        part: parseFloat(String(row.porcentaje_participacion || "0").replace("%", "").replace(",", ".")) || 0,
+                        blanco: parseInt(row.votos_blanco) || 0,
+                        nulos: parseInt(row.votos_nulos) || 0
+                    };
+                }
+
+                const listaKey = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
+                if (!sumaListas[listaKey]) {
+                    sumaListas[listaKey] = {
+                        lista_id: row.lista_id,
+                        nombre: row.nombre_lista || `Lista ${row.lista_id}`,
+                        votos: 0
+                    };
+                }
+                sumaListas[listaKey].votos += (parseInt(row.votos) || 0);
+            });
+
+            let mesasEscrutadasSum = 0;
+            let mesasTotalesSum = 0;
+            let blancoTotal = 0;
+            let nulosTotal = 0;
+            let partSum = 0;
+            let partCount = 0;
+
+            Object.values(metaPorLocalidad).forEach(m => {
+                blancoTotal += m.blanco;
+                nulosTotal += m.nulos;
+                if (m.part > 0) {
+                    partSum += m.part;
+                    partCount++;
+                }
+                const partesMesas = String(m.mesas).split("/");
+                if (partesMesas.length === 2) {
+                    mesasEscrutadasSum += parseInt(partesMesas[0]) || 0;
+                    mesasTotalesSum += parseInt(partesMesas[1]) || 0;
+                } else {
+                    const n = parseInt(partesMesas[0]) || 0;
+                    mesasEscrutadasSum += n;
+                    mesasTotalesSum += n;
+                }
+            });
+
+            const listas = Object.values(sumaListas).sort((a, b) => b.votos - a.votos);
+            return {
+                mesas: `${mesasEscrutadasSum} / ${mesasTotalesSum}`,
+                participacion: partCount > 0 ? (partSum / partCount).toFixed(2) + "%" : "0.00%",
+                blanco: blancoTotal,
+                nulos: nulosTotal,
+                listas
+            };
         }
 
         async function actualizarFiltros(forzar = false) {
@@ -444,48 +963,7 @@
                 const anio = parseInt(document.getElementById('filter-year').value);
                 const tipoEleccion = document.getElementById('filter-election-kind').value;
 
-                let todasLasFilas = [];
-                let desde = 0;
-                const paso = 1000;
-                let seguirBuscando = true;
-
-                while (seguirBuscando) {
-                    let { data, error } = await supabaseClient
-                        .from('resultados_mesas')
-                        .select('*')
-                        .eq('anio', anio)
-                        .range(desde, desde + paso - 1);
-
-                    if (error) {
-                        console.error("Error al sincronizar:", error.message);
-                        return;
-                    }
-
-                    if (data && data.length > 0) {
-                        todasLasFilas = todasLasFilas.concat(data);
-                        if (data.length < paso) {
-                            seguirBuscando = false;
-                        } else {
-                            desde += paso;
-                        }
-                    } else {
-                        seguirBuscando = false;
-                    }
-                }
-
-                const filasFiltradasPorTipo = todasLasFilas.filter(d => {
-                    const esCatNac = codigosNacionales.includes(d.categoria);
-
-                    if (tipoEleccion === "PASO") {
-                        return d.tipo_eleccion === "PASO";
-                    }
-                    if (tipoEleccion === "General") {
-                        if (d.tipo_eleccion === "PASO") return false;
-                        return d.tipo_eleccion === "General" || esCatNac;
-                    }
-                    if (esCatNac) return false;
-                    return !d.tipo_eleccion || d.tipo_eleccion === "Provincial";
-                });
+                const filasFiltradasPorTipo = await consultarAnioTipoEnSupabase(anio, tipoEleccion);
 
                 const filasOrdenadas = [...filasFiltradasPorTipo].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
                 const nuevoHash = JSON.stringify({ tipoEleccion, filas: filasOrdenadas });
@@ -499,6 +977,8 @@
 
                 actualizarLocalidadesPorCircuito();
                 marcarHoraSincronizacion();
+            } catch (err) {
+                console.error("Error al sincronizar:", err.message);
             } finally {
                 sincronizando = false;
             }
@@ -509,7 +989,7 @@
             if (!badge) return;
             const ahora = new Date();
             const hora = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            badge.innerText = `● Sincronizado ${hora}`;
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-white"></span> Sincronizado ${hora}`;
         }
 
         function actualizarLocalidadesPorCircuito() {
@@ -657,6 +1137,7 @@
         }
 
         function cargarDatosPublicos() {
+            actualizarBannerContexto();
             const categoria = document.getElementById('filter-category').value;
             if (!categoria) {
                 renderizarResultadosUnicos([]);
@@ -670,13 +1151,45 @@
         function renderizarResultadosUnicos(rawRows) {
             const tbody = document.getElementById('table-results-body');
             const legendContainer = document.getElementById('chart-custom-legend');
+            const winnerPill = document.getElementById('winner-pill');
             tbody.innerHTML = "";
+
+            const anio = document.getElementById('filter-year').value;
+            const tipoEleccion = document.getElementById('filter-election-kind').value;
+            const circuito = document.getElementById('filter-circuit').value || "Provincial";
+            const selectLoc = document.getElementById('filter-locality');
+            const localidad = selectLoc.value || "Provincial General";
+            const localidadTexto = selectLoc.options[selectLoc.selectedIndex]?.text || localidad;
+            const categoria = document.getElementById('filter-category').value;
+            const categoriaTexto = nombresCategorias[categoria] || categoria || "";
+
+            const consolidado = consolidarBloqueResultados(rawRows);
+
+            estadoActualReporte = {
+                anio,
+                tipoEleccion,
+                circuito,
+                localidad,
+                localidadTexto,
+                categoria,
+                categoriaTexto,
+                mesas: consolidado.mesas,
+                participacion: consolidado.participacion,
+                blanco: consolidado.blanco,
+                nulos: consolidado.nulos,
+                listas: consolidado.listas
+            };
 
             if (!rawRows || rawRows.length === 0) {
                 document.getElementById('stat-mesas').innerText = "0 / 0";
                 document.getElementById('stat-participacion').innerText = "0.00%";
+                document.getElementById('stat-afirmativos').innerText = "0";
+                document.getElementById('donut-center-total').innerText = "0";
                 document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
-                tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">Sin registros computados para esta selección.</td></tr>`;
+                document.getElementById('badge-total-listas').innerText = "0 listas";
+                actualizarBarrasKPI("0 / 0", "0%");
+                if (winnerPill) winnerPill.classList.add('hidden');
+                tbody.innerHTML = `<p class="py-8 text-center text-xs text-slate-400">Sin registros computados para esta selección.</p>`;
                 if (legendContainer) legendContainer.innerHTML = "";
                 
                 if (chartInstance) {
@@ -687,98 +1200,46 @@
                 return;
             }
 
-            const localidadesDistintas = [...new Set(rawRows.map(r => normalizarTexto(r.localidad)))];
+            document.getElementById('stat-mesas').innerText = consolidado.mesas;
+            document.getElementById('stat-participacion').innerText = consolidado.participacion;
+            document.getElementById('stat-subvalidos').innerText = `Blanco: ${consolidado.blanco.toLocaleString('es-AR')} | Nulos: ${consolidado.nulos.toLocaleString('es-AR')}`;
+            actualizarBarrasKPI(consolidado.mesas, consolidado.participacion);
 
-            if (localidadesDistintas.length <= 1) {
-                document.getElementById('stat-mesas').innerText = rawRows[0].mesas_procesadas || "0 / 0";
-                document.getElementById('stat-participacion').innerText = rawRows[0].porcentaje_participacion || "0.00%";
-                document.getElementById('stat-subvalidos').innerText = `Blanco: ${(rawRows[0].votos_blanco || 0).toLocaleString()} | Nulos: ${(rawRows[0].votos_nulos || 0).toLocaleString()}`;
-
-                let mapaUnicos = {};
-                rawRows.forEach(row => {
-                    let keyLista = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
-                    mapaUnicos[keyLista] = {
-                        nombre: row.nombre_lista || `Lista ${row.lista_id}`,
-                        votos: row.votos || 0
-                    };
-                });
-
-                dibujarTablaYGrafico(Object.values(mapaUnicos));
-            } else {
-                let metaPorLocalidad = {};
-                let sumaListas = {};
-
-                rawRows.forEach(row => {
-                    const locKey = normalizarTexto(row.localidad);
-                    if (!metaPorLocalidad[locKey]) {
-                        metaPorLocalidad[locKey] = {
-                            mesas: row.mesas_procesadas || "0 / 0",
-                            part: parseFloat(String(row.porcentaje_participacion || "0").replace("%", "").replace(",", ".")) || 0,
-                            blanco: parseInt(row.votos_blanco) || 0,
-                            nulos: parseInt(row.votos_nulos) || 0
-                        };
-                    }
-
-                    const listaKey = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
-                    if (!sumaListas[listaKey]) {
-                        sumaListas[listaKey] = {
-                            nombre: row.nombre_lista || `Lista ${row.lista_id}`,
-                            votos: 0
-                        };
-                    }
-                    sumaListas[listaKey].votos += (parseInt(row.votos) || 0);
-                });
-
-                let mesasEscrutadasSum = 0;
-                let mesasTotalesSum = 0;
-                let blancoTotal = 0;
-                let nulosTotal = 0;
-                let partSum = 0;
-                let partCount = 0;
-
-                Object.values(metaPorLocalidad).forEach(m => {
-                    blancoTotal += m.blanco;
-                    nulosTotal += m.nulos;
-                    if (m.part > 0) {
-                        partSum += m.part;
-                        partCount++;
-                    }
-                    const partesMesas = String(m.mesas).split("/");
-                    if (partesMesas.length === 2) {
-                        mesasEscrutadasSum += parseInt(partesMesas[0]) || 0;
-                        mesasTotalesSum += parseInt(partesMesas[1]) || 0;
-                    } else {
-                        const n = parseInt(partesMesas[0]) || 0;
-                        mesasEscrutadasSum += n;
-                        mesasTotalesSum += n;
-                    }
-                });
-
-                const partPromedio = partCount > 0 ? (partSum / partCount).toFixed(2) + "%" : "0.00%";
-                document.getElementById('stat-mesas').innerText = `${mesasEscrutadasSum} / ${mesasTotalesSum}`;
-                document.getElementById('stat-participacion').innerText = partPromedio;
-                document.getElementById('stat-subvalidos').innerText = `Blanco: ${blancoTotal.toLocaleString()} | Nulos: ${nulosTotal.toLocaleString()}`;
-
-                dibujarTablaYGrafico(Object.values(sumaListas));
-            }
+            dibujarTablaYGrafico(consolidado.listas);
         }
 
         function dibujarTablaYGrafico(data) {
             const tbody = document.getElementById('table-results-body');
             const legendContainer = document.getElementById('chart-custom-legend');
+            const winnerPill = document.getElementById('winner-pill');
             tbody.innerHTML = "";
             if (legendContainer) legendContainer.innerHTML = "";
 
             let totalValidos = data.reduce((acc, r) => acc + r.votos, 0);
             data.sort((a, b) => b.votos - a.votos);
 
+            document.getElementById('stat-afirmativos').innerText = totalValidos.toLocaleString('es-AR');
+            document.getElementById('donut-center-total').innerText = totalValidos.toLocaleString('es-AR');
+            document.getElementById('badge-total-listas').innerText = `${data.length} ${data.length === 1 ? 'lista' : 'listas'}`;
+
             let labels = [];
             let votosArr = [];
-            let bgColors = ["#0063BE", "#39C937", "#FBB03B", "#DA251D", "#8B5CF6", "#06B6D4", "#475569", "#EC4899", "#F97316", "#78716C"];
+            let bgColors = ["#0063BE", "#39C937", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#475569", "#EC4899", "#F97316", "#78716C"];
+
+            if (data.length > 0 && winnerPill) {
+                const topPct = totalValidos > 0 ? ((data[0].votos / totalValidos) * 100).toFixed(2) : "0.00";
+                winnerPill.classList.remove('hidden');
+                winnerPill.classList.add('flex');
+                document.getElementById('winner-dot').style.backgroundColor = bgColors[0];
+                document.getElementById('winner-name').innerText = data[0].nombre;
+                document.getElementById('winner-pct').innerText = `${topPct}%`;
+            }
 
             data.forEach((row, index) => {
-                let pct = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
+                let pctNum = totalValidos > 0 ? (row.votos / totalValidos) * 100 : 0;
+                let pct = pctNum.toFixed(2);
                 const color = bgColors[index % bgColors.length];
+                const isFirst = index === 0 && row.votos > 0;
 
                 if (index < 8) {
                     labels.push(row.nombre);
@@ -788,23 +1249,34 @@
                         legendContainer.innerHTML += `
                             <div class="flex items-center justify-between gap-2 py-0.5">
                                 <div class="flex items-center gap-2 min-w-0">
-                                    <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: ${color};"></span>
-                                    <span class="text-slate-700 font-medium truncate" title="${row.nombre}">${row.nombre}</span>
+                                    <span class="w-3 h-3 rounded flex-shrink-0 shadow-xs" style="background-color: ${color};"></span>
+                                    <span class="text-slate-700 font-semibold truncate" title="${row.nombre}">${row.nombre}</span>
                                 </div>
-                                <span class="font-bold text-slate-800 flex-shrink-0">${pct}%</span>
+                                <span class="font-extrabold text-slate-900 flex-shrink-0">${pct}%</span>
                             </div>`;
                     }
                 }
 
                 tbody.innerHTML += `
-                    <tr class="border-b hover:bg-slate-50">
-                        <td class="py-2 font-semibold text-slate-700">
-                            <span class="inline-block w-2.5 h-2.5 rounded-sm mr-1.5 align-middle" style="background-color: ${color};"></span>
-                            ${row.nombre}
-                        </td>
-                        <td class="py-2 text-right font-bold">${row.votos.toLocaleString()}</td>
-                        <td class="py-2 text-right font-bold text-rnblue">${pct}%</td>
-                    </tr>`;
+                    <div class="p-3 rounded-lg border ${isFirst ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/60 border-slate-200/70'} hover:bg-slate-50 transition">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center flex-shrink-0 text-white shadow-xs" style="background-color: ${color};">
+                                    ${index + 1}°
+                                </span>
+                                <span class="text-xs sm:text-sm font-bold text-slate-800 leading-snug" title="${row.nombre}">
+                                    ${row.nombre}
+                                </span>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <span class="text-sm font-black text-slate-900 block leading-none">${pct}%</span>
+                                <span class="text-[11px] font-semibold text-slate-500 mt-0.5 block">${row.votos.toLocaleString('es-AR')} votos</span>
+                            </div>
+                        </div>
+                        <div class="w-full h-2 bg-slate-200/70 rounded-full overflow-hidden mt-2.5">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: ${Math.min(100, pctNum)}%; background-color: ${color};"></div>
+                        </div>
+                    </div>`;
             });
 
             const ctx = document.getElementById('chart-resultados').getContext('2d');
@@ -823,14 +1295,15 @@
                             data: votosArr,
                             backgroundColor: bgColors.slice(0, labels.length),
                             borderWidth: 2,
-                            borderColor: '#ffffff'
+                            borderColor: '#ffffff',
+                            hoverOffset: 4
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         animation: false,
-                        cutout: '52%',
+                        cutout: '62%',
                         plugins: {
                             legend: { display: false },
                             tooltip: { enabled: false },
@@ -841,12 +1314,241 @@
                                     const sum = context.dataset.data.reduce((a, b) => a + b, 0);
                                     if (!sum) return '';
                                     const pct = (value / sum) * 100;
-                                    return pct >= 4 ? pct.toFixed(1) + '%' : '';
+                                    return pct >= 5 ? pct.toFixed(1) + '%' : '';
                                 }
                             }
                         }
                     }
                 });
+            }
+        }
+
+        // --- GENERADOR DE REPORTES DE DAEBOT (SIMPLE Y COMPARATIVO) ---
+        function dibujarEncabezadoPDF(doc, subtitulo) {
+            doc.setFillColor(57, 201, 55);
+            doc.rect(0, 0, 210, 16, "F");
+            doc.setFillColor(0, 99, 190);
+            doc.rect(0, 16, 210, 3, "F");
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("DIRECCIÓN DE ASUNTOS ELECTORALES · PROVINCIA DE RÍO NEGRO", 14, 10.5);
+
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(15);
+            doc.text(subtitulo, 14, 29);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Generado por DAEBot el ${new Date().toLocaleString('es-AR')}`, 14, 34.5);
+        }
+
+        async function generarReporteDAEBot() {
+            const mode = document.getElementById('daebot-report-mode').value;
+            const statusEl = document.getElementById('daebot-status');
+            const btn = document.getElementById('btn-daebot-generate');
+
+            statusEl.classList.remove('hidden');
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+
+            try {
+                const { jsPDF } = window.jspdf;
+
+                if (mode === 'simple') {
+                    statusEl.innerText = "🤖 DAEBot está armando tu reporte simple...";
+                    const st = estadoActualReporte;
+
+                    if (!st.listas || st.listas.length === 0) {
+                        alert("No hay datos cargados en la selección actual para generar el reporte.");
+                        return;
+                    }
+
+                    const doc = new jsPDF();
+                    dibujarEncabezadoPDF(doc, `Reporte Electoral Oficial — ${st.categoriaTexto} (${st.anio})`);
+
+                    doc.setFillColor(241, 245, 249);
+                    doc.roundedRect(14, 39, 182, 22, 2, 2, "F");
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(9.5);
+                    doc.setTextColor(0, 99, 190);
+                    doc.text(`Elección: ${st.tipoEleccion} ${st.anio}   |   Territorio: ${st.circuito} — ${st.localidadTexto}`, 18, 46.5);
+
+                    const totalValidos = st.listas.reduce((s, l) => s + l.votos, 0);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(9);
+                    doc.setTextColor(51, 65, 85);
+                    doc.text(
+                        `Mesas: ${st.mesas}   |   Participación: ${st.participacion}   |   Afirmativos: ${totalValidos.toLocaleString('es-AR')}   |   Blanco: ${st.blanco.toLocaleString('es-AR')}   |   Nulos: ${st.nulos.toLocaleString('es-AR')}`,
+                        18,
+                        54.5
+                    );
+
+                    const bodyRows = st.listas.map((l, idx) => {
+                        const pct = totalValidos > 0 ? ((l.votos / totalValidos) * 100).toFixed(2) + "%" : "0.00%";
+                        return [`${idx + 1}°`, l.lista_id || "-", l.nombre, l.votos.toLocaleString('es-AR'), pct];
+                    });
+
+                    doc.autoTable({
+                        startY: 66,
+                        head: [['Pos.', 'Lista', 'Agrupación Política', 'Votos', '% Válidos']],
+                        body: bodyRows,
+                        theme: 'grid',
+                        headStyles: { fillColor: [0, 99, 190], textColor: 255, fontStyle: 'bold' },
+                        styles: { fontSize: 9, cellPadding: 3 },
+                        columnStyles: {
+                            0: { halign: 'center', cellWidth: 14 },
+                            1: { halign: 'center', cellWidth: 18 },
+                            3: { halign: 'right', cellWidth: 28 },
+                            4: { halign: 'right', cellWidth: 26, fontStyle: 'bold' }
+                        }
+                    });
+
+                    const safeLoc = st.localidadTexto.replace(/[^a-zA-Z0-9_-]/g, "_");
+                    doc.save(`Reporte_DAEBot_${st.anio}_${safeLoc}_${st.categoria}.pdf`);
+                    statusEl.innerText = "✓ ¡Listo! Reporte simple descargado.";
+                } else {
+                    // MODO COMPARATIVO: AMBOS AÑOS 100% A ELECCIÓN
+                    const st = estadoActualReporte;
+                    const anio1 = document.getElementById('daebot-year-a').value;
+                    const anio2 = document.getElementById('daebot-year-b').value;
+
+                    if (anio1 === anio2) {
+                        alert("Elegí dos años distintos para poder compararlos.");
+                        return;
+                    }
+
+                    statusEl.innerText = `🤖 Consultando ${anio1} y ${anio2} para comparar...`;
+
+                    const [filas1, filas2] = await Promise.all([
+                        consultarAnioTipoEnSupabase(anio1, st.tipoEleccion),
+                        consultarAnioTipoEnSupabase(anio2, st.tipoEleccion)
+                    ]);
+
+                    const bloque1 = consolidarBloqueResultados(
+                        filtrarFilasDeCache(filas1, st.circuito, st.localidad).filter(d => d.categoria === st.categoria)
+                    );
+                    const bloque2 = consolidarBloqueResultados(
+                        filtrarFilasDeCache(filas2, st.circuito, st.localidad).filter(d => d.categoria === st.categoria)
+                    );
+
+                    if ((!bloque1.listas || bloque1.listas.length === 0) && (!bloque2.listas || bloque2.listas.length === 0)) {
+                        alert(`No se encontraron registros ni en ${anio1} ni en ${anio2} para ${st.localidadTexto} (${st.categoriaTexto}).`);
+                        return;
+                    }
+
+                    const bloqueIzq = { anio: anio1, ...bloque1 };
+                    const bloqueDer = { anio: anio2, ...bloque2 };
+
+                    const totIzq = bloqueIzq.listas.reduce((s, l) => s + l.votos, 0);
+                    const totDer = bloqueDer.listas.reduce((s, l) => s + l.votos, 0);
+
+                    const doc = new jsPDF('l');
+                    doc.setFillColor(57, 201, 55);
+                    doc.rect(0, 0, 297, 16, "F");
+                    doc.setFillColor(0, 99, 190);
+                    doc.rect(0, 16, 297, 3, "F");
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(10);
+                    doc.text("DIRECCIÓN DE ASUNTOS ELECTORALES · PROVINCIA DE RÍO NEGRO", 14, 10.5);
+
+                    doc.setTextColor(15, 23, 42);
+                    doc.setFontSize(15);
+                    doc.text(`Cuadro Comparativo Electoral (${bloqueIzq.anio} vs ${bloqueDer.anio}) — ${st.categoriaTexto}`, 14, 28);
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(100, 116, 139);
+                    doc.text(`Elección: ${st.tipoEleccion}  |  Territorio: ${st.circuito} — ${st.localidadTexto}  |  Generado por DAEBot el ${new Date().toLocaleString('es-AR')}`, 14, 33.5);
+
+                    doc.setFillColor(241, 245, 249);
+                    doc.roundedRect(14, 38, 131, 18, 2, 2, "F");
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(10);
+                    doc.setTextColor(0, 99, 190);
+                    doc.text(`ELECCIÓN ${bloqueIzq.anio}`, 18, 44.5);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8.2);
+                    doc.setTextColor(51, 65, 85);
+                    doc.text(`Participación: ${bloqueIzq.participacion}  |  Afirmativos: ${totIzq.toLocaleString('es-AR')}  |  Blanco: ${bloqueIzq.blanco.toLocaleString('es-AR')}`, 18, 51.5);
+
+                    doc.setFillColor(240, 253, 244);
+                    doc.roundedRect(152, 38, 131, 18, 2, 2, "F");
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(10);
+                    doc.setTextColor(22, 163, 74);
+                    doc.text(`ELECCIÓN ${bloqueDer.anio}`, 156, 44.5);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8.2);
+                    doc.setTextColor(51, 65, 85);
+                    doc.text(`Participación: ${bloqueDer.participacion}  |  Afirmativos: ${totDer.toLocaleString('es-AR')}  |  Blanco: ${bloqueDer.blanco.toLocaleString('es-AR')}`, 156, 51.5);
+
+                    const limpiarComillas = (txt) => String(txt || "").replace(/[“”"']/g, "").trim();
+
+                    const listasIzqLimpias = bloqueIzq.listas.filter(l => l.votos > 0);
+                    const listasDerLimpias = bloqueDer.listas.filter(l => l.votos > 0);
+
+                    const rowsIzq = listasIzqLimpias.map((l, i) => [
+                        `${i + 1}°`,
+                        limpiarComillas(l.nombre),
+                        l.votos.toLocaleString('es-AR'),
+                        totIzq > 0 ? ((l.votos / totIzq) * 100).toFixed(2) + "%" : "0.00%"
+                    ]);
+
+                    const rowsDer = listasDerLimpias.map((l, i) => [
+                        `${i + 1}°`,
+                        limpiarComillas(l.nombre),
+                        l.votos.toLocaleString('es-AR'),
+                        totDer > 0 ? ((l.votos / totDer) * 100).toFixed(2) + "%" : "0.00%"
+                    ]);
+
+                    doc.autoTable({
+                        startY: 60,
+                        margin: { left: 14, right: 152 },
+                        tableWidth: 131,
+                        head: [['Pos.', `Agrupación Política (${bloqueIzq.anio})`, 'Votos', '%']],
+                        body: rowsIzq.length ? rowsIzq : [['-', 'Sin datos cargados', '-', '-']],
+                        theme: 'grid',
+                        headStyles: { fillColor: [0, 99, 190], textColor: 255, fontStyle: 'bold', fontSize: 8.2 },
+                        styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
+                        columnStyles: {
+                            0: { halign: 'center', cellWidth: 11 },
+                            1: { cellWidth: 78 },
+                            2: { halign: 'right', cellWidth: 22 },
+                            3: { halign: 'right', cellWidth: 20, fontStyle: 'bold' }
+                        }
+                    });
+
+                    doc.autoTable({
+                        startY: 60,
+                        margin: { left: 152, right: 14 },
+                        tableWidth: 131,
+                        head: [['Pos.', `Agrupación Política (${bloqueDer.anio})`, 'Votos', '%']],
+                        body: rowsDer.length ? rowsDer : [['-', 'Sin datos cargados', '-', '-']],
+                        theme: 'grid',
+                        headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold', fontSize: 8.2 },
+                        styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
+                        columnStyles: {
+                            0: { halign: 'center', cellWidth: 11 },
+                            1: { cellWidth: 78 },
+                            2: { halign: 'right', cellWidth: 22 },
+                            3: { halign: 'right', cellWidth: 20, fontStyle: 'bold' }
+                        }
+                    });
+
+                    const safeLoc = st.localidadTexto.replace(/[^a-zA-Z0-9_-]/g, "_");
+                    doc.save(`Cuadro_Comparativo_${bloqueIzq.anio}_vs_${bloqueDer.anio}_${safeLoc}_${st.categoria}.pdf`);
+                    statusEl.innerText = `✓ ¡Listo! Cuadro comparativo ${bloqueIzq.anio} vs ${bloqueDer.anio} descargado.`;
+                }
+            } catch (err) {
+                alert("Error al generar el reporte con DAEBot: " + err.message);
+                statusEl.innerText = "⚠️ Error al generar reporte.";
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
             }
         }
 
