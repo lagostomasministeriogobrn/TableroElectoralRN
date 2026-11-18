@@ -7,14 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        rnblue: '#0072CE',
-                        rngreen: '#18B753',
+                        rnblue: '#0063BE',
+                        rngreen: '#39C937',
                         rnlight: '#F8FAFC',
                     }
                 }
@@ -23,9 +24,105 @@
     </script>
     <style>
         .custom-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+
+        @keyframes pptRevealContent {
+            0% {
+                opacity: 0;
+                transform: translateY(24px) scale(0.98);
+                filter: blur(4px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes pptRevealBar {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+
+        .ppt-reveal-content {
+            animation: pptRevealContent 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .ppt-reveal-sub {
+            opacity: 0;
+            animation: pptRevealContent 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
+        }
+
+        .ppt-progress-bar {
+            transform-origin: left center;
+            animation: pptRevealBar 2.6s linear forwards;
+        }
+
+        .ppt-slide-exit {
+            opacity: 0;
+            transform: scale(1.03);
+            transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1), transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-rnlight text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Diapositiva de Bienvenida en Verde #39C937 -->
+    <div id="welcome-slide" class="fixed inset-0 z-50 flex flex-col justify-between bg-[#39C937] text-white overflow-hidden">
+        <!-- Franja superior institucional -->
+        <div class="w-full h-2.5 flex shadow-sm">
+            <div class="w-1/3 bg-[#0063BE]"></div>
+            <div class="w-1/3 bg-white"></div>
+            <div class="w-1/3 bg-black"></div>
+        </div>
+
+        <!-- Contenido central de la diapositiva -->
+        <div class="max-w-4xl mx-auto px-6 text-center flex flex-col items-center justify-center my-auto space-y-6">
+            <div class="ppt-reveal-content flex items-center justify-center">
+                <div class="flex h-20 w-40 rounded-lg overflow-hidden shadow-2xl border-2 border-white/50 bg-black">
+                    <div class="w-1/2 bg-black flex items-center justify-center">
+                        <svg class="w-full h-full" viewBox="0 0 100 100">
+                            <g fill="white">
+                                <circle cx="28" cy="22" r="2.3"/><circle cx="38" cy="16" r="2.3"/><circle cx="50" cy="14" r="2.3"/><circle cx="62" cy="16" r="2.3"/><circle cx="72" cy="22" r="2.3"/>
+                                <circle cx="78" cy="32" r="2.3"/><circle cx="80" cy="45" r="2.3"/><circle cx="78" cy="58" r="2.3"/><circle cx="72" cy="68" r="2.3"/>
+                                <circle cx="62" cy="74" r="2.3"/><circle cx="50" cy="76" r="2.3"/><circle cx="38" cy="74" r="2.3"/><circle cx="28" cy="68" r="2.3"/>
+                                <circle cx="22" cy="58" r="2.3"/><circle cx="20" cy="45" r="2.3"/><circle cx="22" cy="32" r="2.3"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="w-1/2 bg-[#39C937] flex items-center justify-center">
+                        <span class="text-white font-black text-2xl tracking-widest">RN</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ppt-reveal-content space-y-3">
+                <span class="inline-block text-xs md:text-sm uppercase font-bold tracking-[0.25em] text-white bg-black/15 px-4 py-1 rounded-full">
+                    Dirección de Asuntos Electorales
+                </span>
+                <h1 class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-white drop-shadow-sm">
+                    Bienvenido al Tablero Electoral Oficial de la Provincia de Río Negro
+                </h1>
+            </div>
+
+            <div class="ppt-reveal-sub pt-2 flex flex-col items-center space-y-4">
+                <p class="text-xs md:text-sm text-white/95 max-w-xl font-medium">
+                    Sistema de consulta de cómputos provinciales y nacionales por circuito, departamento y localidad.
+                </p>
+                <div class="w-52 h-1.5 bg-black/20 rounded-full overflow-hidden">
+                    <div class="h-full bg-white ppt-progress-bar"></div>
+                </div>
+                <button onclick="cerrarDiapositivaBienvenida()" class="text-[11px] uppercase tracking-widest text-white/95 hover:text-white font-bold transition pt-1">
+                    Ingresar ahora →
+                </button>
+            </div>
+        </div>
+
+        <!-- Pie de diapositiva -->
+        <div class="pb-5 text-center text-[11px] text-white font-semibold tracking-wider">
+            Gobierno de la Provincia de Río Negro
+        </div>
+    </div>
 
     <header class="bg-rngreen text-white shadow-md border-b-4 border-rnblue">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center">
@@ -46,7 +143,7 @@
                     </div>
                 </div>
                 <div>
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-green-100 block">Dirección de Asuntos Electorales</span>
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-white/90 block">Dirección de Asuntos Electorales</span>
                     <h1 class="text-lg md:text-xl font-semibold tracking-tight">Tablero Electoral Oficial</h1>
                 </div>
             </div>
@@ -126,15 +223,16 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow flex flex-col justify-center items-center">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow flex flex-col items-center">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 w-full text-left">Distribución de Porcentajes</h3>
-                        <div class="w-full max-w-xs h-64 relative">
+                        <div class="w-full max-w-[230px] h-56 relative">
                             <canvas id="chart-resultados"></canvas>
                         </div>
+                        <div id="chart-custom-legend" class="w-full mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs"></div>
                     </div>
 
-                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow overflow-x-auto max-h-[400px]">
+                    <div class="bg-white p-5 rounded border border-slate-200 custom-shadow overflow-x-auto max-h-[480px]">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Detalle por Fuerza Política</h3>
                         <table class="w-full text-left text-xs">
                             <thead>
@@ -159,6 +257,22 @@
     </footer>
 
     <script>
+        if (typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+        }
+
+        let slideCerrada = false;
+        function cerrarDiapositivaBienvenida() {
+            if (slideCerrada) return;
+            slideCerrada = true;
+            const slide = document.getElementById('welcome-slide');
+            if (!slide) return;
+            slide.classList.add('ppt-slide-exit');
+            setTimeout(() => {
+                slide.style.display = 'none';
+            }, 750);
+        }
+
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -241,7 +355,6 @@
         function coincideDivisionTerritorial(circBDNorm, seleccionNorm) {
             if (!circBDNorm || !seleccionNorm) return false;
             if (circBDNorm === seleccionNorm) return true;
-            // Tolerar variantes como "Departamento Avellaneda" o "00002 - AVELLANEDA"
             return circBDNorm.includes(seleccionNorm) || seleccionNorm.includes(circBDNorm);
         }
 
@@ -300,7 +413,6 @@
                 const filasCircuito = datosCacheGlobal.filter(d => {
                     let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    // También contemplar si alguien guardó el nombre del departamento en el campo localidad con circuito_id = "Provincial"
                     return coincideDivisionTerritorial(c, circNorm) || ((c === "provincial" || c === "") && l === circNorm);
                 });
 
@@ -371,7 +483,6 @@
                         if (d.tipo_eleccion === "PASO") return false;
                         return d.tipo_eleccion === "General" || esCatNac;
                     }
-                    // Provincial
                     if (esCatNac) return false;
                     return !d.tipo_eleccion || d.tipo_eleccion === "Provincial";
                 });
@@ -558,6 +669,7 @@
 
         function renderizarResultadosUnicos(rawRows) {
             const tbody = document.getElementById('table-results-body');
+            const legendContainer = document.getElementById('chart-custom-legend');
             tbody.innerHTML = "";
 
             if (!rawRows || rawRows.length === 0) {
@@ -565,6 +677,7 @@
                 document.getElementById('stat-participacion').innerText = "0.00%";
                 document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
                 tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">Sin registros computados para esta selección.</td></tr>`;
+                if (legendContainer) legendContainer.innerHTML = "";
                 
                 if (chartInstance) {
                     chartInstance.data.labels = [];
@@ -652,25 +765,43 @@
 
         function dibujarTablaYGrafico(data) {
             const tbody = document.getElementById('table-results-body');
+            const legendContainer = document.getElementById('chart-custom-legend');
             tbody.innerHTML = "";
+            if (legendContainer) legendContainer.innerHTML = "";
 
             let totalValidos = data.reduce((acc, r) => acc + r.votos, 0);
             data.sort((a, b) => b.votos - a.votos);
 
             let labels = [];
             let votosArr = [];
-            let bgColors = ["#0072CE", "#18B753", "#FBB03B", "#DA251D", "#B4B5E0", "#88D9E8", "#444444", "#9C27B0", "#FF9800", "#795548"];
+            let bgColors = ["#0063BE", "#39C937", "#FBB03B", "#DA251D", "#8B5CF6", "#06B6D4", "#475569", "#EC4899", "#F97316", "#78716C"];
 
             data.forEach((row, index) => {
                 let pct = totalValidos > 0 ? ((row.votos / totalValidos) * 100).toFixed(2) : "0.00";
+                const color = bgColors[index % bgColors.length];
+
                 if (index < 8) {
                     labels.push(row.nombre);
                     votosArr.push(row.votos);
+
+                    if (legendContainer) {
+                        legendContainer.innerHTML += `
+                            <div class="flex items-center justify-between gap-2 py-0.5">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: ${color};"></span>
+                                    <span class="text-slate-700 font-medium truncate" title="${row.nombre}">${row.nombre}</span>
+                                </div>
+                                <span class="font-bold text-slate-800 flex-shrink-0">${pct}%</span>
+                            </div>`;
+                    }
                 }
 
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-slate-50">
-                        <td class="py-2 font-semibold text-slate-700">${row.nombre}</td>
+                        <td class="py-2 font-semibold text-slate-700">
+                            <span class="inline-block w-2.5 h-2.5 rounded-sm mr-1.5 align-middle" style="background-color: ${color};"></span>
+                            ${row.nombre}
+                        </td>
                         <td class="py-2 text-right font-bold">${row.votos.toLocaleString()}</td>
                         <td class="py-2 text-right font-bold text-rnblue">${pct}%</td>
                     </tr>`;
@@ -691,20 +822,37 @@
                         datasets: [{
                             data: votosArr,
                             backgroundColor: bgColors.slice(0, labels.length),
-                            borderWidth: 1
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         animation: false,
-                        plugins: { legend: { display: false } }
+                        cutout: '52%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false },
+                            datalabels: {
+                                color: '#ffffff',
+                                font: { weight: 'bold', size: 11 },
+                                formatter: (value, context) => {
+                                    const sum = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    if (!sum) return '';
+                                    const pct = (value / sum) * 100;
+                                    return pct >= 4 ? pct.toFixed(1) + '%' : '';
+                                }
+                            }
+                        }
                     }
                 });
             }
         }
 
         window.onload = async function() {
+            setTimeout(cerrarDiapositivaBienvenida, 2600);
+
             actualizarDivisionTerritorialPublico();
             await actualizarFiltros(true);
 

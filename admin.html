@@ -15,8 +15,8 @@
             theme: {
                 extend: {
                     colors: {
-                        rnblue: '#0072CE',
-                        rngreen: '#18B753',
+                        rnblue: '#0063BE',
+                        rngreen: '#39C937',
                         rnlight: '#F8FAFC',
                     }
                 }
@@ -90,7 +90,7 @@
                         </div>
                     </div>
                     <div>
-                        <span class="text-[10px] uppercase font-bold tracking-widest text-green-100 block">Dirección de Asuntos Electorales</span>
+                        <span class="text-[10px] uppercase font-bold tracking-widest text-white/90 block">Dirección de Asuntos Electorales</span>
                         <h1 class="text-lg md:text-xl font-semibold tracking-tight">Panel Administrativo Oficial</h1>
                     </div>
                 </div>
@@ -153,7 +153,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Paraje</label>
                         <div class="flex gap-1">
-                            <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Provincial General...">
+                            <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, San Javier...">
                             <button type="button" onclick="loadAdminData()" title="Buscar datos de esta localidad" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
                         </div>
                     </div>
@@ -251,8 +251,6 @@
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y8F-G_AnbvTRT7Z46vNoBQ_2TioQnLq';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let localidadCargadaOriginal = "";
 
         const categoriasNacionales = [
             { value: "PRE", text: "Presidente / Vice" },
@@ -434,8 +432,7 @@
 
                 if (filtrados.length > 0) {
                     let row = filtrados[0];
-                    localidadCargadaOriginal = row.localidad || localidad;
-                    document.getElementById('admin-locality').value = localidadCargadaOriginal;
+                    document.getElementById('admin-locality').value = row.localidad || localidad;
                     document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
                     document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
                     document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
@@ -449,12 +446,11 @@
                     }
 
                     renderPartiesRows(filtrados);
-                    document.getElementById('admin-status').innerText = `✓ Datos de "${localidadCargadaOriginal}" (${tipoEleccion} - ${circuitoSeleccionado}) cargados.`;
+                    document.getElementById('admin-status').innerText = `✓ Datos de "${row.localidad || localidad}" (${tipoEleccion} - ${circuitoSeleccionado}) cargados.`;
                     return;
                 }
             }
 
-            localidadCargadaOriginal = "";
             renderPartiesRows([]);
             document.getElementById('admin-mesas').value = "0 / 0";
             document.getElementById('admin-participacion').value = "0.00%";
@@ -484,7 +480,7 @@
             if(container.querySelector('p')) container.innerHTML = "";
             container.innerHTML += `
                 <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
-                    <input type="color" value="#0072CE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                    <input type="color" value="#0063BE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
                     <input type="text" value="1" class="w-16 text-xs font-bold text-center border rounded party-id">
                     <input type="text" value="Nombre de Lista" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
                     <input type="number" value="0" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
@@ -493,17 +489,15 @@
         }
 
         async function guardarBloqueCategoriaEnSupabase({ anio, tipoEleccion, localidad, tipoEntidad, circuito_id, categoria, mesas, participacion, blanco, nulos, parties }) {
+            // Solo elimina registros previos DE ESA MISMA localidad, año, tipo de elección, circuito/depto y categoría
             let delQuery = supabaseClient
                 .from('resultados_mesas')
                 .delete()
                 .eq('anio', anio)
                 .eq('tipo_eleccion', tipoEleccion)
                 .ilike('localidad', localidad)
+                .ilike('circuito_id', circuito_id)
                 .eq('categoria', categoria);
-
-            if (esTotalGeneral(localidad)) {
-                delQuery = delQuery.ilike('circuito_id', circuito_id);
-            }
 
             let { error: errDel } = await delQuery;
             if (errDel) throw new Error(errDel.message);
@@ -677,9 +671,6 @@
                 if (optDept) {
                     selDept.value = optDept.value;
                 }
-                if (esTotalGeneral(document.getElementById('admin-locality').value)) {
-                    document.getElementById('admin-locality').value = "Provincial General";
-                }
             }
 
             if (mesasDetectadas) document.getElementById('admin-mesas').value = mesasDetectadas;
@@ -700,7 +691,7 @@
                 const anioActual = parseInt(document.getElementById('admin-year').value);
                 const localidadActual = document.getElementById('admin-locality').value.trim() || "Provincial General";
 
-                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para ${deptoActual} (${anioActual}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
+                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para "${localidadActual}" (${deptoActual} - ${anioActual}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
                     try {
                         for (const cat of columnasCategorias) {
                             const bloque = resultadosPorCategoria[cat.code];
@@ -718,8 +709,8 @@
                                 parties: bloque.parties
                             });
                         }
-                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de ${deptoActual} (${anioActual}) se guardaron en Supabase!`;
-                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de ${deptoActual} (${anioActual}) en Supabase.`);
+                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual}) se guardaron en Supabase!`;
+                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual}) en Supabase.`);
                     } catch (err) {
                         alert("❌ Error al guardar las categorías en lote: " + err.message);
                     }
@@ -827,20 +818,6 @@
             if(btn) btn.innerText = "Guardando en Supabase...";
 
             try {
-                if (localidadCargadaOriginal && normalizarTexto(localidadCargadaOriginal) !== normalizarTexto(localidad)) {
-                    let delOld = supabaseClient
-                        .from('resultados_mesas')
-                        .delete()
-                        .eq('anio', anio)
-                        .eq('tipo_eleccion', tipoEleccion)
-                        .ilike('localidad', localidadCargadaOriginal)
-                        .eq('categoria', categoria);
-                    if (esTotalGeneral(localidadCargadaOriginal)) {
-                        delOld = delOld.ilike('circuito_id', circuito_id);
-                    }
-                    await delOld;
-                }
-
                 let parties = [];
                 document.querySelectorAll('.party-row').forEach(row => {
                     parties.push({
@@ -871,7 +848,6 @@
                 });
 
                 if(btn) btn.innerText = "Guardar en Supabase ☁️";
-                localidadCargadaOriginal = localidad;
                 document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito: "${localidad}" (${tipoEleccion} - ${circuito_id})!`;
                 alert(`¡Los datos de ${localidad} (${tipoEleccion} - ${circuito_id}) se guardaron correctamente!`);
             } catch (err) {
@@ -895,11 +871,8 @@
                     .eq('anio', anio)
                     .eq('tipo_eleccion', tipoEleccion)
                     .ilike('localidad', localidad)
+                    .ilike('circuito_id', circuito_id)
                     .eq('categoria', categoria);
-
-                if (esTotalGeneral(localidad)) {
-                    delQuery = delQuery.ilike('circuito_id', circuito_id);
-                }
 
                 let { error } = await delQuery;
 
@@ -907,7 +880,6 @@
                     alert("❌ Error al borrar: " + error.message);
                     return;
                 }
-                localidadCargadaOriginal = "";
                 loadAdminData();
                 alert("Datos eliminados correctamente.");
             }
@@ -935,7 +907,6 @@
                     alert("❌ Error al eliminar localidad: " + error.message);
                     return;
                 }
-                localidadCargadaOriginal = "";
                 loadAdminData();
                 alert(`"${localidad}" (${tipoEleccion}) fue eliminada por completo del año ${anio}.`);
             }
@@ -971,9 +942,9 @@
                 
                 let yPos = 20;
 
-                doc.setFillColor(24, 183, 83);
+                doc.setFillColor(57, 201, 55);
                 doc.rect(0, 0, 210, 15, "F");
-                doc.setFillColor(0, 114, 206);
+                doc.setFillColor(0, 99, 190);
                 doc.rect(0, 15, 210, 3, "F");
 
                 doc.setTextColor(255, 255, 255);
@@ -997,7 +968,7 @@
 
                     doc.setFontSize(11);
                     doc.setFont("helvetica", "bold");
-                    doc.setTextColor(0, 114, 206);
+                    doc.setTextColor(0, 99, 190);
                     doc.text(seccion, 14, yPos);
                     yPos += 4;
 
@@ -1016,7 +987,7 @@
                         head: [['Fuerza Política / Lista', 'Votos', 'Porcentaje']],
                         body: tableRows,
                         theme: 'grid',
-                        headStyles: { fillColor: [0, 114, 206], textColor: 255, fontStyle: 'bold' },
+                        headStyles: { fillColor: [0, 99, 190], textColor: 255, fontStyle: 'bold' },
                         styles: { fontSize: 9, cellPadding: 3 },
                         columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } }
                     });
