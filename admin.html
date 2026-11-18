@@ -414,7 +414,6 @@
             return digits ? parseInt(digits, 10) : 0;
         }
 
-        // Preprocesa la imagen escalándola 2x y mejorando contraste para OCR nítido de tablas
         function preprocesarImagenParaOCR(fileOrBlob) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -710,12 +709,10 @@
             }
         }
 
-        // Parser específico para el Excel Consolidado Provincial de Río Negro (múltiples pestañas)
         async function procesarExcelConsolidadoProvincial(workbook) {
             const statusEl = document.getElementById('admin-status');
             const progressEl = document.getElementById('ocr-progress');
 
-            // 1. Detectar año desde el título de Resumen Provincial
             const resumenSheet = workbook.Sheets['Resumen Provincial'];
             const resumenRows = XLSX.utils.sheet_to_json(resumenSheet, { header: 1, defval: "" });
             let anioDetectado = 2015;
@@ -730,10 +727,8 @@
                 : "75,87%";
 
             const bloques = [];
-            const metaLocalidad = {}; // para heredar mesas y participación en Municipios y Com. Fomento
+            const metaLocalidad = {};
 
-            // --- BLOQUE 1: Resumen Provincial (GOB y LEGP a nivel Provincial General) ---
-            let catActual = null;
             let bloqueActual = null;
             for (let i = 6; i < resumenRows.length; i++) {
                 const r = resumenRows[i];
@@ -793,7 +788,6 @@
             }
             if (bloqueActual) bloques.push(bloqueActual);
 
-            // --- BLOQUE 2: GOB por Región (8 circuitos regionales) ---
             if (workbook.SheetNames.includes('GOB por Región')) {
                 const regRows = XLSX.utils.sheet_to_json(workbook.Sheets['GOB por Región'], { header: 1, defval: "" });
                 for (let i = 4; i < regRows.length; i++) {
@@ -829,7 +823,6 @@
                 }
             }
 
-            // --- BLOQUE 3: GOB por Localidad (92 localidades) ---
             if (workbook.SheetNames.includes('GOB por Localidad')) {
                 const locRows = XLSX.utils.sheet_to_json(workbook.Sheets['GOB por Localidad'], { header: 1, defval: "" });
                 for (let i = 4; i < locRows.length; i++) {
@@ -877,7 +870,6 @@
                 }
             }
 
-            // --- BLOQUE 4: Legisladores Circuito (LRC -> LEGC por Región) ---
             if (workbook.SheetNames.includes('Legisladores Circuito (LRC)')) {
                 const lrcRows = XLSX.utils.sheet_to_json(workbook.Sheets['Legisladores Circuito (LRC)'], { header: 1, defval: "" });
                 const mapaRegionesLRC = {};
@@ -914,7 +906,6 @@
                 Object.values(mapaRegionesLRC).forEach(b => bloques.push(b));
             }
 
-            // --- BLOQUE 5: Municipios y Com. Fomento (INT y COF por localidad) ---
             if (workbook.SheetNames.includes('Municipios y Com. Fomento')) {
                 const munRows = XLSX.utils.sheet_to_json(workbook.Sheets['Municipios y Com. Fomento'], { header: 1, defval: "" });
                 const mapaLocales = {};
@@ -960,7 +951,6 @@
                 Object.values(mapaLocales).forEach(b => bloques.push(b));
             }
 
-            // Cargar vista previa del primer bloque (Provincial General - GOB) en el formulario
             document.getElementById('admin-year').value = String(anioDetectado);
             document.getElementById('admin-election-kind').value = "Provincial";
             actualizarOpcionesCategoriaAdmin();
@@ -988,7 +978,6 @@
             if (confirm(resumenMsg)) {
                 progressEl.classList.remove('hidden');
                 try {
-                    // Limpieza previa del año Provincial en Supabase para evitar duplicados viejos y acelerar la inserción
                     progressEl.innerText = `⏳ Preparando base de datos para ${anioDetectado}...`;
                     await supabaseClient
                         .from('resultados_mesas')
@@ -996,7 +985,6 @@
                         .eq('anio', anioDetectado)
                         .eq('tipo_eleccion', 'Provincial');
 
-                    // Armar todas las filas e insertar en lotes de 250 filas (mucho más rápido que 1 por 1)
                     const allRows = [];
                     for (const b of bloques) {
                         for (const p of b.parties) {
@@ -1045,7 +1033,6 @@
         async function procesarExcelCNE(arrayBuffer) {
             const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
-            // Si es el Excel Consolidado Provincial multi-pestaña, usar el importador completo
             if (workbook.SheetNames.includes('Resumen Provincial') && workbook.SheetNames.includes('GOB por Localidad')) {
                 await procesarExcelConsolidadoProvincial(workbook);
                 return;
@@ -1070,10 +1057,13 @@
                 const row = rows[i].map(c => String(c).trim());
                 const rowJoined = row.join(" ").toUpperCase();
 
-                if (rowJoined.includes("PRIMARIAS") || rowJoined.includes("P.A.S.O") || rowJoined.includes("PASO")) {
-                    tipoDetectado = "PASO";
-                } else if (rowJoined.includes("ELECCIONES GENERALES")) {
+                // Detección precisa de tipo de elección sin confundirse con localidades como "Paso Chacabuco" o "Paso Flores"
+                if (/\bELECCI[OÓ]N(ES)?\s+GENERALES?\b/i.test(rowJoined)) {
                     tipoDetectado = "General";
+                } else if (/\bPRIMARIAS\b/i.test(rowJoined) || /\bP\.?\s*A\.?\s*S\.?\s*O\.?\b/.test(rowJoined) && !/\bPASO\s+(CHACABUCO|FLORES|CORDOVA|CORDOBA|DE\s+LOS|DEL|GRANDE|HONDO|SECO|VIEJO)\b/i.test(rowJoined)) {
+                    if (/\bPRIMARIAS\b/i.test(rowJoined) || /P\.A\.S\.O/i.test(rowJoined) || /\bELECCI[OÓ]N(ES)?\s+PASO\b/i.test(rowJoined)) {
+                        tipoDetectado = "PASO";
+                    }
                 }
 
                 const matchFecha = rowJoined.match(/FECHA\s+ELECCION:\s*\d{1,2}\/\d{1,2}\/(\d{4})/i);
@@ -1215,7 +1205,7 @@
                 const anioActual = parseInt(document.getElementById('admin-year').value);
                 const localidadActual = document.getElementById('admin-locality').value.trim() || "Provincial General";
 
-                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para "${localidadActual}" (${deptoActual} - ${anioActual}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
+                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoDetectado}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
                     try {
                         for (const cat of columnasCategorias) {
                             const bloque = resultadosPorCategoria[cat.code];
@@ -1233,8 +1223,8 @@
                                 parties: bloque.parties
                             });
                         }
-                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual}) se guardaron en Supabase!`;
-                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual}) en Supabase.`);
+                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoDetectado}) se guardaron en Supabase!`;
+                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoDetectado}) en Supabase.`);
                     } catch (err) {
                         alert("❌ Error al guardar las categorías en lote: " + err.message);
                     }
@@ -1242,7 +1232,7 @@
                 }
             }
 
-            document.getElementById('admin-status').innerText = `✓ Excel CNE importado (${columnasCategorias.length} categoría/s detectada/s).`;
+            document.getElementById('admin-status').innerText = `✓ Excel CNE importado (${columnasCategorias.length} categoría/s detectada/s - ${tipoDetectado}).`;
         }
 
         async function handleSmartUpload(event) {
