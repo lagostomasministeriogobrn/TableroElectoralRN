@@ -107,8 +107,8 @@
             
             <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de Capturas de Pantalla, CSV y Excel Oficial</h3>
-                    <p class="text-xs text-slate-600 mt-1">Subí una captura (<strong>.png / .jpg</strong>) o pegala con <strong>Ctrl+V</strong> para extraer mesas, participación, listas, votos, blancos y nulos automáticamente.</p>
+                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de Excel Consolidado, Planillas CNE, CSV y Capturas</h3>
+                    <p class="text-xs text-slate-600 mt-1">Subí el Excel consolidado provincial (detecta todas las pestañas, regiones, localidades y categorías), planillas CNE, CSV o capturas (<strong>Ctrl+V</strong>).</p>
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
                     <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
@@ -364,6 +364,19 @@
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
+        function normalizarNombreCircuitoRN(rawRegion) {
+            const r = normalizarTexto(rawRegion);
+            if (r.includes("alto valle centro")) return "Alto Valle Centro";
+            if (r.includes("alto valle este")) return "Alto Valle Este";
+            if (r.includes("alto valle oeste")) return "Alto Valle Oeste";
+            if (r.includes("andino")) return "Circuito Andino";
+            if (r.includes("atlantico")) return "Circuito Atlántico";
+            if (r.includes("linea sur")) return "Línea Sur";
+            if (r.includes("valle medio")) return "Valle Medio";
+            if (r.includes("valle inferior")) return "Valle Inferior";
+            return rawRegion.trim() || "Provincial";
+        }
+
         function esTotalGeneral(loc) {
             const n = normalizarTexto(loc);
             return n === "provincial general" || n === "provincial" || n === "provincia";
@@ -395,6 +408,7 @@
         }
 
         function limpiarNumeroEntero(str) {
+            if (typeof str === "number") return Math.round(str);
             if (!str) return 0;
             const digits = String(str).replace(/[^\d]/g, "");
             return digits ? parseInt(digits, 10) : 0;
@@ -467,7 +481,6 @@
                 for (const line of lines) {
                     const norm = normalizarTexto(line);
 
-                    // Mesas Habilitadas / Escrutadas
                     if (norm.includes("habilitadas") && !norm.includes("electores")) {
                         const m = line.match(/([\d\.]+)\s*\*?\s*$/);
                         if (m) mesasHabilitadas = limpiarNumeroEntero(m[1]);
@@ -477,13 +490,11 @@
                         if (m) mesasEscrutadas = limpiarNumeroEntero(m[1]);
                     }
 
-                    // Participación sobre mesas procesadas
                     if (norm.includes("participacion")) {
                         const m = line.match(/(\d{1,3}[,\.]\d{1,2})\s*%/);
                         if (m) participacion = m[1].replace(".", ",") + "%";
                     }
 
-                    // Control de secciones de la tabla
                     if (norm === "resultados" || (norm.includes("lista") && norm.includes("votos") && norm.includes("porcentaje"))) {
                         enSeccionResultados = true;
                         enSeccionTotales = false;
@@ -496,7 +507,6 @@
                         continue;
                     }
 
-                    // Votos en blanco y nulos
                     if (norm.includes("votos en blanco") || norm.startsWith("blanco")) {
                         const m = line.match(/([\d\.]+)\s+\d{1,3}[,\.]\d{1,2}\s*%?/);
                         if (m) votosBlanco = limpiarNumeroEntero(m[1]);
@@ -509,7 +519,6 @@
                         continue;
                     }
 
-                    // Filas de listas dentro de Resultados: <NroLista> <Nombre Lista> <Votos> <Porcentaje%>
                     if (enSeccionResultados && !enSeccionTotales) {
                         const matchFila = line.match(/^(\d{1,5})\s+(.+?)\s+([\d\.]+)\s+(\d{1,3}[,\.]\d{1,2})\s*%?$/);
                         if (matchFila) {
@@ -527,7 +536,6 @@
                     }
                 }
 
-                // Fallback por si el encabezado "Resultados" no se leyó limpio pero sí las filas con N° + Nombre + Votos + %
                 if (parties.length === 0) {
                     for (const line of lines) {
                         const norm = normalizarTexto(line);
@@ -702,8 +710,347 @@
             }
         }
 
+        // Parser específico para el Excel Consolidado Provincial de Río Negro (múltiples pestañas)
+        async function procesarExcelConsolidadoProvincial(workbook) {
+            const statusEl = document.getElementById('admin-status');
+            const progressEl = document.getElementById('ocr-progress');
+
+            // 1. Detectar año desde el título de Resumen Provincial
+            const resumenSheet = workbook.Sheets['Resumen Provincial'];
+            const resumenRows = XLSX.utils.sheet_to_json(resumenSheet, { header: 1, defval: "" });
+            let anioDetectado = 2015;
+            const tituloResumen = String(resumenRows[0]?.[0] || "");
+            const matchAnio = tituloResumen.match(/(20\d{2})/);
+            if (matchAnio) anioDetectado = parseInt(matchAnio[1], 10);
+
+            const totalMesasProv = limpiarNumeroEntero(resumenRows[4]?.[6]) || 1533;
+            const partRawProv = resumenRows[4]?.[4];
+            const partProvStr = typeof partRawProv === "number"
+                ? (partRawProv <= 1 ? (partRawProv * 100).toFixed(2).replace(".", ",") + "%" : partRawProv.toFixed(2).replace(".", ",") + "%")
+                : "75,87%";
+
+            const bloques = [];
+            const metaLocalidad = {}; // para heredar mesas y participación en Municipios y Com. Fomento
+
+            // --- BLOQUE 1: Resumen Provincial (GOB y LEGP a nivel Provincial General) ---
+            let catActual = null;
+            let bloqueActual = null;
+            for (let i = 6; i < resumenRows.length; i++) {
+                const r = resumenRows[i];
+                const col0 = String(r[0] ?? "").trim();
+                const col1 = String(r[1] ?? "").trim();
+                const col3 = normalizarTexto(String(r[3] ?? ""));
+                const votos = limpiarNumeroEntero(r[4]);
+
+                if (col0.includes("GOBERNADOR")) {
+                    if (bloqueActual) bloques.push(bloqueActual);
+                    bloqueActual = {
+                        anio: anioDetectado,
+                        tipoEleccion: "Provincial",
+                        localidad: "Provincial General",
+                        tipoEntidad: "Municipio",
+                        circuito_id: "Provincial",
+                        categoria: "GOB",
+                        mesas: `${totalMesasProv} / ${totalMesasProv}`,
+                        participacion: partProvStr,
+                        blanco: 0,
+                        nulos: 0,
+                        parties: []
+                    };
+                    continue;
+                }
+                if (col0.includes("LEGISLADORES")) {
+                    if (bloqueActual) bloques.push(bloqueActual);
+                    bloqueActual = {
+                        anio: anioDetectado,
+                        tipoEleccion: "Provincial",
+                        localidad: "Provincial General",
+                        tipoEntidad: "Municipio",
+                        circuito_id: "Provincial",
+                        categoria: "LEGP",
+                        mesas: `${totalMesasProv} / ${totalMesasProv}`,
+                        participacion: partProvStr,
+                        blanco: 0,
+                        nulos: 0,
+                        parties: []
+                    };
+                    continue;
+                }
+
+                if (!bloqueActual) continue;
+
+                if (col3 === "positivo" && col1) {
+                    bloqueActual.parties.push({
+                        lista_id: parsearListaId(col0, bloqueActual.parties.length + 1),
+                        nombre_lista: col1,
+                        votos: votos
+                    });
+                } else if (col0 === "BLC" || normalizarTexto(col1).includes("blanco")) {
+                    bloqueActual.blanco = votos;
+                } else if (col0 === "NUL" || normalizarTexto(col1).includes("nulos")) {
+                    bloqueActual.nulos = votos;
+                }
+            }
+            if (bloqueActual) bloques.push(bloqueActual);
+
+            // --- BLOQUE 2: GOB por Región (8 circuitos regionales) ---
+            if (workbook.SheetNames.includes('GOB por Región')) {
+                const regRows = XLSX.utils.sheet_to_json(workbook.Sheets['GOB por Región'], { header: 1, defval: "" });
+                for (let i = 4; i < regRows.length; i++) {
+                    const r = regRows[i];
+                    const codigo = String(r[0] ?? "").trim();
+                    const regionRaw = String(r[1] ?? "").trim();
+                    if (!regionRaw || normalizarTexto(codigo) === "total") continue;
+
+                    const circuito = normalizarNombreCircuitoRN(regionRaw);
+                    const mesas = limpiarNumeroEntero(r[2]);
+                    const hab = limpiarNumeroEntero(r[3]);
+                    const votantes = limpiarNumeroEntero(r[4]);
+                    const partStr = hab > 0 ? ((votantes / hab) * 100).toFixed(2).replace(".", ",") + "%" : "0,00%";
+
+                    bloques.push({
+                        anio: anioDetectado,
+                        tipoEleccion: "Provincial",
+                        localidad: "Provincial General",
+                        tipoEntidad: "Municipio",
+                        circuito_id: circuito,
+                        categoria: "GOB",
+                        mesas: `${mesas} / ${mesas}`,
+                        participacion: partStr,
+                        blanco: limpiarNumeroEntero(r[11]),
+                        nulos: limpiarNumeroEntero(r[12]) + limpiarNumeroEntero(r[13]) + limpiarNumeroEntero(r[14]),
+                        parties: [
+                            { lista_id: 414, nombre_lista: "Alianza Juntos Somos Río Negro", votos: limpiarNumeroEntero(r[7]) },
+                            { lista_id: 412, nombre_lista: "Alianza Frente para la Victoria Distrito Río Negro", votos: limpiarNumeroEntero(r[8]) },
+                            { lista_id: 415, nombre_lista: "Alianza Frente Progresista por la Igualdad y la República", votos: limpiarNumeroEntero(r[9]) },
+                            { lista_id: 3, nombre_lista: "Unión Cívica Radical", votos: limpiarNumeroEntero(r[10]) }
+                        ]
+                    });
+                }
+            }
+
+            // --- BLOQUE 3: GOB por Localidad (92 localidades) ---
+            if (workbook.SheetNames.includes('GOB por Localidad')) {
+                const locRows = XLSX.utils.sheet_to_json(workbook.Sheets['GOB por Localidad'], { header: 1, defval: "" });
+                for (let i = 4; i < locRows.length; i++) {
+                    const r = locRows[i];
+                    const codigo = String(r[0] ?? "").trim();
+                    const regionRaw = String(r[1] ?? "").trim();
+                    const locRaw = String(r[2] ?? "").trim();
+                    if (!locRaw || normalizarTexto(codigo) === "total") continue;
+
+                    const esCF = /\(\s*c\.?\s*f\.?\s*\)?$/i.test(locRaw);
+                    const localidadLimpia = locRaw.replace(/\(\s*c\.?\s*f\.?\s*\)?$/i, "").trim();
+                    const tipoEntidad = esCF ? "Comision de Fomento" : "Municipio";
+                    const circuito = normalizarNombreCircuitoRN(regionRaw);
+
+                    const mesas = limpiarNumeroEntero(r[3]);
+                    const hab = limpiarNumeroEntero(r[4]);
+                    const votantes = limpiarNumeroEntero(r[5]);
+                    const partStr = hab > 0 ? ((votantes / hab) * 100).toFixed(2).replace(".", ",") + "%" : "0,00%";
+
+                    metaLocalidad[normalizarTexto(localidadLimpia)] = {
+                        mesas: `${mesas} / ${mesas}`,
+                        participacion: partStr,
+                        circuito: circuito,
+                        tipoEntidad: tipoEntidad
+                    };
+
+                    bloques.push({
+                        anio: anioDetectado,
+                        tipoEleccion: "Provincial",
+                        localidad: localidadLimpia,
+                        tipoEntidad: tipoEntidad,
+                        circuito_id: circuito,
+                        categoria: "GOB",
+                        mesas: `${mesas} / ${mesas}`,
+                        participacion: partStr,
+                        blanco: limpiarNumeroEntero(r[12]),
+                        nulos: limpiarNumeroEntero(r[13]) + limpiarNumeroEntero(r[14]) + limpiarNumeroEntero(r[15]),
+                        parties: [
+                            { lista_id: 414, nombre_lista: "Alianza Juntos Somos Río Negro", votos: limpiarNumeroEntero(r[8]) },
+                            { lista_id: 412, nombre_lista: "Alianza Frente para la Victoria Distrito Río Negro", votos: limpiarNumeroEntero(r[9]) },
+                            { lista_id: 415, nombre_lista: "Alianza Frente Progresista por la Igualdad y la República", votos: limpiarNumeroEntero(r[10]) },
+                            { lista_id: 3, nombre_lista: "Unión Cívica Radical", votos: limpiarNumeroEntero(r[11]) }
+                        ]
+                    });
+                }
+            }
+
+            // --- BLOQUE 4: Legisladores Circuito (LRC -> LEGC por Región) ---
+            if (workbook.SheetNames.includes('Legisladores Circuito (LRC)')) {
+                const lrcRows = XLSX.utils.sheet_to_json(workbook.Sheets['Legisladores Circuito (LRC)'], { header: 1, defval: "" });
+                const mapaRegionesLRC = {};
+
+                for (let i = 4; i < lrcRows.length; i++) {
+                    const r = lrcRows[i];
+                    const regionRaw = String(r[1] ?? "").trim();
+                    const agrupacion = String(r[3] ?? "").trim();
+                    if (!regionRaw || !agrupacion) continue;
+
+                    const circuito = normalizarNombreCircuitoRN(regionRaw);
+                    if (!mapaRegionesLRC[circuito]) {
+                        const refGob = bloques.find(b => b.categoria === "GOB" && b.localidad === "Provincial General" && b.circuito_id === circuito);
+                        mapaRegionesLRC[circuito] = {
+                            anio: anioDetectado,
+                            tipoEleccion: "Provincial",
+                            localidad: "Provincial General",
+                            tipoEntidad: "Municipio",
+                            circuito_id: circuito,
+                            categoria: "LEGC",
+                            mesas: refGob ? refGob.mesas : "0 / 0",
+                            participacion: refGob ? refGob.participacion : "0,00%",
+                            blanco: 0,
+                            nulos: 0,
+                            parties: []
+                        };
+                    }
+                    mapaRegionesLRC[circuito].parties.push({
+                        lista_id: parsearListaId(r[2], mapaRegionesLRC[circuito].parties.length + 1),
+                        nombre_lista: agrupacion,
+                        votos: limpiarNumeroEntero(r[5])
+                    });
+                }
+                Object.values(mapaRegionesLRC).forEach(b => bloques.push(b));
+            }
+
+            // --- BLOQUE 5: Municipios y Com. Fomento (INT y COF por localidad) ---
+            if (workbook.SheetNames.includes('Municipios y Com. Fomento')) {
+                const munRows = XLSX.utils.sheet_to_json(workbook.Sheets['Municipios y Com. Fomento'], { header: 1, defval: "" });
+                const mapaLocales = {};
+
+                for (let i = 4; i < munRows.length; i++) {
+                    const r = munRows[i];
+                    const catRaw = normalizarTexto(String(r[0] ?? ""));
+                    const regionRaw = String(r[2] ?? "").trim();
+                    const locRaw = String(r[3] ?? "").trim();
+                    const agrupacion = String(r[5] ?? "").trim();
+                    if (!locRaw || !agrupacion) continue;
+
+                    const esCF = catRaw.includes("fomento") || /\(\s*c\.?\s*f\.?\s*\)?$/i.test(locRaw);
+                    const catCode = esCF ? "COF" : "INT";
+                    const tipoEntidad = esCF ? "Comision de Fomento" : "Municipio";
+                    const localidadLimpia = locRaw.replace(/\(\s*c\.?\s*f\.?\s*\)?$/i, "").trim();
+                    const circuito = normalizarNombreCircuitoRN(regionRaw);
+                    const key = `${catCode}__${normalizarTexto(localidadLimpia)}`;
+
+                    if (!mapaLocales[key]) {
+                        const meta = metaLocalidad[normalizarTexto(localidadLimpia)];
+                        mapaLocales[key] = {
+                            anio: anioDetectado,
+                            tipoEleccion: "Provincial",
+                            localidad: localidadLimpia,
+                            tipoEntidad: tipoEntidad,
+                            circuito_id: circuito,
+                            categoria: catCode,
+                            mesas: meta ? meta.mesas : "1 / 1",
+                            participacion: meta ? meta.participacion : "0,00%",
+                            blanco: 0,
+                            nulos: 0,
+                            parties: []
+                        };
+                    }
+
+                    mapaLocales[key].parties.push({
+                        lista_id: parsearListaId(r[4], mapaLocales[key].parties.length + 1),
+                        nombre_lista: agrupacion,
+                        votos: limpiarNumeroEntero(r[7])
+                    });
+                }
+                Object.values(mapaLocales).forEach(b => bloques.push(b));
+            }
+
+            // Cargar vista previa del primer bloque (Provincial General - GOB) en el formulario
+            document.getElementById('admin-year').value = String(anioDetectado);
+            document.getElementById('admin-election-kind').value = "Provincial";
+            actualizarOpcionesCategoriaAdmin();
+            actualizarDivisionTerritorialAdmin();
+            document.getElementById('admin-locality').value = "Provincial General";
+            document.getElementById('admin-circuit').value = "Provincial";
+            document.getElementById('admin-election-type').value = "GOB";
+
+            if (bloques.length > 0) {
+                const p0 = bloques[0];
+                document.getElementById('admin-mesas').value = p0.mesas;
+                document.getElementById('admin-participacion').value = p0.participacion;
+                document.getElementById('admin-subvalidos').value = `Blanco: ${p0.blanco} | Nulos: ${p0.nulos}`;
+                renderPartiesRows(p0.parties);
+            }
+
+            const resumenMsg =
+                `Se detectó el Consolidado Provincial ${anioDetectado} completo con ${bloques.length} bloques de resultados:\n\n` +
+                `• Resumen Provincial (Gobernador y Legisladores Poblacionales)\n` +
+                `• 8 Circuitos Regionales (Gobernador y Legisladores Circuitales)\n` +
+                `• 92 Localidades (Gobernador)\n` +
+                `• Municipios y Comisiones de Fomento (Intendentes y Com. de Fomento)\n\n` +
+                `¿Querés importar y guardar TODO automáticamente en Supabase ahora mismo?`;
+
+            if (confirm(resumenMsg)) {
+                progressEl.classList.remove('hidden');
+                try {
+                    // Limpieza previa del año Provincial en Supabase para evitar duplicados viejos y acelerar la inserción
+                    progressEl.innerText = `⏳ Preparando base de datos para ${anioDetectado}...`;
+                    await supabaseClient
+                        .from('resultados_mesas')
+                        .delete()
+                        .eq('anio', anioDetectado)
+                        .eq('tipo_eleccion', 'Provincial');
+
+                    // Armar todas las filas e insertar en lotes de 250 filas (mucho más rápido que 1 por 1)
+                    const allRows = [];
+                    for (const b of bloques) {
+                        for (const p of b.parties) {
+                            allRows.push({
+                                anio: b.anio,
+                                tipo_eleccion: b.tipoEleccion,
+                                localidad: b.localidad,
+                                tipo_entidad: b.tipoEntidad,
+                                circuito_id: b.circuito_id,
+                                categoria: b.categoria,
+                                mesa_numero: 1,
+                                mesas_procesadas: b.mesas,
+                                porcentaje_participacion: b.participacion,
+                                lista_id: p.lista_id,
+                                nombre_lista: p.nombre_lista,
+                                votos: p.votos,
+                                votos_blanco: b.blanco,
+                                votos_nulos: b.nulos
+                            });
+                        }
+                    }
+
+                    const chunkSize = 250;
+                    for (let i = 0; i < allRows.length; i += chunkSize) {
+                        const chunk = allRows.slice(i, i + chunkSize);
+                        const pct = Math.min(100, Math.round(((i + chunk.length) / allRows.length) * 100));
+                        progressEl.innerText = `⏳ Guardando en Supabase (${pct}%)...`;
+                        const { error: errIns } = await supabaseClient.from('resultados_mesas').insert(chunk);
+                        if (errIns) throw new Error(errIns.message);
+                    }
+
+                    statusEl.innerText = `✓ ¡Consolidado ${anioDetectado} guardado completo (${bloques.length} bloques / ${allRows.length} registros)!`;
+                    alert(`¡Éxito total! Se cargaron los ${bloques.length} bloques de las Elecciones Provinciales ${anioDetectado} en el tablero.`);
+                } catch (err) {
+                    alert("❌ Error al guardar el consolidado: " + err.message);
+                    statusEl.innerText = "⚠️ Error al guardar el consolidado.";
+                } finally {
+                    progressEl.classList.add('hidden');
+                    progressEl.innerText = "";
+                }
+            } else {
+                statusEl.innerText = `✓ Consolidado ${anioDetectado} leído (${bloques.length} bloques listos).`;
+            }
+        }
+
         async function procesarExcelCNE(arrayBuffer) {
             const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+            // Si es el Excel Consolidado Provincial multi-pestaña, usar el importador completo
+            if (workbook.SheetNames.includes('Resumen Provincial') && workbook.SheetNames.includes('GOB por Localidad')) {
+                await procesarExcelConsolidadoProvincial(workbook);
+                return;
+            }
+
             const firstSheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[firstSheetName];
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
@@ -904,7 +1251,6 @@
 
             const fileName = file.name.toLowerCase();
 
-            // Si es imagen (.png, .jpg, .jpeg, .webp)
             if (file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(fileName)) {
                 await procesarImagenCaptura(file);
                 event.target.value = "";
@@ -918,6 +1264,8 @@
                         await procesarExcelCNE(e.target.result);
                     } catch (err) {
                         alert("Error al leer el archivo Excel: " + err.message);
+                    } finally {
+                        event.target.value = "";
                     }
                 };
                 reader.readAsArrayBuffer(file);
@@ -978,7 +1326,6 @@
             };
         }
 
-        // Permitir pegar una captura directamente con Ctrl+V
         window.addEventListener('paste', async (event) => {
             if (sessionStorage.getItem(SESSION_KEY) !== "ok") return;
             const items = (event.clipboardData || event.originalEvent?.clipboardData)?.items || [];
