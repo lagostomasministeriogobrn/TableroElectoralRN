@@ -676,9 +676,17 @@
         function formatearMesasLimpio(mesasRaw) {
             const s = String(mesasRaw || "0 / 0").trim();
             if (!s.includes("/")) {
-                const n = parseFloat(s.replace(",", "."));
-                if (!isNaN(n)) return Math.round(n).toLocaleString('es-AR');
+                const limpio = s.replace("%", "").replace(",", ".").trim();
+                const n = parseFloat(limpio);
+                if (!isNaN(n)) {
+                    if (n === 100) return "100%";
+                    return Math.round(n).toLocaleString('es-AR');
+                }
                 return s;
+            }
+            const partes = s.split("/");
+            if (partes.length === 2 && partes[0].trim() === "100" && partes[1].trim() === "100") {
+                return "100%";
             }
             return s;
         }
@@ -727,7 +735,7 @@
                 const tot = parseFloat(partes[1]) || 0;
                 pctMesas = tot > 0 ? Math.min(100, (escr / tot) * 100) : 0;
             } else {
-                const val = parseFloat(String(mesasText).replace(",", ".")) || 0;
+                const val = parseFloat(String(mesasText).replace("%", "").replace(",", ".")) || 0;
                 pctMesas = Math.max(0, Math.min(100, val));
             }
             document.getElementById('stat-mesas-pct').innerText = pctMesas.toFixed(0) + "%";
@@ -947,7 +955,7 @@
 
             const listas = Object.values(sumaListas).sort((a, b) => b.votos - a.votos);
             return {
-                mesas: `${mesasEscrutadasSum} / ${mesasTotalesSum}`,
+                mesas: formatearMesasLimpio(`${mesasEscrutadasSum} / ${mesasTotalesSum}`),
                 participacion: partCount > 0 ? (partSum / partCount).toFixed(2) + "%" : "0.00%",
                 blanco: blancoTotal,
                 nulos: nulosTotal,

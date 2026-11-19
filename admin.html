@@ -108,10 +108,10 @@
             <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de Excel Consolidado, Planillas CNE, CSV y Capturas</h3>
-                    <p class="text-xs text-slate-600 mt-1">Subí el Excel consolidado provincial (detecta todas las pestañas, regiones, localidades y categorías), planillas CNE, CSV o capturas (<strong>Ctrl+V</strong>).</p>
+                    <p class="text-xs text-slate-600 mt-1">Subí el Excel consolidado provincial (detecta todas las pestañas, regiones, localidades y categorías), planillas CNE, planillas simples (.xlsx / .xls), CSV o capturas (<strong>Ctrl+V</strong>).</p>
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
-                    <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .odt, .json" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
+                    <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .odt, .json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
                     <span id="ocr-progress" class="text-[11px] font-bold text-rnblue hidden"></span>
                 </div>
             </div>
@@ -1031,6 +1031,11 @@
         }
 
         async function procesarExcelCNE(arrayBuffer) {
+            if (typeof XLSX === 'undefined') {
+                alert("Error: No se cargó la librería XLSX. Revisá tu conexión a internet.");
+                return;
+            }
+
             const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
             if (workbook.SheetNames.includes('Resumen Provincial') && workbook.SheetNames.includes('GOB por Localidad')) {
@@ -1052,15 +1057,15 @@
             let colNro = 0;
             let colNombre = 1;
             let columnasCategorias = [];
+            let colVotosSimple = -1;
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i].map(c => String(c).trim());
                 const rowJoined = row.join(" ").toUpperCase();
 
-                // Detección precisa de tipo de elección sin confundirse con localidades como "Paso Chacabuco" o "Paso Flores"
                 if (/\bELECCI[OÓ]N(ES)?\s+GENERALES?\b/i.test(rowJoined)) {
                     tipoDetectado = "General";
-                } else if (/\bPRIMARIAS\b/i.test(rowJoined) || /\bP\.?\s*A\.?\s*S\.?\s*O\.?\b/.test(rowJoined) && !/\bPASO\s+(CHACABUCO|FLORES|CORDOVA|CORDOBA|DE\s+LOS|DEL|GRANDE|HONDO|SECO|VIEJO)\b/i.test(rowJoined)) {
+                } else if (/\bPRIMARIAS\b/i.test(rowJoined) || (/\bP\.?\s*A\.?\s*S\.?\s*O\.?\b/.test(rowJoined) && !/\bPASO\s+(CHACABUCO|FLORES|CORDOVA|CORDOBA|DE\s+LOS|DEL|GRANDE|HONDO|SECO|VIEJO)\b/i.test(rowJoined))) {
                     if (/\bPRIMARIAS\b/i.test(rowJoined) || /P\.A\.S\.O/i.test(rowJoined) || /\bELECCI[OÓ]N(ES)?\s+PASO\b/i.test(rowJoined)) {
                         tipoDetectado = "PASO";
                     }
@@ -1094,18 +1099,28 @@
                     }
                 }
 
-                const idxAgrup = row.findIndex(c => normalizarTexto(c).includes("agrupacion politica") || normalizarTexto(c).includes("lista"));
+                const idxAgrup = row.findIndex(c => {
+                    const n = normalizarTexto(c);
+                    return n.includes("agrupacion") || n.includes("partido") || n.includes("fuerza") || n === "lista" || n === "nombre";
+                });
+
                 if (idxAgrup !== -1) {
                     headerRowIdx = i;
                     colNombre = idxAgrup;
-                    const idxNro = row.findIndex(c => normalizarTexto(c) === "nro" || normalizarTexto(c) === "lista");
-                    colNro = idxNro !== -1 ? idxNro : 0;
+                    const idxNro = row.findIndex(c => {
+                        const n = normalizarTexto(c);
+                        return n === "nro" || n === "numero" || n === "lista_id" || (n === "lista" && idxAgrup !== row.indexOf(c));
+                    });
+                    colNro = idxNro !== -1 ? idxNro : -1;
 
-                    for (let c = idxAgrup + 1; c < row.length; c++) {
+                    for (let c = 0; c < row.length; c++) {
+                        if (c === colNombre || c === colNro) continue;
                         if (row[c]) {
                             const code = mapearHeaderCategoria(row[c]);
                             if (code) {
                                 columnasCategorias.push({ colIdx: c, code: code, label: row[c] });
+                            } else if (normalizarTexto(row[c]).includes("voto")) {
+                                colVotosSimple = c;
                             }
                         }
                     }
@@ -1113,8 +1128,13 @@
                 }
             }
 
+            if (headerRowIdx !== -1 && columnasCategorias.length === 0 && colVotosSimple !== -1) {
+                const catActual = document.getElementById('admin-election-type').value || "GOB";
+                columnasCategorias.push({ colIdx: colVotosSimple, code: catActual, label: catActual });
+            }
+
             if (headerRowIdx === -1 || columnasCategorias.length === 0) {
-                alert("No se encontraron columnas de categorías válidas en el archivo Excel.");
+                alert("No se reconocieron los encabezados del Excel. Asegurate de que tenga columnas como 'Agrupación Política' (o 'Partido') y los nombres de categorías o 'Votos'.");
                 return;
             }
 
@@ -1130,19 +1150,21 @@
             });
 
             for (let i = headerRowIdx + 1; i < rows.length; i++) {
-                const nroRaw = String(rows[i][colNro] ?? "").trim();
+                const nroRaw = colNro !== -1 ? String(rows[i][colNro] ?? "").trim() : "";
                 const nombreRaw = String(rows[i][colNombre] ?? "").trim();
                 if (!nombreRaw) continue;
 
                 const nombreNorm = normalizarTexto(nombreRaw);
-                if (nombreNorm.includes("totales") || nombreNorm === "total") {
+                if (nombreNorm.includes("totales") || nombreNorm === "total" || nombreNorm.includes("afirmativos")) {
                     break;
                 }
 
                 columnasCategorias.forEach(cat => {
                     const cellRaw = rows[i][cat.colIdx];
                     const cellStr = String(cellRaw ?? "").trim();
-                    const votos = parseInt(cellStr.replace(/\./g, "").replace(/,/g, "")) || 0;
+                    const votos = typeof cellRaw === "number"
+                        ? Math.round(cellRaw)
+                        : (parseInt(cellStr.replace(/\./g, "").replace(/,/g, "")) || 0);
                     const bucket = resultadosPorCategoria[cat.code];
 
                     if (nombreNorm.includes("blanco")) {
@@ -1167,13 +1189,11 @@
                 }
             }
 
-            if (!tipoDetectado) {
-                tipoDetectado = "General";
+            if (tipoDetectado) {
+                document.getElementById('admin-election-kind').value = tipoDetectado;
+                actualizarOpcionesCategoriaAdmin();
+                actualizarDivisionTerritorialAdmin();
             }
-
-            document.getElementById('admin-election-kind').value = tipoDetectado;
-            actualizarOpcionesCategoriaAdmin();
-            actualizarDivisionTerritorialAdmin();
 
             if (seccionDetectada) {
                 const seccionNorm = normalizarTexto(seccionDetectada);
@@ -1204,14 +1224,15 @@
                 const deptoActual = document.getElementById('admin-circuit').value;
                 const anioActual = parseInt(document.getElementById('admin-year').value);
                 const localidadActual = document.getElementById('admin-locality').value.trim() || "Provincial General";
+                const tipoActual = document.getElementById('admin-election-kind').value;
 
-                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoDetectado}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
+                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoActual}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
                     try {
                         for (const cat of columnasCategorias) {
                             const bloque = resultadosPorCategoria[cat.code];
                             await guardarBloqueCategoriaEnSupabase({
                                 anio: anioActual,
-                                tipoEleccion: tipoDetectado,
+                                tipoEleccion: tipoActual,
                                 localidad: localidadActual,
                                 tipoEntidad: document.getElementById('admin-entity-type').value,
                                 circuito_id: deptoActual,
@@ -1223,8 +1244,8 @@
                                 parties: bloque.parties
                             });
                         }
-                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoDetectado}) se guardaron en Supabase!`;
-                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoDetectado}) en Supabase.`);
+                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoActual}) se guardaron en Supabase!`;
+                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoActual}) en Supabase.`);
                     } catch (err) {
                         alert("❌ Error al guardar las categorías en lote: " + err.message);
                     }
@@ -1232,7 +1253,7 @@
                 }
             }
 
-            document.getElementById('admin-status').innerText = `✓ Excel CNE importado (${columnasCategorias.length} categoría/s detectada/s - ${tipoDetectado}).`;
+            document.getElementById('admin-status').innerText = `✓ Excel importado (${datosPrimera.parties.length} listas cargadas en vista previa).`;
         }
 
         async function handleSmartUpload(event) {
@@ -1240,10 +1261,10 @@
             if (!file) return;
 
             const fileName = file.name.toLowerCase();
+            document.getElementById('admin-status').innerText = `⏳ Leyendo archivo "${file.name}"...`;
 
             if (file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(fileName)) {
                 await procesarImagenCaptura(file);
-                event.target.value = "";
                 return;
             }
 
@@ -1254,8 +1275,6 @@
                         await procesarExcelCNE(e.target.result);
                     } catch (err) {
                         alert("Error al leer el archivo Excel: " + err.message);
-                    } finally {
-                        event.target.value = "";
                     }
                 };
                 reader.readAsArrayBuffer(file);
