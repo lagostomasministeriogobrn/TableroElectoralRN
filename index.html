@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -38,7 +39,6 @@
             box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.09), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
         }
 
-        /* Animaciones de DAEBot */
         @keyframes botFloat {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-5px); }
@@ -60,60 +60,24 @@
             96% { transform: scaleY(0.1); }
         }
 
-        .daebot-float {
-            animation: botFloat 3.2s ease-in-out infinite;
-        }
-        .daebot-arm-l {
-            transform-origin: 42px 92px;
-            animation: botWaveLeft 2.8s ease-in-out infinite;
-        }
-        .daebot-arm-r {
-            transform-origin: 118px 92px;
-            animation: botWaveRight 2.8s ease-in-out infinite;
-        }
-        .daebot-q-center {
-            animation: botQuestionFloat 2.4s ease-in-out infinite;
-        }
-        .daebot-q-side {
-            animation: botQuestionFloat 2.4s ease-in-out 0.4s infinite;
-        }
-        .daebot-eye {
-            transform-origin: center;
-            animation: botBlink 4.5s infinite;
-        }
+        .daebot-float { animation: botFloat 3.2s ease-in-out infinite; }
+        .daebot-arm-l { transform-origin: 42px 92px; animation: botWaveLeft 2.8s ease-in-out infinite; }
+        .daebot-arm-r { transform-origin: 118px 92px; animation: botWaveRight 2.8s ease-in-out infinite; }
+        .daebot-q-center { animation: botQuestionFloat 2.4s ease-in-out infinite; }
+        .daebot-q-side { animation: botQuestionFloat 2.4s ease-in-out 0.4s infinite; }
+        .daebot-eye { transform-origin: center; animation: botBlink 4.5s infinite; }
 
         @keyframes pptRevealContent {
-            0% {
-                opacity: 0;
-                transform: translateY(24px) scale(0.98);
-                filter: blur(4px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-                filter: blur(0);
-            }
+            0% { opacity: 0; transform: translateY(24px) scale(0.98); filter: blur(4px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
-
         @keyframes pptRevealBar {
             0% { transform: scaleX(0); }
             100% { transform: scaleX(1); }
         }
-
-        .ppt-reveal-content {
-            animation: pptRevealContent 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-
-        .ppt-reveal-sub {
-            opacity: 0;
-            animation: pptRevealContent 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
-        }
-
-        .ppt-progress-bar {
-            transform-origin: left center;
-            animation: pptRevealBar 2.6s linear forwards;
-        }
-
+        .ppt-reveal-content { animation: pptRevealContent 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .ppt-reveal-sub { opacity: 0; animation: pptRevealContent 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards; }
+        .ppt-progress-bar { transform-origin: left center; animation: pptRevealBar 2.6s linear forwards; }
         .ppt-slide-exit {
             opacity: 0;
             transform: scale(1.03);
@@ -162,7 +126,7 @@
 
             <div class="ppt-reveal-sub pt-2 flex flex-col items-center space-y-4">
                 <p class="text-xs md:text-sm text-white/95 max-w-xl font-medium">
-                    Sistema de consulta de cómputos provinciales y nacionales por circuito, departamento y localidad.
+                    Sistema de consulta de cómputos provinciales y nacionales (Distrito Río Negro) por circuito, departamento y localidad.
                 </p>
                 <div class="w-52 h-1.5 bg-black/20 rounded-full overflow-hidden">
                     <div class="h-full bg-white ppt-progress-bar"></div>
@@ -217,7 +181,7 @@
         
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- Columna Izquierda: Filtros + DAEBot Generador de Reportes -->
+            <!-- Columna Izquierda: Filtros + DAEBot Constructor Independiente -->
             <div class="lg:col-span-3 space-y-5">
                 
                 <!-- Panel Lateral de Filtros -->
@@ -249,8 +213,8 @@
                             <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Tipo de Elección</label>
                             <select id="filter-election-kind" onchange="cambiarTipoEleccionPublico()" class="w-full bg-blue-50/70 hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-sm font-bold text-rnblue focus:ring-2 focus:ring-rnblue focus:outline-none transition cursor-pointer">
                                 <option value="Provincial" selected>Provincial</option>
-                                <option value="General">General (Nacional)</option>
-                                <option value="PASO">PASO (Nacional)</option>
+                                <option value="General">General (Distrito RN)</option>
+                                <option value="PASO">PASO (Distrito RN)</option>
                             </select>
                         </div>
 
@@ -274,15 +238,28 @@
                                 <option value="">Cargando...</option>
                             </select>
                         </div>
+
+                        <div class="pt-3 border-t border-slate-200/80">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500">Partidos Políticos</label>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="seleccionarTodosPartidos()" class="text-[10px] font-extrabold text-rnblue hover:underline">Todos</button>
+                                    <span class="text-slate-300 text-[10px]">|</span>
+                                    <button type="button" onclick="seleccionarSoloPrimero()" class="text-[10px] font-extrabold text-slate-500 hover:text-slate-800 hover:underline" title="Tildar solo la 1° fuerza">Solo 1°</button>
+                                </div>
+                            </div>
+                            <div id="filter-parties-list" class="max-h-48 overflow-y-auto bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1">
+                                <p class="text-[11px] text-slate-400 text-center py-2">Cargando fuerzas...</p>
+                            </div>
+                        </div>
                     </div>
                 </aside>
 
-                <!-- Módulo DAEBot: Generador de Reportes Simples o Comparativos -->
+                <!-- Módulo DAEBot: Constructor de Tablas Genéricas Oficiales -->
                 <aside class="bg-white rounded-xl border border-blue-200/90 card-elevated overflow-hidden">
                     <div class="bg-gradient-to-br from-[#0052cc] via-[#0063BE] to-[#003d99] p-4 text-white relative overflow-hidden">
                         <div class="flex items-center gap-3">
-                            <!-- Robotito 3D SVG animado -->
-                            <div class="w-20 h-24 flex-shrink-0 daebot-float drop-shadow-lg">
+                            <div class="w-16 h-20 flex-shrink-0 daebot-float drop-shadow-lg">
                                 <svg viewBox="0 0 160 190" class="w-full h-full overflow-visible">
                                     <defs>
                                         <linearGradient id="botWhiteGrad" x1="0" y1="0" x2="0" y2="1">
@@ -369,71 +346,170 @@
 
                             <div class="min-w-0">
                                 <span class="inline-block text-[10px] uppercase font-extrabold tracking-widest bg-rngreen text-slate-950 px-2 py-0.5 rounded-full mb-1">
-                                    Asistente Oficial
+                                    Formato Planilla Oficial
                                 </span>
                                 <h3 class="text-sm font-black leading-tight text-white">
-                                    Pedile tu reporte a DAEBot
+                                    Reportes DAEBot
                                 </h3>
-                                <p class="text-[11px] text-blue-100 mt-1 leading-snug">
-                                    Descargá un informe simple o compará dos elecciones al instante.
+                                <p class="text-[11px] text-blue-100 mt-0.5 leading-snug">
+                                    Genera tablas genéricas por Circuito, Municipio y Comisión de Fomento según tus categorías.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Controles del Generador de Reportes -->
+                    <!-- Controles Independientes del Constructor de Reportes -->
                     <div class="p-4 space-y-3.5 bg-gradient-to-b from-blue-50/40 to-white">
+
+                        <!-- BLOQUE 1: DIMENSIONES INDEPENDIENTES A COMPARAR -->
                         <div>
-                            <label class="block text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1.5">Tipo de Reporte</label>
-                            <select id="daebot-report-mode" onchange="toggleModoComparativo()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none cursor-pointer">
-                                <option value="simple" selected>📄 Reporte Simple (Elección actual)</option>
-                                <option value="comparativo">⚖️ Reporte Comparativo (Entre años)</option>
-                            </select>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[10px] uppercase tracking-wider font-extrabold text-rnblue">1. Categorías y Alcance</span>
+                                <button type="button" onclick="refrescarCatalogoConstructor()" class="text-[10px] font-bold text-slate-500 hover:text-rnblue underline" title="Recargar opciones de la base">↻ Actualizar</button>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <!-- Dimensión: Años Electorales -->
+                                <details class="group bg-white border border-slate-200 rounded-lg overflow-hidden">
+                                    <summary class="flex items-center justify-between px-2.5 py-2 text-xs font-bold text-slate-800 cursor-pointer hover:bg-slate-50 select-none">
+                                        <span>📅 Años Electorales</span>
+                                        <span id="badge-rep-years" class="text-[10px] font-extrabold bg-blue-100 text-rnblue px-1.5 py-0.5 rounded">1</span>
+                                    </summary>
+                                    <div class="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1.5 text-[11px]">
+                                        <div class="flex justify-end gap-2 text-[10px]">
+                                            <button type="button" onclick="setCheckboxes('#rep-years-list', true)" class="font-bold text-rnblue hover:underline">Todos</button>
+                                            <button type="button" onclick="setCheckboxes('#rep-years-list', false)" class="font-bold text-slate-500 hover:underline">Limpiar</button>
+                                        </div>
+                                        <div id="rep-years-list" class="grid grid-cols-2 gap-1">
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2027" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2027</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2026" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2026</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2025" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2025</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2023" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2023</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2021" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2021</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2019" checked onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2019</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2017" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2017</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2015" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2015</label>
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Dimensión: Tipo de Elección -->
+                                <details class="group bg-white border border-slate-200 rounded-lg overflow-hidden">
+                                    <summary class="flex items-center justify-between px-2.5 py-2 text-xs font-bold text-slate-800 cursor-pointer hover:bg-slate-50 select-none">
+                                        <span>🗳️ Instancia / Tipo</span>
+                                        <span id="badge-rep-kinds" class="text-[10px] font-extrabold bg-blue-100 text-rnblue px-1.5 py-0.5 rounded">1</span>
+                                    </summary>
+                                    <div id="rep-kinds-list" class="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1 text-[11px]">
+                                        <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="PASO" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> P.A.S.O. (Distrito RN)</label>
+                                        <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="General" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> GENERALES (Distrito RN)</label>
+                                        <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="Provincial" checked onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> PROVINCIALES / MUNICIPALES</label>
+                                    </div>
+                                </details>
+
+                                <!-- Dimensión: Categorías / Cargos -->
+                                <details class="group bg-white border border-slate-200 rounded-lg overflow-hidden" open>
+                                    <summary class="flex items-center justify-between px-2.5 py-2 text-xs font-bold text-slate-800 cursor-pointer hover:bg-slate-50 select-none">
+                                        <span>🏛️ Categorías a Incluir</span>
+                                        <span id="badge-rep-categories" class="text-[10px] font-extrabold bg-blue-100 text-rnblue px-1.5 py-0.5 rounded">1</span>
+                                    </summary>
+                                    <div class="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1.5 text-[11px]">
+                                        <div class="flex justify-end gap-2 text-[10px]">
+                                            <button type="button" onclick="setCheckboxes('#rep-categories-list', true)" class="font-bold text-rnblue hover:underline">Todas</button>
+                                            <button type="button" onclick="setCheckboxes('#rep-categories-list', false)" class="font-bold text-slate-500 hover:underline">Limpiar</button>
+                                        </div>
+                                        <div id="rep-categories-list" class="max-h-40 overflow-y-auto space-y-1"></div>
+                                    </div>
+                                </details>
+
+                                <!-- Dimensión: Circuitos / Municipios / Comisiones -->
+                                <details class="group bg-white border border-slate-200 rounded-lg overflow-hidden">
+                                    <summary class="flex items-center justify-between px-2.5 py-2 text-xs font-bold text-slate-800 cursor-pointer hover:bg-slate-50 select-none">
+                                        <span>🗺️ Circuitos y Localidades</span>
+                                        <span id="badge-rep-territories" class="text-[10px] font-extrabold bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Toda la Prov.</span>
+                                    </summary>
+                                    <div class="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1.5 text-[11px]">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <input type="text" oninput="filtrarChecklistConstructor(this, '#rep-territories-list')" placeholder="Filtrar circuito o localidad..." class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-[11px] focus:outline-none focus:border-rnblue">
+                                            <button type="button" onclick="setCheckboxes('#rep-territories-list', false)" class="text-[10px] font-bold text-slate-500 hover:underline flex-shrink-0 px-1">Todos</button>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 leading-tight">Sin tildar = incluye los 5 Circuitos Regionales (39 Municipios) + 31 Comisiones de Fomento.</p>
+                                        <div id="rep-territories-list" class="max-h-40 overflow-y-auto space-y-1"></div>
+                                    </div>
+                                </details>
+
+                                <!-- Dimensión: Agrupaciones Políticas -->
+                                <details class="group bg-white border border-slate-200 rounded-lg overflow-hidden">
+                                    <summary class="flex items-center justify-between px-2.5 py-2 text-xs font-bold text-slate-800 cursor-pointer hover:bg-slate-50 select-none">
+                                        <span>🎯 Agrupaciones Políticas</span>
+                                        <span id="badge-rep-parties" class="text-[10px] font-extrabold bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Todas</span>
+                                    </summary>
+                                    <div class="p-2 border-t border-slate-100 bg-slate-50/70 space-y-1.5 text-[11px]">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <input type="text" oninput="filtrarChecklistConstructor(this, '#rep-parties-list')" placeholder="Buscar fuerza..." class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-[11px] focus:outline-none focus:border-rnblue">
+                                            <button type="button" onclick="setCheckboxes('#rep-parties-list', false)" class="text-[10px] font-bold text-slate-500 hover:underline flex-shrink-0 px-1">Todas</button>
+                                        </div>
+                                        <div id="rep-parties-list" class="max-h-44 overflow-y-auto space-y-1">
+                                            <p class="text-[10px] text-slate-400 text-center py-2">Cargando catálogo...</p>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
                         </div>
 
-                        <!-- Selectores 100% libres cuando elige Comparativo -->
-                        <div id="daebot-compare-box" class="hidden space-y-2.5 p-3 rounded-lg bg-blue-50/80 border border-blue-200">
-                            <div class="grid grid-cols-11 items-center gap-1.5">
-                                <div class="col-span-5">
-                                    <label class="block text-[10px] uppercase font-bold text-rnblue mb-1">Año 1</label>
-                                    <select id="daebot-year-a" class="w-full bg-white border border-blue-200 rounded-lg px-2 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none cursor-pointer">
-                                        <option value="2027">2027</option>
-                                        <option value="2026">2026</option>
-                                        <option value="2025">2025</option>
-                                        <option value="2023">2023</option>
-                                        <option value="2021">2021</option>
-                                        <option value="2019" selected>2019</option>
-                                        <option value="2017">2017</option>
-                                        <option value="2015">2015</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-span-1 text-center pt-4 text-[11px] font-black text-slate-400">
-                                    vs
-                                </div>
-
-                                <div class="col-span-5">
-                                    <label class="block text-[10px] uppercase font-bold text-green-700 mb-1">Año 2</label>
-                                    <select id="daebot-year-b" class="w-full bg-white border border-blue-200 rounded-lg px-2 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rnblue focus:outline-none cursor-pointer">
-                                        <option value="2027">2027</option>
-                                        <option value="2026">2026</option>
-                                        <option value="2025">2025</option>
-                                        <option value="2023" selected>2023</option>
-                                        <option value="2021">2021</option>
-                                        <option value="2019">2019</option>
-                                        <option value="2017">2017</option>
-                                        <option value="2015">2015</option>
-                                    </select>
+                        <!-- BLOQUE 2: COLUMNAS DE LA TABLA GENÉRICA -->
+                        <div class="pt-2 border-t border-slate-200/80">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[10px] uppercase tracking-wider font-extrabold text-green-700">2. Columnas de Tabla Genérica</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="setCheckboxes('#rep-metrics-list', true)" class="text-[10px] font-bold text-green-700 hover:underline">Todas</button>
+                                    <span class="text-slate-300 text-[10px]">|</span>
+                                    <button type="button" onclick="setCheckboxes('#rep-metrics-list', false)" class="text-[10px] font-bold text-slate-500 hover:underline">Limpiar</button>
                                 </div>
                             </div>
-                            <p class="text-[10px] text-slate-500 leading-tight">
-                                Compara ambos años elegidos para el territorio y categoría seleccionados arriba.
-                            </p>
+                            <div id="rep-metrics-list" class="bg-white border border-slate-200 rounded-lg p-2 space-y-1 text-[11px] max-h-52 overflow-y-auto">
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="electores" checked class="rounded text-green-600">
+                                    <span>Cant. de Electores Habilitados</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="partidos" checked class="rounded text-green-600">
+                                    <span>Votos Válidos (Agrup. Políticas)</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="otros" checked class="rounded text-green-600">
+                                    <span>Otros Tipos de Voto (Blanco/Nulo)</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="emitidos" checked class="rounded text-green-600">
+                                    <span>Total de Votos</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="escuelas" checked class="rounded text-green-600">
+                                    <span>Cantidad de Escuelas</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="mesas" checked class="rounded text-green-600">
+                                    <span>Cantidad de Mesas</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="participacion" checked class="rounded text-green-600">
+                                    <span>% Participación Electoral</span>
+                                </label>
+                                <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer font-semibold text-slate-700">
+                                    <input type="checkbox" value="comisiones" checked class="rounded text-green-600">
+                                    <span>Incluir Hoja Comisiones de Fomento</span>
+                                </label>
+                            </div>
                         </div>
 
-                        <button id="btn-daebot-generate" onclick="generarReporteDAEBot()" class="w-full bg-rngreen hover:bg-[#2fb82d] text-white font-extrabold py-2.5 px-4 rounded-lg text-xs shadow-sm transition flex items-center justify-center gap-2">
-                            <span>🤖 Generar Reporte PDF</span>
-                        </button>
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <button id="btn-daebot-excel" onclick="generarReporteDAEBot('excel')" class="w-full bg-rngreen hover:bg-[#2fb82d] text-white font-extrabold py-2.5 px-3 rounded-lg text-xs shadow-sm transition flex items-center justify-center gap-1.5">
+                                <span>📊 Planilla Excel</span>
+                            </button>
+                            <button id="btn-daebot-generate" onclick="generarReporteDAEBot('pdf')" class="w-full bg-rnblue hover:bg-blue-700 text-white font-extrabold py-2.5 px-3 rounded-lg text-xs shadow-sm transition flex items-center justify-center gap-1.5">
+                                <span>📄 Tabla PDF</span>
+                            </button>
+                        </div>
                         <p id="daebot-status" class="text-[11px] text-center font-semibold text-slate-500 hidden"></p>
                     </div>
                 </aside>
@@ -466,7 +542,6 @@
                 
                 <!-- Tarjetas de Indicadores (KPIs) -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <!-- KPI 1: Mesas -->
                     <div class="bg-white p-5 rounded-xl border border-slate-200/80 card-elevated border-t-4 border-t-rnblue">
                         <div class="flex items-center justify-between">
                             <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Mesas Escrutadas</span>
@@ -481,7 +556,6 @@
                         </div>
                     </div>
 
-                    <!-- KPI 2: Participación -->
                     <div class="bg-white p-5 rounded-xl border border-slate-200/80 card-elevated border-t-4 border-t-rngreen">
                         <div class="flex items-center justify-between">
                             <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Participación</span>
@@ -489,14 +563,13 @@
                         </div>
                         <div class="mt-2 flex items-baseline justify-between">
                             <h3 id="stat-participacion" class="text-2xl font-black text-green-600">0.00%</h3>
-                            <span class="text-[11px] font-semibold text-slate-400">sobre padrón</span>
+                            <span id="stat-padron-est" class="text-[11px] font-semibold text-slate-400">sobre padrón</span>
                         </div>
                         <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3">
                             <div id="bar-participacion" class="h-full bg-rngreen rounded-full transition-all duration-500" style="width: 0%"></div>
                         </div>
                     </div>
 
-                    <!-- KPI 3: Votos Blancos / Nulos / Afirmativos -->
                     <div class="bg-white p-5 rounded-xl border border-slate-200/80 card-elevated border-t-4 border-t-slate-700">
                         <div class="flex items-center justify-between">
                             <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Resumen de Votos</span>
@@ -504,7 +577,7 @@
                         </div>
                         <div class="mt-2">
                             <div class="flex items-baseline justify-between">
-                                <span class="text-xs font-semibold text-slate-500">Afirmativos:</span>
+                                <span id="label-stat-afirmativos" class="text-xs font-semibold text-slate-500">Afirmativos:</span>
                                 <span id="stat-afirmativos" class="text-lg font-black text-slate-900">0</span>
                             </div>
                             <p id="stat-subvalidos" class="text-xs font-semibold text-slate-500 mt-1.5 pt-1.5 border-t border-slate-100">
@@ -516,18 +589,16 @@
 
                 <!-- Gráfico + Tabla de Resultados -->
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-                    
-                    <!-- Tarjeta del Gráfico de Dona -->
                     <div class="md:col-span-5 bg-white p-5 rounded-xl border border-slate-200/80 card-elevated flex flex-col items-center">
                         <div class="w-full flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
                             <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-600">Distribución de Porcentajes</h3>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">Votos Válidos</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Votos Afirmativos</span>
                         </div>
 
                         <div class="w-full max-w-[240px] h-56 relative my-1">
                             <canvas id="chart-resultados"></canvas>
                             <div id="donut-center-info" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-6">
-                                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Afirmativos</span>
+                                <span id="donut-center-label" class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Afirmativos</span>
                                 <span id="donut-center-total" class="text-base font-black text-slate-800 leading-tight">0</span>
                             </div>
                         </div>
@@ -535,7 +606,6 @@
                         <div id="chart-custom-legend" class="w-full mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs"></div>
                     </div>
 
-                    <!-- Tarjeta de Detalle por Fuerza Política -->
                     <div class="md:col-span-7 bg-white p-5 rounded-xl border border-slate-200/80 card-elevated overflow-hidden">
                         <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
                             <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-600">Detalle por Fuerza Política</h3>
@@ -546,14 +616,13 @@
                             <p class="py-8 text-center text-xs text-slate-400">Sin datos para mostrar.</p>
                         </div>
                     </div>
-
                 </div>
             </section>
         </div>
     </main>
 
     <footer class="bg-slate-900 text-slate-300 py-4 text-center text-xs border-t-4 border-rngreen mt-10">
-        <p class="font-semibold tracking-wide">Dirección de Asuntos Electorales — Provincia de Río Negro &copy; Tablero Oficial</p>
+        <p class="font-semibold tracking-wide">Dirección de Asuntos Electorales — Provincia de Río Negro &copy; Sistema de Análisis Electoral Histórico</p>
     </footer>
 
     <script>
@@ -568,9 +637,7 @@
             const slide = document.getElementById('welcome-slide');
             if (!slide) return;
             slide.classList.add('ppt-slide-exit');
-            setTimeout(() => {
-                slide.style.display = 'none';
-            }, 750);
+            setTimeout(() => { slide.style.display = 'none'; }, 750);
         }
 
         const SUPABASE_URL = 'https://wyvxnzklfvhhzphubjik.supabase.co';
@@ -582,20 +649,9 @@
         let ultimoHashDatos = "";
         let sincronizando = false;
 
-        let estadoActualReporte = {
-            anio: "2019",
-            tipoEleccion: "Provincial",
-            circuito: "Provincial",
-            localidad: "Provincial General",
-            localidadTexto: "Provincial General",
-            categoria: "GOB",
-            categoriaTexto: "Gobernador / Vice",
-            mesas: "0 / 0",
-            participacion: "0.00%",
-            blanco: 0,
-            nulos: 0,
-            listas: []
-        };
+        let consolidadoCategoriaActual = null;
+        let partidosSeleccionadosKeys = new Set();
+        let claveContextoPartidos = "";
 
         const nombresCategorias = {
             "GOB": "Gobernador / Vice",
@@ -606,11 +662,11 @@
             "TDC": "Miembro del Tribunal de Cuentas",
             "COF": "Comisión de Fomento",
             "VCF": "Vocal de Comisión de Fomento",
-            "PRE": "Presidente / Vice",
-            "SEN": "Senador Nacional",
-            "DIP": "Diputado Nacional",
-            "PMN": "Parlamentario Mercosur (DN)",
-            "PMR": "Parlamentario Mercosur (DR)"
+            "PRE": "Presidente / Vice (Distrito Río Negro)",
+            "SEN": "Senador Nacional (Distrito Río Negro)",
+            "DIP": "Diputado Nacional (Distrito Río Negro)",
+            "PMN": "Parlamentario Mercosur DN (Distrito Río Negro)",
+            "PMR": "Parlamentario Mercosur DR (Distrito Río Negro)"
         };
 
         const circuitosProvinciales = [
@@ -642,6 +698,109 @@
             "Veinticinco de Mayo"
         ];
 
+        // ESTRUCTURA OFICIAL DE LA PLANILLA GENÉRICA (5 CIRCUITOS REGIONALES + 39 MUNICIPIOS)
+        const ESTRUCTURA_CIRCUITOS_OFICIAL = [
+            {
+                circuito: "LÍNEA SUR",
+                municipios: [
+                    "COMALLO",
+                    "INGENIERO JACOBACCI",
+                    "LOS MENUCOS",
+                    "MAQUINCHAO",
+                    "MINISTRO RAMOS MEXIA",
+                    "PILCANIYEU",
+                    "SIERRA COLORADA",
+                    "VALCHETA"
+                ]
+            },
+            {
+                circuito: "ZONA ANDINA",
+                municipios: [
+                    "DINA HUAPI",
+                    "EL BOLSON",
+                    "ÑORQUINCO",
+                    "SAN CARLOS DE BARILOCHE"
+                ]
+            },
+            {
+                circuito: "ZONA ATLÁNTICA",
+                municipios: [
+                    "GENERAL CONESA",
+                    "GUARDIA MITRE",
+                    "SAN ANTONIO OESTE",
+                    "SIERRA GRANDE",
+                    "VIEDMA"
+                ]
+            },
+            {
+                circuito: "ALTO VALLE",
+                municipios: [
+                    "ALLEN",
+                    "CAMPO GRANDE",
+                    "CATRIEL",
+                    "CERVANTES",
+                    "CHICHINALES",
+                    "CINCO SALTOS",
+                    "CIPOLLETTI",
+                    "CONTRALMIRANTE CORDERO",
+                    "GENERAL ENRIQUE GODOY",
+                    "GENERAL FERNANDEZ ORO",
+                    "GENERAL ROCA",
+                    "INGENIERO HUERGO",
+                    "MAINQUE",
+                    "VILLA REGINA"
+                ]
+            },
+            {
+                circuito: "VALLE MEDIO",
+                municipios: [
+                    "CHIMPAY",
+                    "CHOELE CHOEL",
+                    "CORONEL BELISLE",
+                    "DARWIN",
+                    "LAMARQUE",
+                    "LUIS BELTRAN",
+                    "POMONA",
+                    "RIO COLORADO"
+                ]
+            }
+        ];
+
+        // LISTADO OFICIAL DE 31 COMISIONES DE FOMENTO (ORDEN ALFABÉTICO PLANILLA OFICIAL)
+        const COMISIONES_FOMENTO_OFICIAL = [
+            "AGUADA DE GUERRA",
+            "AGUADA CECILIO",
+            "AGUADA GUZMAN",
+            "ARROYO LOS BERROS",
+            "ARROYO VENTANA",
+            "CERRO POLICIA",
+            "CONA NIYEU",
+            "CLEMENTE ONELLI",
+            "CHELFORO",
+            "CHIPAUQUIL",
+            "COLAN CONUE",
+            "COMICO",
+            "EL CAIN- PILQUINIYEU",
+            "EL CUY",
+            "EL MANSO",
+            "LAGUNA BLANCA",
+            "MAMUEL CHOIQUE - OJO DE AGUA",
+            "MENCUE",
+            "NAHUEL NIYEU",
+            "NAUPA HUEN",
+            "PASO FLORES",
+            "PEÑAS BLANCAS",
+            "PRAHUANIYEU",
+            "PIL. DEL LIMAY",
+            "RINCON TRENETA- YAMINUE",
+            "RIO CHICO",
+            "SAN JAVIER",
+            "SIERRA PAILEMAN",
+            "VALLE AZUL",
+            "VILLA LLANQUIN",
+            "VILLA MASCARDI"
+        ];
+
         const ordenCategorias = ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC", "COF", "VCF", "PRE", "SEN", "DIP", "PMN", "PMR"];
         const codigosNacionales = ["PRE", "SEN", "DIP", "PMN", "PMR"];
 
@@ -652,6 +811,69 @@
         function normalizarTexto(texto) {
             if (!texto) return "";
             return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        }
+
+        function limpiarComillas(txt) {
+            return String(txt || "").replace(/[“”"']/g, "").replace(/\s+/g, " ").trim();
+        }
+
+        function obtenerKeyPartido(item) {
+            return `${item.lista_id || ""}_${normalizarTexto(item.nombre)}`;
+        }
+
+        function claveNormalizadaFuerza(nombre) {
+            let n = normalizarTexto(limpiarComillas(nombre));
+            n = n.replace(/\([^)]*\)/g, " ");
+            n = n.replace(/\bdistrito\s+rio\s+negro\b/g, " ");
+            n = n.replace(/[-–—/.,;:]+/g, " ").replace(/\s+/g, " ").trim();
+            let anterior = "";
+            while (n !== anterior) {
+                anterior = n;
+                n = n.replace(/^(alianza|frente|partido|movimiento|nuevo|nueva|confederacion|lista)\s+/i, "").trim();
+            }
+
+            if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n === "jsrn") return "canonical_jsrn";
+            if (n.includes("izquierda") || n === "fit" || n === "fit u" || n === "fit unidad") return "canonical_fit";
+            if (n.includes("al socialismo") || n === "mas" || n === "nuevo mas") return "canonical_mas";
+            if (n.includes("cambiemos") || n.includes("cambia rio negro") || n.includes("juntos por el cambio") || n === "jxc") return "canonical_jxc_cambiemos";
+            if (n.includes("para la victoria") || n.includes("frente de todos") || n.includes("union por la patria")) return "canonical_fpv_upv";
+            if (n.includes("socialista") || n === "ps" || n === "mst") return "canonical_ps_mst";
+            if (n.includes("libertad avanza") || n === "lla") return "canonical_lla";
+            if (n.includes("union civica radical") || n === "ucr") return "canonical_ucr";
+            if (n.includes("justicialista") || n === "pj") return "canonical_pj";
+
+            return n;
+        }
+
+        function obtenerColorFuerzaPolitica(nombre, conteoFamilias = {}) {
+            const n = normalizarTexto(limpiarComillas(nombre));
+            const asignarTono = (familia, tonos) => {
+                const idx = conteoFamilias[familia] || 0;
+                conteoFamilias[familia] = idx + 1;
+                return tonos[idx % tonos.length];
+            };
+
+            if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n === "jsrn") {
+                return asignarTono("jsrn", ["#39C937", "#16A34A", "#15803D"]);
+            }
+            if (n.includes("frente de todos") || n.includes("union por la patria") || n.includes("para la victoria") || n.includes("nos une rio negro") || n.includes("vamos con todos") || n.includes("justicialista")) {
+                return asignarTono("pj_fdt", ["#0063BE", "#0284C7", "#2563EB"]);
+            }
+            if (n.includes("juntos por el cambio") || n.includes("cambiemos") || n.includes("cambia rio negro") || n.includes("union civica radical") || /\bucr\b/.test(n)) {
+                return asignarTono("jxc", ["#EAB308", "#F59E0B", "#CA8A04"]);
+            }
+            if (n.includes("libertad avanza") || n.includes("primero rio negro") || /\blla\b/.test(n)) {
+                return asignarTono("lla", ["#7C3AED", "#9333EA", "#6D28D9"]);
+            }
+            if (n.includes("izquierda") || n.includes("socialismo") || n.includes("socialista") || /\bfit\b/.test(n) || /\bmas\b/.test(n)) {
+                return asignarTono("izq", ["#DC2626", "#E11D48", "#B91C1C"]);
+            }
+            return asignarTono("otros", ["#0D9488", "#F97316", "#475569", "#EC4899", "#0891B2"]);
+        }
+
+        function obtenerColorHexExcelFuerza(nombre) {
+            const hex = obtenerColorFuerzaPolitica(nombre, {}).replace("#", "");
+            return "FF" + hex.toUpperCase();
         }
 
         function esNombreTotalGeneral(locNorm, circNorm = "") {
@@ -673,6 +895,18 @@
             return circBDNorm.includes(seleccionNorm) || seleccionNorm.includes(circBDNorm);
         }
 
+        function coincideLocalidadOficial(locBD, locOficial) {
+            const a = normalizarTexto(locBD).replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+            const b = normalizarTexto(locOficial).replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+            if (!a || !b) return false;
+            if (a === b) return true;
+            if (b === "el cain pilquiniyeu" && (a.includes("el cain") || a.includes("pilquiniyeu"))) return true;
+            if (b === "mamuel choique ojo de agua" && (a.includes("mamuel choique") || a.includes("ojo de agua"))) return true;
+            if (b === "rincon treneta yaminue" && (a.includes("treneta") || a.includes("yaminue"))) return true;
+            if (b === "pil del limay" && (a.includes("pilquiniyeu del limay") || a.includes("pil del limay"))) return true;
+            return false;
+        }
+
         function formatearMesasLimpio(mesasRaw) {
             const s = String(mesasRaw || "0 / 0").trim();
             if (!s.includes("/")) {
@@ -691,6 +925,19 @@
             return s;
         }
 
+        function extraerCantidadMesasNumerico(mesasRaw) {
+            const s = String(mesasRaw || "").trim();
+            if (!s) return 0;
+            if (s.includes("/")) {
+                const partes = s.split("/");
+                const tot = parseInt(partes[1]) || parseInt(partes[0]) || 0;
+                return tot === 100 && partes[0].trim() === "100" ? 0 : tot;
+            }
+            if (s.includes("%")) return 0;
+            const n = parseInt(s.replace(/\D/g, ""), 10);
+            return isNaN(n) ? 0 : n;
+        }
+
         function formatearParticipacionLimpio(partRaw) {
             const s = String(partRaw || "0.00%").trim();
             const num = parseFloat(s.replace("%", "").replace(",", "."));
@@ -698,18 +945,26 @@
             return num.toFixed(2) + "%";
         }
 
-        function onPrimaryFilterChanged() {
-            actualizarFiltros(true);
+        function parsearPorcentajeNumerico(pctStr) {
+            const num = parseFloat(String(pctStr || "0").replace("%", "").replace(",", "."));
+            return isNaN(num) ? 0 : num;
         }
 
-        function toggleModoComparativo() {
-            const mode = document.getElementById('daebot-report-mode').value;
-            const box = document.getElementById('daebot-compare-box');
-            if (mode === 'comparativo') {
-                box.classList.remove('hidden');
-            } else {
-                box.classList.add('hidden');
+        function calcularElectoresHabilitados(rawRows, totalEmitidos, partNum) {
+            if (rawRows && rawRows.length > 0) {
+                const explicito = parseInt(rawRows[0].electores_habilitados || rawRows[0].padron || rawRows[0].electores || 0);
+                if (!isNaN(explicito) && explicito > 0) {
+                    return { valor: explicito, esEstimado: false };
+                }
             }
+            if (totalEmitidos > 0 && partNum > 0) {
+                return { valor: Math.round(totalEmitidos / (partNum / 100)), esEstimado: true };
+            }
+            return { valor: 0, esEstimado: true };
+        }
+
+        function onPrimaryFilterChanged() {
+            actualizarFiltros(true);
         }
 
         function actualizarBannerContexto() {
@@ -722,7 +977,7 @@
             const catText = nombresCategorias[catCode] || catCode || "Sin categoría";
 
             document.getElementById('context-badge-year').innerText = anio;
-            document.getElementById('context-badge-kind').innerText = tipoEleccion === "General" ? "General (Nacional)" : (tipoEleccion === "PASO" ? "PASO (Nacional)" : "Provincial");
+            document.getElementById('context-badge-kind').innerText = tipoEleccion === "General" ? "General (Distrito RN)" : (tipoEleccion === "PASO" ? "PASO (Distrito RN)" : "Provincial");
             document.getElementById('context-badge-territory').innerText = `${circuito} · ${locText}`;
             document.getElementById('context-title-category').innerText = catText;
         }
@@ -806,10 +1061,7 @@
                     return esNombreTotalGeneral(l, circNorm);
                 });
 
-                if (explicitosGeneral.length > 0) {
-                    return explicitosGeneral;
-                }
-
+                if (explicitosGeneral.length > 0) return explicitosGeneral;
                 return filasCircuito;
             }
 
@@ -844,11 +1096,8 @@
 
                 if (data && data.length > 0) {
                     todasLasFilas = todasLasFilas.concat(data);
-                    if (data.length < paso) {
-                        seguirBuscando = false;
-                    } else {
-                        desde += paso;
-                    }
+                    if (data.length < paso) seguirBuscando = false;
+                    else desde += paso;
                 } else {
                     seguirBuscando = false;
                 }
@@ -856,9 +1105,7 @@
 
             return todasLasFilas.filter(d => {
                 const esCatNac = codigosNacionales.includes(d.categoria);
-                if (tipoEleccion === "PASO") {
-                    return d.tipo_eleccion === "PASO";
-                }
+                if (tipoEleccion === "PASO") return d.tipo_eleccion === "PASO";
                 if (tipoEleccion === "General") {
                     if (d.tipo_eleccion === "PASO") return false;
                     return d.tipo_eleccion === "General" || esCatNac;
@@ -872,9 +1119,14 @@
             if (!rawRows || rawRows.length === 0) {
                 return {
                     mesas: "0 / 0",
+                    mesasNum: 0,
+                    escuelasNum: 0,
                     participacion: "0.00%",
                     blanco: 0,
                     nulos: 0,
+                    electoresHabilitados: 0,
+                    electoresEsEstimado: true,
+                    localidadesIncluidas: 0,
                     listas: []
                 };
             }
@@ -883,22 +1135,44 @@
 
             if (localidadesDistintas.length <= 1) {
                 const mesasTxt = formatearMesasLimpio(rawRows[0].mesas_procesadas);
+                const mesasNum = extraerCantidadMesasNumerico(rawRows[0].mesas_procesadas);
+                const escuelasNum = parseInt(rawRows[0].escuelas || rawRows[0].cantidad_escuelas || 0) || 0;
                 const partTxt = formatearParticipacionLimpio(rawRows[0].porcentaje_participacion);
+                const partNum = parsearPorcentajeNumerico(partTxt);
                 let mapaUnicos = {};
                 rawRows.forEach(row => {
-                    let keyLista = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
+                    const nombreLimpio = limpiarComillas(row.nombre_lista || `Lista ${row.lista_id}`);
+                    let keyLista = `${row.lista_id}_${normalizarTexto(nombreLimpio)}`;
                     mapaUnicos[keyLista] = {
                         lista_id: row.lista_id,
-                        nombre: row.nombre_lista || `Lista ${row.lista_id}`,
+                        nombre: nombreLimpio,
                         votos: row.votos || 0
                     };
                 });
                 const listas = Object.values(mapaUnicos).sort((a, b) => b.votos - a.votos);
+                const conteoFamilias = {};
+                listas.forEach((l, idx) => {
+                    l.key = obtenerKeyPartido(l);
+                    l.color = obtenerColorFuerzaPolitica(l.nombre, conteoFamilias);
+                    l.posicionOficial = idx + 1;
+                });
+
+                const blanco = rawRows[0].votos_blanco || 0;
+                const nulos = rawRows[0].votos_nulos || 0;
+                const totAfirm = listas.reduce((s, l) => s + l.votos, 0);
+                const totEmit = totAfirm + blanco + nulos;
+                const calcPadron = calcularElectoresHabilitados(rawRows, totEmit, partNum);
+
                 return {
                     mesas: mesasTxt,
+                    mesasNum,
+                    escuelasNum,
                     participacion: partTxt,
-                    blanco: rawRows[0].votos_blanco || 0,
-                    nulos: rawRows[0].votos_nulos || 0,
+                    blanco,
+                    nulos,
+                    electoresHabilitados: calcPadron.valor,
+                    electoresEsEstimado: calcPadron.esEstimado,
+                    localidadesIncluidas: 1,
                     listas
                 };
             }
@@ -911,17 +1185,20 @@
                 if (!metaPorLocalidad[locKey]) {
                     metaPorLocalidad[locKey] = {
                         mesas: row.mesas_procesadas || "0 / 0",
+                        escuelas: parseInt(row.escuelas || row.cantidad_escuelas || 0) || 0,
                         part: parseFloat(String(row.porcentaje_participacion || "0").replace("%", "").replace(",", ".")) || 0,
                         blanco: parseInt(row.votos_blanco) || 0,
-                        nulos: parseInt(row.votos_nulos) || 0
+                        nulos: parseInt(row.votos_nulos) || 0,
+                        padronExplicito: parseInt(row.electores_habilitados || row.padron || row.electores || 0) || 0
                     };
                 }
 
-                const listaKey = `${row.lista_id}_${normalizarTexto(row.nombre_lista)}`;
+                const nombreLimpio = limpiarComillas(row.nombre_lista || `Lista ${row.lista_id}`);
+                const listaKey = `${row.lista_id}_${normalizarTexto(nombreLimpio)}`;
                 if (!sumaListas[listaKey]) {
                     sumaListas[listaKey] = {
                         lista_id: row.lista_id,
-                        nombre: row.nombre_lista || `Lista ${row.lista_id}`,
+                        nombre: nombreLimpio,
                         votos: 0
                     };
                 }
@@ -930,14 +1207,18 @@
 
             let mesasEscrutadasSum = 0;
             let mesasTotalesSum = 0;
+            let escuelasTotal = 0;
             let blancoTotal = 0;
             let nulosTotal = 0;
             let partSum = 0;
             let partCount = 0;
+            let padronExplicitoSum = 0;
 
             Object.values(metaPorLocalidad).forEach(m => {
+                escuelasTotal += m.escuelas;
                 blancoTotal += m.blanco;
                 nulosTotal += m.nulos;
+                padronExplicitoSum += m.padronExplicito;
                 if (m.part > 0) {
                     partSum += m.part;
                     partCount++;
@@ -954,11 +1235,30 @@
             });
 
             const listas = Object.values(sumaListas).sort((a, b) => b.votos - a.votos);
+            const conteoFamilias = {};
+            listas.forEach((l, idx) => {
+                l.key = obtenerKeyPartido(l);
+                l.color = obtenerColorFuerzaPolitica(l.nombre, conteoFamilias);
+                l.posicionOficial = idx + 1;
+            });
+
+            const partProm = partCount > 0 ? (partSum / partCount) : 0;
+            const totAfirm = listas.reduce((s, l) => s + l.votos, 0);
+            const totEmit = totAfirm + blancoTotal + nulosTotal;
+            const electoresFinal = padronExplicitoSum > 0
+                ? padronExplicitoSum
+                : (totEmit > 0 && partProm > 0 ? Math.round(totEmit / (partProm / 100)) : 0);
+
             return {
                 mesas: formatearMesasLimpio(`${mesasEscrutadasSum} / ${mesasTotalesSum}`),
-                participacion: partCount > 0 ? (partSum / partCount).toFixed(2) + "%" : "0.00%",
+                mesasNum: mesasTotalesSum,
+                escuelasNum: escuelasTotal,
+                participacion: partProm > 0 ? partProm.toFixed(2) + "%" : "0.00%",
                 blanco: blancoTotal,
                 nulos: nulosTotal,
+                electoresHabilitados: electoresFinal,
+                electoresEsEstimado: padronExplicitoSum === 0,
+                localidadesIncluidas: localidadesDistintas.length,
                 listas
             };
         }
@@ -976,9 +1276,7 @@
                 const filasOrdenadas = [...filasFiltradasPorTipo].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
                 const nuevoHash = JSON.stringify({ tipoEleccion, filas: filasOrdenadas });
 
-                if (!forzar && nuevoHash === ultimoHashDatos) {
-                    return;
-                }
+                if (!forzar && nuevoHash === ultimoHashDatos) return;
 
                 ultimoHashDatos = nuevoHash;
                 datosCacheGlobal = filasFiltradasPorTipo;
@@ -1049,13 +1347,9 @@
 
             unicasLoc.forEach(loc => {
                 const tipo = mapaEntidadesLocales[loc];
-                if (tipo === 'comision') {
-                    comisiones.push(loc);
-                } else if (tipo === 'paraje') {
-                    parajes.push(loc);
-                } else {
-                    municipios.push(loc);
-                }
+                if (tipo === 'comision') comisiones.push(loc);
+                else if (tipo === 'paraje') parajes.push(loc);
+                else municipios.push(loc);
             });
 
             if (municipios.length > 0) {
@@ -1144,10 +1438,60 @@
             cargarDatosPublicos();
         }
 
+        function renderizarChecklistPartidos(listas) {
+            const container = document.getElementById('filter-parties-list');
+            if (!container) return;
+
+            if (!listas || listas.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">Sin partidos disponibles</p>`;
+                return;
+            }
+
+            container.innerHTML = "";
+            listas.forEach(item => {
+                const checked = partidosSeleccionadosKeys.has(item.key);
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white cursor-pointer transition select-none";
+                label.innerHTML = `
+                    <input type="checkbox" ${checked ? "checked" : ""} class="w-3.5 h-3.5 rounded border-slate-300 text-rnblue focus:ring-rnblue cursor-pointer flex-shrink-0">
+                    <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0" style="background-color: ${item.color};"></span>
+                    <span class="text-[11px] font-semibold text-slate-700 leading-tight truncate" title="${item.nombre}">${item.nombre}</span>
+                `;
+                const input = label.querySelector('input');
+                input.addEventListener('change', (e) => {
+                    togglePartidoIndividual(item.key, e.target.checked);
+                });
+                container.appendChild(label);
+            });
+        }
+
+        function togglePartidoIndividual(key, isChecked) {
+            if (isChecked) partidosSeleccionadosKeys.add(key);
+            else partidosSeleccionadosKeys.delete(key);
+            aplicarFiltroPartidosYRenderizar();
+        }
+
+        function seleccionarTodosPartidos() {
+            if (!consolidadoCategoriaActual || !consolidadoCategoriaActual.listas) return;
+            partidosSeleccionadosKeys = new Set(consolidadoCategoriaActual.listas.map(l => l.key));
+            renderizarChecklistPartidos(consolidadoCategoriaActual.listas);
+            aplicarFiltroPartidosYRenderizar();
+        }
+
+        function seleccionarSoloPrimero() {
+            if (!consolidadoCategoriaActual || !consolidadoCategoriaActual.listas || consolidadoCategoriaActual.listas.length === 0) return;
+            partidosSeleccionadosKeys = new Set([consolidadoCategoriaActual.listas[0].key]);
+            renderizarChecklistPartidos(consolidadoCategoriaActual.listas);
+            aplicarFiltroPartidosYRenderizar();
+        }
+
         function cargarDatosPublicos() {
             actualizarBannerContexto();
             const categoria = document.getElementById('filter-category').value;
             if (!categoria) {
+                consolidadoCategoriaActual = null;
+                partidosSeleccionadosKeys.clear();
+                renderizarChecklistPartidos([]);
                 renderizarResultadosUnicos([]);
                 return;
             }
@@ -1157,41 +1501,54 @@
         }
 
         function renderizarResultadosUnicos(rawRows) {
-            const tbody = document.getElementById('table-results-body');
-            const legendContainer = document.getElementById('chart-custom-legend');
-            const winnerPill = document.getElementById('winner-pill');
-            tbody.innerHTML = "";
-
             const anio = document.getElementById('filter-year').value;
             const tipoEleccion = document.getElementById('filter-election-kind').value;
             const circuito = document.getElementById('filter-circuit').value || "Provincial";
             const selectLoc = document.getElementById('filter-locality');
             const localidad = selectLoc.value || "Provincial General";
-            const localidadTexto = selectLoc.options[selectLoc.selectedIndex]?.text || localidad;
             const categoria = document.getElementById('filter-category').value;
-            const categoriaTexto = nombresCategorias[categoria] || categoria || "";
 
+            const nuevoContexto = `${anio}|${tipoEleccion}|${circuito}|${localidad}|${categoria}`;
             const consolidado = consolidarBloqueResultados(rawRows);
-
-            estadoActualReporte = {
-                anio,
-                tipoEleccion,
-                circuito,
-                localidad,
-                localidadTexto,
-                categoria,
-                categoriaTexto,
-                mesas: consolidado.mesas,
-                participacion: consolidado.participacion,
-                blanco: consolidado.blanco,
-                nulos: consolidado.nulos,
-                listas: consolidado.listas
-            };
+            consolidadoCategoriaActual = consolidado;
 
             if (!rawRows || rawRows.length === 0) {
+                claveContextoPartidos = nuevoContexto;
+                partidosSeleccionadosKeys.clear();
+                renderizarChecklistPartidos([]);
+                aplicarFiltroPartidosYRenderizar();
+                return;
+            }
+
+            const keysDisponibles = new Set(consolidado.listas.map(l => l.key));
+            if (claveContextoPartidos !== nuevoContexto) {
+                claveContextoPartidos = nuevoContexto;
+                partidosSeleccionadosKeys = new Set(keysDisponibles);
+            } else {
+                partidosSeleccionadosKeys = new Set([...partidosSeleccionadosKeys].filter(k => keysDisponibles.has(k)));
+                if (partidosSeleccionadosKeys.size === 0 && keysDisponibles.size > 0) {
+                    partidosSeleccionadosKeys = new Set(keysDisponibles);
+                }
+            }
+
+            renderizarChecklistPartidos(consolidado.listas);
+            aplicarFiltroPartidosYRenderizar();
+        }
+
+        function aplicarFiltroPartidosYRenderizar() {
+            const tbody = document.getElementById('table-results-body');
+            const legendContainer = document.getElementById('chart-custom-legend');
+            const winnerPill = document.getElementById('winner-pill');
+
+            const consolidado = consolidadoCategoriaActual;
+
+            if (!consolidado || !consolidado.listas || consolidado.listas.length === 0) {
                 document.getElementById('stat-mesas').innerText = "0 / 0";
                 document.getElementById('stat-participacion').innerText = "0.00%";
+                document.getElementById('stat-padron-est').innerText = "sobre padrón";
+                document.getElementById('label-stat-afirmativos').innerText = "Afirmativos:";
                 document.getElementById('stat-afirmativos').innerText = "0";
+                document.getElementById('donut-center-label').innerText = "Afirmativos";
                 document.getElementById('donut-center-total').innerText = "0";
                 document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
                 document.getElementById('badge-total-listas').innerText = "0 listas";
@@ -1199,7 +1556,6 @@
                 if (winnerPill) winnerPill.classList.add('hidden');
                 tbody.innerHTML = `<p class="py-8 text-center text-xs text-slate-400">Sin registros computados para esta selección.</p>`;
                 if (legendContainer) legendContainer.innerHTML = "";
-                
                 if (chartInstance) {
                     chartInstance.data.labels = [];
                     chartInstance.data.datasets[0].data = [];
@@ -1208,50 +1564,79 @@
                 return;
             }
 
+            const totalAfirmativosCategoria = consolidado.listas.reduce((acc, r) => acc + r.votos, 0);
+            const listasFiltradas = consolidado.listas.filter(l => partidosSeleccionadosKeys.has(l.key));
+            const esFiltroParcial = listasFiltradas.length < consolidado.listas.length;
+
             document.getElementById('stat-mesas').innerText = consolidado.mesas;
             document.getElementById('stat-participacion').innerText = consolidado.participacion;
+            document.getElementById('stat-padron-est').innerText = consolidado.electoresHabilitados > 0
+                ? `de ~${consolidado.electoresHabilitados.toLocaleString('es-AR')} hab.`
+                : "sobre padrón";
             document.getElementById('stat-subvalidos').innerText = `Blanco: ${consolidado.blanco.toLocaleString('es-AR')} | Nulos: ${consolidado.nulos.toLocaleString('es-AR')}`;
             actualizarBarrasKPI(consolidado.mesas, consolidado.participacion);
 
-            dibujarTablaYGrafico(consolidado.listas);
+            dibujarTablaYGrafico(listasFiltradas, totalAfirmativosCategoria, consolidado.listas.length, esFiltroParcial);
         }
 
-        function dibujarTablaYGrafico(data) {
+        function dibujarTablaYGrafico(data, totalAfirmativosCategoria, totalListasCategoria, esFiltroParcial) {
             const tbody = document.getElementById('table-results-body');
             const legendContainer = document.getElementById('chart-custom-legend');
             const winnerPill = document.getElementById('winner-pill');
             tbody.innerHTML = "";
             if (legendContainer) legendContainer.innerHTML = "";
 
-            let totalValidos = data.reduce((acc, r) => acc + r.votos, 0);
+            let totalSeleccionados = data.reduce((acc, r) => acc + r.votos, 0);
             data.sort((a, b) => b.votos - a.votos);
 
-            document.getElementById('stat-afirmativos').innerText = totalValidos.toLocaleString('es-AR');
-            document.getElementById('donut-center-total').innerText = totalValidos.toLocaleString('es-AR');
-            document.getElementById('badge-total-listas').innerText = `${data.length} ${data.length === 1 ? 'lista' : 'listas'}`;
+            document.getElementById('label-stat-afirmativos').innerText = esFiltroParcial ? "Votos seleccionados:" : "Afirmativos:";
+            document.getElementById('stat-afirmativos').innerText = totalSeleccionados.toLocaleString('es-AR');
+            document.getElementById('donut-center-label').innerText = esFiltroParcial ? "Seleccionados" : "Afirmativos";
+            document.getElementById('donut-center-total').innerText = totalSeleccionados.toLocaleString('es-AR');
+
+            document.getElementById('badge-total-listas').innerText = esFiltroParcial
+                ? `${data.length} de ${totalListasCategoria} listas`
+                : `${data.length} ${data.length === 1 ? 'lista' : 'listas'}`;
+
+            if (data.length === 0) {
+                if (winnerPill) winnerPill.classList.add('hidden');
+                tbody.innerHTML = `<p class="py-8 text-center text-xs text-slate-400">Ningún partido tildado. Seleccioná al menos una fuerza en el panel izquierdo.</p>`;
+                if (chartInstance) {
+                    chartInstance.data.labels = [];
+                    chartInstance.data.datasets[0].data = [];
+                    chartInstance.update('none');
+                }
+                return;
+            }
 
             let labels = [];
             let votosArr = [];
-            let bgColors = ["#0063BE", "#39C937", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#475569", "#EC4899", "#F97316", "#78716C"];
+            let chartColors = [];
 
-            if (data.length > 0 && winnerPill) {
-                const topPct = totalValidos > 0 ? ((data[0].votos / totalValidos) * 100).toFixed(2) : "0.00";
+            if (winnerPill) {
+                const topPct = totalAfirmativosCategoria > 0 ? ((data[0].votos / totalAfirmativosCategoria) * 100).toFixed(2) : "0.00";
+                const topColor = data[0].color;
                 winnerPill.classList.remove('hidden');
                 winnerPill.classList.add('flex');
-                document.getElementById('winner-dot').style.backgroundColor = bgColors[0];
+                winnerPill.querySelector('span.uppercase').innerText = `${data[0].posicionOficial}° Fuerza`;
+                document.getElementById('winner-dot').style.backgroundColor = topColor;
                 document.getElementById('winner-name').innerText = data[0].nombre;
-                document.getElementById('winner-pct').innerText = `${topPct}%`;
+                const winnerPctEl = document.getElementById('winner-pct');
+                winnerPctEl.innerText = `${topPct}%`;
+                winnerPctEl.style.color = topColor === "#EAB308" ? "#B45309" : topColor;
             }
 
             data.forEach((row, index) => {
-                let pctNum = totalValidos > 0 ? (row.votos / totalValidos) * 100 : 0;
+                let pctNum = totalAfirmativosCategoria > 0 ? (row.votos / totalAfirmativosCategoria) * 100 : 0;
                 let pct = pctNum.toFixed(2);
-                const color = bgColors[index % bgColors.length];
-                const isFirst = index === 0 && row.votos > 0;
+                const color = row.color;
+                const textContrastClass = color === "#EAB308" ? "text-slate-950" : "text-white";
+                const isFirst = row.posicionOficial === 1 && row.votos > 0;
 
                 if (index < 8) {
                     labels.push(row.nombre);
                     votosArr.push(row.votos);
+                    chartColors.push(color);
 
                     if (legendContainer) {
                         legendContainer.innerHTML += `
@@ -1266,11 +1651,11 @@
                 }
 
                 tbody.innerHTML += `
-                    <div class="p-3 rounded-lg border ${isFirst ? 'bg-blue-50/40 border-blue-200/80' : 'bg-slate-50/60 border-slate-200/70'} hover:bg-slate-50 transition">
+                    <div class="p-3 rounded-lg border ${isFirst ? 'bg-slate-50 border-slate-300 shadow-xs' : 'bg-slate-50/60 border-slate-200/70'} hover:bg-slate-50 transition" style="${isFirst ? `border-left: 4px solid ${color};` : ''}">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center flex-shrink-0 text-white shadow-xs" style="background-color: ${color};">
-                                    ${index + 1}°
+                                <span class="w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center flex-shrink-0 ${textContrastClass} shadow-xs" style="background-color: ${color};">
+                                    ${row.posicionOficial}°
                                 </span>
                                 <span class="text-xs sm:text-sm font-bold text-slate-800 leading-snug" title="${row.nombre}">
                                     ${row.nombre}
@@ -1287,12 +1672,19 @@
                     </div>`;
             });
 
+            const votosRestantes = Math.max(0, totalAfirmativosCategoria - totalSeleccionados);
+            if (esFiltroParcial && votosRestantes > 0) {
+                labels.push("Otras fuerzas (no tildadas)");
+                votosArr.push(votosRestantes);
+                chartColors.push("#E2E8F0");
+            }
+
             const ctx = document.getElementById('chart-resultados').getContext('2d');
 
             if (chartInstance) {
                 chartInstance.data.labels = labels;
                 chartInstance.data.datasets[0].data = votosArr;
-                chartInstance.data.datasets[0].backgroundColor = bgColors.slice(0, labels.length);
+                chartInstance.data.datasets[0].backgroundColor = chartColors;
                 chartInstance.update('none');
             } else {
                 chartInstance = new Chart(ctx, {
@@ -1301,7 +1693,7 @@
                         labels: labels,
                         datasets: [{
                             data: votosArr,
-                            backgroundColor: bgColors.slice(0, labels.length),
+                            backgroundColor: chartColors,
                             borderWidth: 2,
                             borderColor: '#ffffff',
                             hoverOffset: 4
@@ -1316,9 +1708,15 @@
                             legend: { display: false },
                             tooltip: { enabled: false },
                             datalabels: {
-                                color: '#ffffff',
+                                color: (context) => {
+                                    const bg = context.dataset.backgroundColor[context.dataIndex];
+                                    if (bg === '#E2E8F0') return 'transparent';
+                                    return bg === '#EAB308' ? '#0f172a' : '#ffffff';
+                                },
                                 font: { weight: 'bold', size: 11 },
                                 formatter: (value, context) => {
+                                    const bg = context.dataset.backgroundColor[context.dataIndex];
+                                    if (bg === '#E2E8F0') return '';
                                     const sum = context.dataset.data.reduce((a, b) => a + b, 0);
                                     if (!sum) return '';
                                     const pct = (value / sum) * 100;
@@ -1331,232 +1729,755 @@
             }
         }
 
-        // --- GENERADOR DE REPORTES DE DAEBOT (SIMPLE Y COMPARATIVO) ---
-        function dibujarEncabezadoPDF(doc, subtitulo) {
-            doc.setFillColor(57, 201, 55);
-            doc.rect(0, 0, 210, 16, "F");
-            doc.setFillColor(0, 99, 190);
-            doc.rect(0, 16, 210, 3, "F");
+        // --- CONSTRUCTOR INDEPENDIENTE DE TABLAS GENÉRICAS OFICIALES (DAEBot) ---
 
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            doc.text("DIRECCIÓN DE ASUNTOS ELECTORALES · PROVINCIA DE RÍO NEGRO", 14, 10.5);
-
-            doc.setTextColor(15, 23, 42);
-            doc.setFontSize(15);
-            doc.text(subtitulo, 14, 29);
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8.5);
-            doc.setTextColor(100, 116, 139);
-            doc.text(`Generado por DAEBot el ${new Date().toLocaleString('es-AR')}`, 14, 34.5);
+        function setCheckboxes(selector, state) {
+            document.querySelectorAll(`${selector} input[type="checkbox"]`).forEach(cb => {
+                cb.checked = state;
+            });
+            actualizarContadoresConstructor();
         }
 
-        async function generarReporteDAEBot() {
-            const mode = document.getElementById('daebot-report-mode').value;
+        function filtrarChecklistConstructor(inputEl, containerSelector) {
+            const q = normalizarTexto(inputEl.value);
+            document.querySelectorAll(`${containerSelector} label`).forEach(lbl => {
+                const txt = normalizarTexto(lbl.innerText);
+                lbl.style.display = (!q || txt.includes(q)) ? "" : "none";
+            });
+        }
+
+        function actualizarContadoresConstructor() {
+            const yearsCount = document.querySelectorAll('#rep-years-list input:checked').length;
+            const kindsCount = document.querySelectorAll('#rep-kinds-list input:checked').length;
+            const terrCount = document.querySelectorAll('#rep-territories-list input:checked').length;
+            const catCount = document.querySelectorAll('#rep-categories-list input:checked').length;
+            const partyCount = document.querySelectorAll('#rep-parties-list input:checked').length;
+
+            const by = document.getElementById('badge-rep-years');
+            const bk = document.getElementById('badge-rep-kinds');
+            const bt = document.getElementById('badge-rep-territories');
+            const bc = document.getElementById('badge-rep-categories');
+            const bp = document.getElementById('badge-rep-parties');
+
+            if (by) by.innerText = yearsCount;
+            if (bk) bk.innerText = kindsCount;
+            if (bt) bt.innerText = terrCount === 0 ? "Toda la Prov." : terrCount;
+            if (bc) bc.innerText = catCount;
+            if (bp) bp.innerText = partyCount === 0 ? "Todas" : partyCount;
+        }
+
+        async function refrescarCatalogoConstructor() {
+            const terrList = document.getElementById('rep-territories-list');
+            const catList = document.getElementById('rep-categories-list');
+            const partyList = document.getElementById('rep-parties-list');
+
+            const prevTerr = new Set(Array.from(document.querySelectorAll('#rep-territories-list input:checked')).map(i => i.value));
+            const prevCat = new Set(Array.from(document.querySelectorAll('#rep-categories-list input:checked')).map(i => i.value));
+            const prevParties = new Set(Array.from(document.querySelectorAll('#rep-parties-list input:checked')).map(i => i.value));
+
+            if (catList) {
+                catList.innerHTML = ordenCategorias.map((code, idx) => {
+                    const checked = prevCat.size > 0 ? prevCat.has(code) : idx === 0;
+                    return `
+                        <label class="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white cursor-pointer text-slate-700 font-medium">
+                            <input type="checkbox" value="${code}" ${checked ? "checked" : ""} onchange="actualizarContadoresConstructor()" class="rounded text-rnblue">
+                            <span class="truncate">${nombresCategorias[code] || code}</span>
+                        </label>
+                    `;
+                }).join("");
+            }
+
+            let mapaPartidosCatalogo = new Map();
+            try {
+                let desde = 0;
+                const paso = 1000;
+                let seguir = true;
+                while (seguir) {
+                    const { data, error } = await supabaseClient
+                        .from('resultados_mesas')
+                        .select('nombre_lista')
+                        .range(desde, desde + paso - 1);
+                    if (error) break;
+                    if (data && data.length > 0) {
+                        data.forEach(r => {
+                            if (r.nombre_lista) {
+                                const nomLimpio = limpiarComillas(r.nombre_lista);
+                                const canon = claveNormalizadaFuerza(nomLimpio);
+                                if (!mapaPartidosCatalogo.has(canon)) {
+                                    mapaPartidosCatalogo.set(canon, {
+                                        canon,
+                                        nombres: new Set([nomLimpio]),
+                                        color: obtenerColorFuerzaPolitica(nomLimpio, {})
+                                    });
+                                } else {
+                                    mapaPartidosCatalogo.get(canon).nombres.add(nomLimpio);
+                                }
+                            }
+                        });
+                        if (data.length < paso) seguir = false;
+                        else desde += paso;
+                    } else {
+                        seguir = false;
+                    }
+                }
+            } catch (e) {
+                console.warn("Catálogo parcial:", e.message);
+            }
+
+            if (terrList) {
+                let htmlTerr = `<div class="text-[9px] uppercase font-extrabold text-slate-400 px-1 pt-0.5">Circuitos Regionales</div>`;
+                ESTRUCTURA_CIRCUITOS_OFICIAL.forEach(grp => {
+                    const val = `CIRC|${grp.circuito}`;
+                    const checked = prevTerr.has(val);
+                    htmlTerr += `
+                        <label class="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white cursor-pointer text-slate-700 font-semibold">
+                            <input type="checkbox" value="${val}" ${checked ? "checked" : ""} onchange="actualizarContadoresConstructor()" class="rounded text-rnblue">
+                            <span class="truncate">${grp.circuito}</span>
+                        </label>
+                    `;
+                });
+
+                htmlTerr += `<div class="text-[9px] uppercase font-extrabold text-slate-400 px-1 pt-1.5 border-t border-slate-200/70 mt-1">Municipios (39)</div>`;
+                ESTRUCTURA_CIRCUITOS_OFICIAL.forEach(grp => {
+                    grp.municipios.forEach(m => {
+                        const val = `MUN|${m}`;
+                        const checked = prevTerr.has(val);
+                        htmlTerr += `
+                            <label class="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white cursor-pointer text-slate-700 font-medium">
+                                <input type="checkbox" value="${val}" ${checked ? "checked" : ""} onchange="actualizarContadoresConstructor()" class="rounded text-rnblue">
+                                <span class="truncate">${m}</span>
+                            </label>
+                        `;
+                    });
+                });
+                terrList.innerHTML = htmlTerr;
+            }
+
+            if (partyList) {
+                const partidosArr = Array.from(mapaPartidosCatalogo.values())
+                    .map(p => {
+                        const arrN = Array.from(p.nombres);
+                        return {
+                            canon: p.canon,
+                            label: arrN.length <= 2 ? arrN.join(" / ") : `${arrN[0]} (+${arrN.length - 1})`,
+                            color: p.color
+                        };
+                    })
+                    .sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }));
+
+                if (partidosArr.length === 0) {
+                    partyList.innerHTML = `<p class="text-[10px] text-slate-400 text-center py-2">Sin partidos registrados aún.</p>`;
+                } else {
+                    partyList.innerHTML = partidosArr.map(p => {
+                        const checked = prevParties.has(p.canon);
+                        return `
+                            <label class="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white cursor-pointer text-slate-700 font-medium">
+                                <input type="checkbox" value="${p.canon}" ${checked ? "checked" : ""} onchange="actualizarContadoresConstructor()" class="rounded text-rnblue flex-shrink-0">
+                                <span class="w-2 h-2 rounded-xs flex-shrink-0" style="background-color: ${p.color};"></span>
+                                <span class="truncate" title="${p.label}">${p.label}</span>
+                            </label>
+                        `;
+                    }).join("");
+                }
+            }
+
+            actualizarContadoresConstructor();
+        }
+
+        function obtenerMetricasLocalidadEnEscenario(filasEscenario, nombreLocalidadOficial) {
+            const filasLoc = filasEscenario.filter(r => coincideLocalidadOficial(r.localidad, nombreLocalidadOficial));
+            if (!filasLoc || filasLoc.length === 0) {
+                return null;
+            }
+            const cons = consolidarBloqueResultados(filasLoc);
+            const totValidos = cons.listas.reduce((s, l) => s + l.votos, 0);
+            const otrosVotos = (cons.blanco || 0) + (cons.nulos || 0);
+            const totalVotos = totValidos + otrosVotos;
+            const partNum = parsearPorcentajeNumerico(cons.participacion);
+
+            const votosPorCanon = {};
+            cons.listas.forEach(l => {
+                const canon = claveNormalizadaFuerza(l.nombre);
+                votosPorCanon[canon] = (votosPorCanon[canon] || 0) + (l.votos || 0);
+            });
+
+            return {
+                electores: cons.electoresHabilitados || 0,
+                votosPorCanon,
+                otrosVotos,
+                totalVotos,
+                escuelas: cons.escuelasNum || 0,
+                mesas: cons.mesasNum || 0,
+                participacionNum: partNum
+            };
+        }
+
+        function sumarAcumuladoresLocalidades(listaMetricas, fuerzasCols, escenarios) {
+            return escenarios.map((_, idxEsc) => {
+                const acc = {
+                    electores: 0,
+                    votosPorCanon: {},
+                    otrosVotos: 0,
+                    totalVotos: 0,
+                    escuelas: 0,
+                    mesas: 0,
+                    partSum: 0,
+                    partCount: 0
+                };
+                fuerzasCols.forEach(f => { acc.votosPorCanon[f.canon] = 0; });
+
+                listaMetricas.forEach(item => {
+                    const m = item.porEscenario[idxEsc];
+                    if (!m) return;
+                    acc.electores += m.electores;
+                    fuerzasCols.forEach(f => {
+                        acc.votosPorCanon[f.canon] += (m.votosPorCanon[f.canon] || 0);
+                    });
+                    acc.otrosVotos += m.otrosVotos;
+                    acc.totalVotos += m.totalVotos;
+                    acc.escuelas += m.escuelas;
+                    acc.mesas += m.mesas;
+                    if (m.participacionNum > 0) {
+                        acc.partSum += m.participacionNum;
+                        acc.partCount++;
+                    }
+                });
+
+                acc.participacionNum = acc.electores > 0 && acc.totalVotos > 0
+                    ? (acc.totalVotos / acc.electores) * 100
+                    : (acc.partCount > 0 ? acc.partSum / acc.partCount : 0);
+                return acc;
+            });
+        }
+
+        async function generarReporteDAEBot(formato = 'excel') {
             const statusEl = document.getElementById('daebot-status');
-            const btn = document.getElementById('btn-daebot-generate');
+            const btnPdf = document.getElementById('btn-daebot-generate');
+            const btnXls = document.getElementById('btn-daebot-excel');
+
+            const aniosSel = Array.from(document.querySelectorAll('#rep-years-list input:checked')).map(i => i.value).sort();
+            const tiposSel = Array.from(document.querySelectorAll('#rep-kinds-list input:checked')).map(i => i.value);
+            const categoriasSel = Array.from(document.querySelectorAll('#rep-categories-list input:checked')).map(i => i.value);
+            const territoriosRaw = Array.from(document.querySelectorAll('#rep-territories-list input:checked')).map(i => i.value);
+            const partidosElegidosCanon = new Set(Array.from(document.querySelectorAll('#rep-parties-list input:checked')).map(i => i.value));
+            const metricasSet = new Set(Array.from(document.querySelectorAll('#rep-metrics-list input:checked')).map(i => i.value));
+
+            if (aniosSel.length === 0 || tiposSel.length === 0 || categoriasSel.length === 0) {
+                alert("Seleccioná al menos un Año, una Instancia/Tipo y una Categoría en el constructor DAEBot.");
+                return;
+            }
 
             statusEl.classList.remove('hidden');
-            btn.disabled = true;
-            btn.classList.add('opacity-70');
+            btnPdf.disabled = true;
+            btnXls.disabled = true;
+            btnPdf.classList.add('opacity-70');
+            btnXls.classList.add('opacity-70');
 
             try {
-                const { jsPDF } = window.jspdf;
-
-                if (mode === 'simple') {
-                    statusEl.innerText = "🤖 DAEBot está armando tu reporte simple...";
-                    const st = estadoActualReporte;
-
-                    if (!st.listas || st.listas.length === 0) {
-                        alert("No hay datos cargados en la selección actual para generar el reporte.");
-                        return;
-                    }
-
-                    const doc = new jsPDF();
-                    dibujarEncabezadoPDF(doc, `Reporte Electoral Oficial — ${st.categoriaTexto} (${st.anio})`);
-
-                    doc.setFillColor(241, 245, 249);
-                    doc.roundedRect(14, 39, 182, 22, 2, 2, "F");
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(9.5);
-                    doc.setTextColor(0, 99, 190);
-                    doc.text(`Elección: ${st.tipoEleccion} ${st.anio}   |   Territorio: ${st.circuito} — ${st.localidadTexto}`, 18, 46.5);
-
-                    const totalValidos = st.listas.reduce((s, l) => s + l.votos, 0);
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(9);
-                    doc.setTextColor(51, 65, 85);
-                    doc.text(
-                        `Mesas: ${st.mesas}   |   Participación: ${st.participacion}   |   Afirmativos: ${totalValidos.toLocaleString('es-AR')}   |   Blanco: ${st.blanco.toLocaleString('es-AR')}   |   Nulos: ${st.nulos.toLocaleString('es-AR')}`,
-                        18,
-                        54.5
-                    );
-
-                    const bodyRows = st.listas.map((l, idx) => {
-                        const pct = totalValidos > 0 ? ((l.votos / totalValidos) * 100).toFixed(2) + "%" : "0.00%";
-                        return [`${idx + 1}°`, l.lista_id || "-", l.nombre, l.votos.toLocaleString('es-AR'), pct];
-                    });
-
-                    doc.autoTable({
-                        startY: 66,
-                        head: [['Pos.', 'Lista', 'Agrupación Política', 'Votos', '% Válidos']],
-                        body: bodyRows,
-                        theme: 'grid',
-                        headStyles: { fillColor: [0, 99, 190], textColor: 255, fontStyle: 'bold' },
-                        styles: { fontSize: 9, cellPadding: 3 },
-                        columnStyles: {
-                            0: { halign: 'center', cellWidth: 14 },
-                            1: { halign: 'center', cellWidth: 18 },
-                            3: { halign: 'right', cellWidth: 28 },
-                            4: { halign: 'right', cellWidth: 26, fontStyle: 'bold' }
-                        }
-                    });
-
-                    const safeLoc = st.localidadTexto.replace(/[^a-zA-Z0-9_-]/g, "_");
-                    doc.save(`Reporte_DAEBot_${st.anio}_${safeLoc}_${st.categoria}.pdf`);
-                    statusEl.innerText = "✓ ¡Listo! Reporte simple descargado.";
-                } else {
-                    // MODO COMPARATIVO: AMBOS AÑOS 100% A ELECCIÓN
-                    const st = estadoActualReporte;
-                    const anio1 = document.getElementById('daebot-year-a').value;
-                    const anio2 = document.getElementById('daebot-year-b').value;
-
-                    if (anio1 === anio2) {
-                        alert("Elegí dos años distintos para poder compararlos.");
-                        return;
-                    }
-
-                    statusEl.innerText = `🤖 Consultando ${anio1} y ${anio2} para comparar...`;
-
-                    const [filas1, filas2] = await Promise.all([
-                        consultarAnioTipoEnSupabase(anio1, st.tipoEleccion),
-                        consultarAnioTipoEnSupabase(anio2, st.tipoEleccion)
-                    ]);
-
-                    const bloque1 = consolidarBloqueResultados(
-                        filtrarFilasDeCache(filas1, st.circuito, st.localidad).filter(d => d.categoria === st.categoria)
-                    );
-                    const bloque2 = consolidarBloqueResultados(
-                        filtrarFilasDeCache(filas2, st.circuito, st.localidad).filter(d => d.categoria === st.categoria)
-                    );
-
-                    if ((!bloque1.listas || bloque1.listas.length === 0) && (!bloque2.listas || bloque2.listas.length === 0)) {
-                        alert(`No se encontraron registros ni en ${anio1} ni en ${anio2} para ${st.localidadTexto} (${st.categoriaTexto}).`);
-                        return;
-                    }
-
-                    const bloqueIzq = { anio: anio1, ...bloque1 };
-                    const bloqueDer = { anio: anio2, ...bloque2 };
-
-                    const totIzq = bloqueIzq.listas.reduce((s, l) => s + l.votos, 0);
-                    const totDer = bloqueDer.listas.reduce((s, l) => s + l.votos, 0);
-
-                    const doc = new jsPDF('l');
-                    doc.setFillColor(57, 201, 55);
-                    doc.rect(0, 0, 297, 16, "F");
-                    doc.setFillColor(0, 99, 190);
-                    doc.rect(0, 16, 297, 3, "F");
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(10);
-                    doc.text("DIRECCIÓN DE ASUNTOS ELECTORALES · PROVINCIA DE RÍO NEGRO", 14, 10.5);
-
-                    doc.setTextColor(15, 23, 42);
-                    doc.setFontSize(15);
-                    doc.text(`Cuadro Comparativo Electoral (${bloqueIzq.anio} vs ${bloqueDer.anio}) — ${st.categoriaTexto}`, 14, 28);
-
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8.5);
-                    doc.setTextColor(100, 116, 139);
-                    doc.text(`Elección: ${st.tipoEleccion}  |  Territorio: ${st.circuito} — ${st.localidadTexto}  |  Generado por DAEBot el ${new Date().toLocaleString('es-AR')}`, 14, 33.5);
-
-                    doc.setFillColor(241, 245, 249);
-                    doc.roundedRect(14, 38, 131, 18, 2, 2, "F");
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(10);
-                    doc.setTextColor(0, 99, 190);
-                    doc.text(`ELECCIÓN ${bloqueIzq.anio}`, 18, 44.5);
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8.2);
-                    doc.setTextColor(51, 65, 85);
-                    doc.text(`Participación: ${bloqueIzq.participacion}  |  Afirmativos: ${totIzq.toLocaleString('es-AR')}  |  Blanco: ${bloqueIzq.blanco.toLocaleString('es-AR')}`, 18, 51.5);
-
-                    doc.setFillColor(240, 253, 244);
-                    doc.roundedRect(152, 38, 131, 18, 2, 2, "F");
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(10);
-                    doc.setTextColor(22, 163, 74);
-                    doc.text(`ELECCIÓN ${bloqueDer.anio}`, 156, 44.5);
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8.2);
-                    doc.setTextColor(51, 65, 85);
-                    doc.text(`Participación: ${bloqueDer.participacion}  |  Afirmativos: ${totDer.toLocaleString('es-AR')}  |  Blanco: ${bloqueDer.blanco.toLocaleString('es-AR')}`, 156, 51.5);
-
-                    const limpiarComillas = (txt) => String(txt || "").replace(/[“”"']/g, "").trim();
-
-                    const listasIzqLimpias = bloqueIzq.listas.filter(l => l.votos > 0);
-                    const listasDerLimpias = bloqueDer.listas.filter(l => l.votos > 0);
-
-                    const rowsIzq = listasIzqLimpias.map((l, i) => [
-                        `${i + 1}°`,
-                        limpiarComillas(l.nombre),
-                        l.votos.toLocaleString('es-AR'),
-                        totIzq > 0 ? ((l.votos / totIzq) * 100).toFixed(2) + "%" : "0.00%"
-                    ]);
-
-                    const rowsDer = listasDerLimpias.map((l, i) => [
-                        `${i + 1}°`,
-                        limpiarComillas(l.nombre),
-                        l.votos.toLocaleString('es-AR'),
-                        totDer > 0 ? ((l.votos / totDer) * 100).toFixed(2) + "%" : "0.00%"
-                    ]);
-
-                    doc.autoTable({
-                        startY: 60,
-                        margin: { left: 14, right: 152 },
-                        tableWidth: 131,
-                        head: [['Pos.', `Agrupación Política (${bloqueIzq.anio})`, 'Votos', '%']],
-                        body: rowsIzq.length ? rowsIzq : [['-', 'Sin datos cargados', '-', '-']],
-                        theme: 'grid',
-                        headStyles: { fillColor: [0, 99, 190], textColor: 255, fontStyle: 'bold', fontSize: 8.2 },
-                        styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
-                        columnStyles: {
-                            0: { halign: 'center', cellWidth: 11 },
-                            1: { cellWidth: 78 },
-                            2: { halign: 'right', cellWidth: 22 },
-                            3: { halign: 'right', cellWidth: 20, fontStyle: 'bold' }
-                        }
-                    });
-
-                    doc.autoTable({
-                        startY: 60,
-                        margin: { left: 152, right: 14 },
-                        tableWidth: 131,
-                        head: [['Pos.', `Agrupación Política (${bloqueDer.anio})`, 'Votos', '%']],
-                        body: rowsDer.length ? rowsDer : [['-', 'Sin datos cargados', '-', '-']],
-                        theme: 'grid',
-                        headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold', fontSize: 8.2 },
-                        styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
-                        columnStyles: {
-                            0: { halign: 'center', cellWidth: 11 },
-                            1: { cellWidth: 78 },
-                            2: { halign: 'right', cellWidth: 22 },
-                            3: { halign: 'right', cellWidth: 20, fontStyle: 'bold' }
-                        }
-                    });
-
-                    const safeLoc = st.localidadTexto.replace(/[^a-zA-Z0-9_-]/g, "_");
-                    doc.save(`Cuadro_Comparativo_${bloqueIzq.anio}_vs_${bloqueDer.anio}_${safeLoc}_${st.categoria}.pdf`);
-                    statusEl.innerText = `✓ ¡Listo! Cuadro comparativo ${bloqueIzq.anio} vs ${bloqueDer.anio} descargado.`;
+                const jsPDFConstructor = window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : window.jsPDF;
+                if (formato === 'pdf' && !jsPDFConstructor) {
+                    alert("No se pudo cargar la librería PDF (jsPDF).");
+                    return;
                 }
+                if (formato === 'excel' && typeof XLSX === 'undefined') {
+                    alert("No se pudo cargar la librería Excel (XLSX).");
+                    return;
+                }
+
+                // Ordenar instancias tipo planilla oficial (PASO primero, luego GENERALES)
+                const ordenTipos = { "PASO": 1, "General": 2, "Provincial": 3 };
+                const tiposOrdenados = [...tiposSel].sort((a, b) => (ordenTipos[a] || 9) - (ordenTipos[b] || 9));
+
+                const paresConsulta = [];
+                aniosSel.forEach(a => {
+                    tiposOrdenados.forEach(t => {
+                        paresConsulta.push({ anio: a, tipo: t });
+                    });
+                });
+
+                statusEl.innerText = `🤖 Armando Tabla Genérica Oficial (${paresConsulta.length} ${paresConsulta.length === 1 ? 'elección' : 'elecciones'})...`;
+
+                const consultas = await Promise.all(
+                    paresConsulta.map(p => consultarAnioTipoEnSupabase(p.anio, p.tipo).then(filas => ({ ...p, filas })))
+                );
+
+                // Construir columnas de escenario (ej: P.A.S.O. / GENERALES o 2019 / 2023 según lo asignado)
+                const escenarios = [];
+                consultas.forEach(c => {
+                    categoriasSel.forEach(catCode => {
+                        const filasCat = c.filas.filter(r => r.categoria === catCode);
+                        if (filasCat.length === 0) return;
+
+                        const etiquetaTipo = c.tipo === "PASO" ? "P.A.S.O" : (c.tipo === "General" ? "GENERALES" : "PROVINCIAL");
+                        const partesLabel = [];
+                        if (aniosSel.length > 1) partesLabel.push(c.anio);
+                        if (tiposOrdenados.length > 1 || aniosSel.length === 1) partesLabel.push(etiquetaTipo);
+                        if (categoriasSel.length > 1) partesLabel.push(catCode);
+
+                        escenarios.push({
+                            anio: c.anio,
+                            tipo: c.tipo,
+                            catCode,
+                            catNombre: nombresCategorias[catCode] || catCode,
+                            subHeader: partesLabel.join(" · "),
+                            filas: filasCat
+                        });
+                    });
+                });
+
+                if (escenarios.length === 0) {
+                    alert("No se encontraron registros para las categorías y años asignados.");
+                    statusEl.innerText = "⚠️ Sin registros para la selección.";
+                    return;
+                }
+
+                // Detectar fuerzas políticas presentes en los escenarios seleccionados
+                const mapaFuerzas = new Map();
+                escenarios.forEach(esc => {
+                    esc.filas.forEach(r => {
+                        const nomLimpio = limpiarComillas(r.nombre_lista || `Lista ${r.lista_id}`);
+                        const canon = claveNormalizadaFuerza(nomLimpio);
+                        if (partidosElegidosCanon.size > 0 && !partidosElegidosCanon.has(canon)) return;
+
+                        if (!mapaFuerzas.has(canon)) {
+                            mapaFuerzas.set(canon, {
+                                canon,
+                                nombre: nomLimpio.toUpperCase(),
+                                maxVotos: 0
+                            });
+                        }
+                        const entry = mapaFuerzas.get(canon);
+                        const v = parseInt(r.votos) || 0;
+                        if (v > entry.maxVotos) {
+                            entry.maxVotos = v;
+                            entry.nombre = nomLimpio.toUpperCase();
+                        }
+                    });
+                });
+
+                const fuerzasCols = Array.from(mapaFuerzas.values()).sort((a, b) => b.maxVotos - a.maxVotos);
+                const k = escenarios.length; // cantidad de subcolumnas por bloque (ej: 2 si PASO + GENERALES)
+
+                // Filtrar circuitos/municipios según selección del usuario (o todos los 5 circuitos + 39 municipios por defecto)
+                const circFiltroSet = new Set(territoriosRaw.filter(v => v.startsWith("CIRC|")).map(v => v.slice(5)));
+                const munFiltroSet = new Set(territoriosRaw.filter(v => v.startsWith("MUN|")).map(v => v.slice(4)));
+
+                const circuitosFiltrados = ESTRUCTURA_CIRCUITOS_OFICIAL.map(grp => {
+                    if (territoriosRaw.length === 0) return grp;
+                    if (circFiltroSet.has(grp.circuito)) return grp;
+                    const muns = grp.municipios.filter(m => munFiltroSet.has(m));
+                    return { circuito: grp.circuito, municipios: muns };
+                }).filter(grp => grp.municipios.length > 0);
+
+                // Construir columnas dinámicas de la Tabla Genérica Oficial
+                const bloquesColumnas = [];
+                if (metricasSet.has('electores')) {
+                    bloquesColumnas.push({ id: 'electores', grupoSup: 'ELECTORES', titulo: 'CANTIDAD DE ELECTORES HABILITADOS', isPartido: false });
+                }
+                if (metricasSet.has('partidos')) {
+                    fuerzasCols.forEach(f => {
+                        bloquesColumnas.push({
+                            id: `partido_${f.canon}`,
+                            canon: f.canon,
+                            grupoSup: 'VOTOS VÁLIDOS',
+                            titulo: f.nombre,
+                            isPartido: true
+                        });
+                    });
+                }
+                if (metricasSet.has('otros')) {
+                    bloquesColumnas.push({ id: 'otros', grupoSup: 'RESUMEN', titulo: 'OTROS TIPOS DE VOTO', isPartido: false });
+                }
+                if (metricasSet.has('emitidos')) {
+                    bloquesColumnas.push({ id: 'emitidos', grupoSup: 'RESUMEN', titulo: 'TOTAL DE VOTOS', isPartido: false });
+                }
+                if (metricasSet.has('escuelas')) {
+                    bloquesColumnas.push({ id: 'escuelas', grupoSup: 'ESTRUCTURA', titulo: 'CANTIDAD DE ESCUELAS', isPartido: false });
+                }
+                if (metricasSet.has('mesas')) {
+                    bloquesColumnas.push({ id: 'mesas', grupoSup: 'ESTRUCTURA', titulo: 'CANTIDAD DE MESAS', isPartido: false });
+                }
+                if (metricasSet.has('participacion')) {
+                    bloquesColumnas.push({ id: 'participacion', grupoSup: 'PARTICIPACIÓN', titulo: 'PORCENTAJE DE PARTICIPACIÓN ELECTORAL', isPartido: false });
+                }
+
+                const extraerValoresFila = (listaAccEscenarios) => {
+                    const vals = [];
+                    bloquesColumnas.forEach(b => {
+                        listaAccEscenarios.forEach(acc => {
+                            if (!acc) {
+                                vals.push(formato === 'excel' ? "" : "—");
+                                return;
+                            }
+                            if (b.id === 'electores') vals.push(acc.electores || (formato === 'excel' ? "" : "—"));
+                            else if (b.isPartido) vals.push(acc.votosPorCanon[b.canon] ?? 0);
+                            else if (b.id === 'otros') vals.push(acc.otrosVotos ?? 0);
+                            else if (b.id === 'emitidos') vals.push(acc.totalVotos ?? 0);
+                            else if (b.id === 'escuelas') vals.push(acc.escuelas || (formato === 'excel' ? "" : "—"));
+                            else if (b.id === 'mesas') vals.push(acc.mesas || (formato === 'excel' ? "" : "—"));
+                            else if (b.id === 'participacion') {
+                                const p = acc.participacionNum || 0;
+                                vals.push(p > 0 ? (formato === 'excel' ? Number(p.toFixed(2)) : `${p.toFixed(2)}%`) : (formato === 'excel' ? "" : "—"));
+                            }
+                        });
+                    });
+                    return vals;
+                };
+
+                const extraerFilaCoeficienteVariacion = (listaAccEscenarios) => {
+                    const vals = [];
+                    const ini = listaAccEscenarios[0];
+                    const fin = listaAccEscenarios[listaAccEscenarios.length - 1];
+                    bloquesColumnas.forEach(b => {
+                        for (let s = 0; s < k; s++) {
+                            if (s < k - 1) {
+                                vals.push("");
+                                continue;
+                            }
+                            if (!ini || !fin) {
+                                vals.push("—");
+                                continue;
+                            }
+                            let v1 = 0, v2 = 0, esPP = false;
+                            if (b.id === 'electores') { v1 = ini.electores; v2 = fin.electores; }
+                            else if (b.isPartido) { v1 = ini.votosPorCanon[b.canon] || 0; v2 = fin.votosPorCanon[b.canon] || 0; }
+                            else if (b.id === 'otros') { v1 = ini.otrosVotos; v2 = fin.otrosVotos; }
+                            else if (b.id === 'emitidos') { v1 = ini.totalVotos; v2 = fin.totalVotos; }
+                            else if (b.id === 'escuelas') { v1 = ini.escuelas; v2 = fin.escuelas; }
+                            else if (b.id === 'mesas') { v1 = ini.mesas; v2 = fin.mesas; }
+                            else if (b.id === 'participacion') { v1 = ini.participacionNum; v2 = fin.participacionNum; esPP = true; }
+
+                            if (v1 > 0 && v2 > 0) {
+                                if (esPP) {
+                                    const dp = v2 - v1;
+                                    vals.push(`${dp >= 0 ? '+' : ''}${dp.toFixed(2)} p.p.`);
+                                } else {
+                                    const cv = ((v2 - v1) / v1) * 100;
+                                    vals.push(`${cv >= 0 ? '+' : ''}${cv.toFixed(2)}%`);
+                                }
+                            } else {
+                                vals.push("—");
+                            }
+                        }
+                    });
+                    return vals;
+                };
+
+                // Armar filas del bloque Municipios agrupado por Circuitos
+                const filasMunicipiosRender = [];
+                const todosMunicipiosMetricas = [];
+
+                circuitosFiltrados.forEach(grp => {
+                    const metricasCircuito = [];
+                    grp.municipios.forEach((munName, idxMun) => {
+                        const porEsc = escenarios.map(esc => obtenerMetricasLocalidadEnEscenario(esc.filas, munName));
+                        const itemMun = { nombre: munName, porEscenario: porEsc };
+                        metricasCircuito.push(itemMun);
+                        todosMunicipiosMetricas.push(itemMun);
+
+                        filasMunicipiosRender.push({
+                            tipo: 'localidad',
+                            circuitoLabel: idxMun === 0 ? grp.circuito : "",
+                            localidadLabel: munName,
+                            valores: extraerValoresFila(porEsc)
+                        });
+                    });
+
+                    const totCirc = sumarAcumuladoresLocalidades(metricasCircuito, fuerzasCols, escenarios);
+                    filasMunicipiosRender.push({
+                        tipo: 'subtotal',
+                        circuitoLabel: "",
+                        localidadLabel: `TOTALES ${grp.circuito}`,
+                        valores: extraerValoresFila(totCirc)
+                    });
+                });
+
+                const totTodosMunicipios = sumarAcumuladoresLocalidades(todosMunicipiosMetricas, fuerzasCols, escenarios);
+                filasMunicipiosRender.push({
+                    tipo: 'total_general',
+                    circuitoLabel: "TOTALES",
+                    localidadLabel: "TOTAL MUNICIPIOS PROVINCIA",
+                    valores: extraerValoresFila(totTodosMunicipios)
+                });
+                if (k >= 2) {
+                    filasMunicipiosRender.push({
+                        tipo: 'coef_var',
+                        circuitoLabel: "COEF. VAR. %",
+                        localidadLabel: `${escenarios[0].subHeader} → ${escenarios[k - 1].subHeader}`,
+                        valores: extraerFilaCoeficienteVariacion(totTodosMunicipios)
+                    });
+                }
+
+                // Armar filas de Comisiones de Fomento (31 en orden alfabético)
+                const filasComisionesRender = [];
+                const todasComisionesMetricas = [];
+                if (metricasSet.has('comisiones')) {
+                    COMISIONES_FOMENTO_OFICIAL.forEach(cfName => {
+                        const porEsc = escenarios.map(esc => obtenerMetricasLocalidadEnEscenario(esc.filas, cfName));
+                        const itemCf = { nombre: cfName, porEscenario: porEsc };
+                        todasComisionesMetricas.push(itemCf);
+
+                        filasComisionesRender.push({
+                            tipo: 'localidad',
+                            localidadLabel: cfName,
+                            valores: extraerValoresFila(porEsc)
+                        });
+                    });
+
+                    const totComisiones = sumarAcumuladoresLocalidades(todasComisionesMetricas, fuerzasCols, escenarios);
+                    filasComisionesRender.push({
+                        tipo: 'total_general',
+                        localidadLabel: "TOTAL COMISIONES DE FOMENTO",
+                        valores: extraerValoresFila(totComisiones)
+                    });
+
+                    const totProvinciaCompleto = sumarAcumuladoresLocalidades([...todosMunicipiosMetricas, ...todasComisionesMetricas], fuerzasCols, escenarios);
+                    filasComisionesRender.push({
+                        tipo: 'total_provincia',
+                        localidadLabel: "TOTAL GENERAL PROVINCIA (MUN. + COM. FOMENTO)",
+                        valores: extraerValoresFila(totProvinciaCompleto)
+                    });
+                    if (k >= 2) {
+                        filasComisionesRender.push({
+                            tipo: 'coef_var',
+                            localidadLabel: `COEF. VARIACIÓN % (${escenarios[0].subHeader} → ${escenarios[k - 1].subHeader})`,
+                            valores: extraerFilaCoeficienteVariacion(totProvinciaCompleto)
+                        });
+                    }
+                }
+
+                const catsLabel = escenarios.map(e => `${e.catNombre} (${e.anio})`).filter((v, i, a) => a.indexOf(v) === i).join(" / ");
+
+                // --- EXPORTACIÓN EXCEL (FORMATO PLANILLA GENÉRICA OFICIAL) ---
+                if (formato === 'excel') {
+                    const wb = XLSX.utils.book_new();
+
+                    const construirHojaOficial = (esComisiones, filasData) => {
+                        const merges = [];
+                        const rowTitle = [`TABLA GENÉRICA OFICIAL — ${esComisiones ? 'COMISIONES DE FOMENTO' : 'MUNICIPIOS POR CIRCUITO'} — ${catsLabel.toUpperCase()}`];
+                        const rowH1 = esComisiones ? ["COMISIÓN DE FOMENTO"] : ["CIRCUITOS", "MUNICIPIOS"];
+                        const rowH2 = esComisiones ? [""] : ["", ""];
+                        const rowH3 = esComisiones ? ["ELECCIONES"] : ["", ""];
+
+                        const colOffset = esComisiones ? 1 : 2;
+                        if (esComisiones) {
+                            merges.push({ s: { r: 2, c: 0 }, e: { r: 3, c: 0 } });
+                        } else {
+                            merges.push({ s: { r: 2, c: 0 }, e: { r: 4, c: 0 } });
+                            merges.push({ s: { r: 2, c: 1 }, e: { r: 4, c: 1 } });
+                        }
+
+                        // Agrupar VOTOS VÁLIDOS en encabezado superior
+                        let idxCol = colOffset;
+                        const partidosBloques = bloquesColumnas.filter(b => b.isPartido);
+                        const idxInicioPartidos = bloquesColumnas.findIndex(b => b.isPartido);
+
+                        bloquesColumnas.forEach((b, bIdx) => {
+                            if (b.isPartido) {
+                                rowH1.push(bIdx === idxInicioPartidos ? "VOTOS VÁLIDOS — AGRUPACIÓN POLÍTICA" : "");
+                            } else {
+                                rowH1.push(b.titulo);
+                                merges.push({ s: { r: 2, c: idxCol }, e: { r: 3, c: idxCol + k - 1 } });
+                            }
+                            for (let s = 1; s < k; s++) rowH1.push("");
+
+                            rowH2.push(b.isPartido ? b.titulo : "");
+                            for (let s = 1; s < k; s++) rowH2.push("");
+                            if (b.isPartido && k > 1) {
+                                merges.push({ s: { r: 3, c: idxCol }, e: { r: 3, c: idxCol + k - 1 } });
+                            }
+
+                            escenarios.forEach(esc => rowH3.push(esc.subHeader));
+                            idxCol += k;
+                        });
+
+                        if (partidosBloques.length > 0) {
+                            const startP = colOffset + idxInicioPartidos * k;
+                            const endP = startP + partidosBloques.length * k - 1;
+                            if (endP > startP) {
+                                merges.push({ s: { r: 2, c: startP }, e: { r: 2, c: endP } });
+                            }
+                        }
+
+                        const aoa = [rowTitle, [], rowH1, rowH2, rowH3];
+                        filasData.forEach(f => {
+                            const prefix = esComisiones ? [f.localidadLabel] : [f.circuitoLabel, f.localidadLabel];
+                            const valsNum = f.valores.map(v => typeof v === 'string' && v === '—' ? '' : v);
+                            aoa.push([...prefix, ...valsNum]);
+                        });
+
+                        const ws = XLSX.utils.aoa_to_sheet(aoa);
+                        ws['!merges'] = merges;
+                        ws['!cols'] = [
+                            { wch: esComisiones ? 30 : 18 },
+                            ...(esComisiones ? [] : [{ wch: 26 }]),
+                            ...Array(bloquesColumnas.length * k).fill({ wch: 13 })
+                        ];
+                        return ws;
+                    };
+
+                    const wsMun = construirHojaOficial(false, filasMunicipiosRender);
+                    XLSX.utils.book_append_sheet(wb, wsMun, "TABLA_GENERICA_MUNICIPIOS");
+
+                    if (metricasSet.has('comisiones') && filasComisionesRender.length > 0) {
+                        const wsCf = construirHojaOficial(true, filasComisionesRender);
+                        XLSX.utils.book_append_sheet(wb, wsCf, "COMISIONES_DE_FOMENTO");
+                    }
+
+                    XLSX.writeFile(wb, `Tabla_Generica_Oficial_RN_${aniosSel.join("-")}.xlsx`);
+                    statusEl.innerText = `✓ ¡Planilla Genérica Oficial descargada!`;
+                    return;
+                }
+
+                // --- EXPORTACIÓN PDF (TABLA GENÉRICA OFICIAL APISADA A3/A4 HORIZONTAL) ---
+                const totalCols = 2 + bloquesColumnas.length * k;
+                const formatoHoja = totalCols > 14 ? 'a3' : 'a4';
+                const doc = new jsPDFConstructor({ orientation: 'l', unit: 'mm', format: formatoHoja });
+                const anchoPag = doc.internal.pageSize.getWidth();
+
+                doc.setFillColor(57, 201, 55);
+                doc.rect(0, 0, anchoPag, 12, "F");
+                doc.setFillColor(0, 99, 190);
+                doc.rect(0, 12, anchoPag, 2, "F");
+                doc.setTextColor(255, 255, 255);
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(9);
+                doc.text("DIRECCIÓN DE ASUNTOS ELECTORALES · PROVINCIA DE RÍO NEGRO", 10, 8);
+
+                doc.setTextColor(15, 23, 42);
+                doc.setFontSize(11);
+                doc.text(`TABLA GENÉRICA OFICIAL — ${catsLabel.toUpperCase()}`, 10, 20);
+
+                // Encabezado multinivel para AutoTable
+                const headRow1 = [
+                    { content: 'CIRCUITOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } },
+                    { content: 'MUNICIPIOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } }
+                ];
+                const headRow2 = [];
+
+                bloquesColumnas.forEach(b => {
+                    const bgCol = b.isPartido ? [205, 220, 57] : [189, 189, 189];
+                    headRow1.push({
+                        content: b.titulo,
+                        colSpan: k,
+                        styles: { halign: 'center', valign: 'middle', fillColor: bgCol, textColor: [15, 23, 42], fontSize: 6.2 }
+                    });
+                    escenarios.forEach(esc => {
+                        headRow2.push({
+                            content: esc.subHeader,
+                            styles: { halign: 'center', valign: 'middle', fillColor: b.isPartido ? [220, 231, 117] : [215, 215, 215], textColor: [15, 23, 42], fontSize: 5.8 }
+                        });
+                    });
+                });
+
+                const bodyMunPDF = filasMunicipiosRender.map(f => {
+                    const valsFmt = f.valores.map(v => typeof v === 'number' ? v.toLocaleString('es-AR') : v);
+                    return [f.circuitoLabel, f.localidadLabel, ...valsFmt];
+                });
+
+                doc.autoTable({
+                    startY: 24,
+                    head: [headRow1, headRow2],
+                    body: bodyMunPDF,
+                    theme: 'grid',
+                    margin: { left: 10, right: 10 },
+                    styles: { fontSize: 6.1, cellPadding: 1.2, halign: 'center', valign: 'middle', lineColor: [148, 163, 184], lineWidth: 0.15 },
+                    columnStyles: {
+                        0: { fontStyle: 'bold', halign: 'left', fillColor: [241, 245, 249] },
+                        1: { halign: 'left' }
+                    },
+                    didParseCell: function(data) {
+                        if (data.section === 'body') {
+                            const rowMeta = filasMunicipiosRender[data.row.index];
+                            if (!rowMeta) return;
+                            if (rowMeta.tipo === 'subtotal') {
+                                data.cell.styles.fillColor = [192, 202, 51];
+                                data.cell.styles.fontStyle = 'bold';
+                                data.cell.styles.textColor = [15, 23, 42];
+                            } else if (rowMeta.tipo === 'total_general') {
+                                data.cell.styles.fillColor = [189, 189, 189];
+                                data.cell.styles.fontStyle = 'bold';
+                                data.cell.styles.textColor = [15, 23, 42];
+                            } else if (rowMeta.tipo === 'coef_var') {
+                                data.cell.styles.fillColor = [219, 234, 254];
+                                data.cell.styles.fontStyle = 'bold';
+                                data.cell.styles.textColor = [30, 58, 138];
+                            }
+                        }
+                    }
+                });
+
+                if (metricasSet.has('comisiones') && filasComisionesRender.length > 0) {
+                    doc.addPage();
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(10.5);
+                    doc.setTextColor(15, 23, 42);
+                    doc.text(`COMISIONES DE FOMENTO — ${catsLabel.toUpperCase()}`, 10, 14);
+
+                    const headCf1 = [
+                        { content: 'COMISIÓN DE FOMENTO', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } }
+                    ];
+                    const headCf2 = [];
+                    bloquesColumnas.forEach(b => {
+                        const bgCol = b.isPartido ? [205, 220, 57] : [189, 189, 189];
+                        headCf1.push({
+                            content: b.titulo,
+                            colSpan: k,
+                            styles: { halign: 'center', valign: 'middle', fillColor: bgCol, textColor: [15, 23, 42], fontSize: 6.2 }
+                        });
+                        escenarios.forEach(esc => {
+                            headCf2.push({
+                                content: esc.subHeader,
+                                styles: { halign: 'center', valign: 'middle', fillColor: b.isPartido ? [220, 231, 117] : [215, 215, 215], textColor: [15, 23, 42], fontSize: 5.8 }
+                            });
+                        });
+                    });
+
+                    const bodyCfPDF = filasComisionesRender.map(f => {
+                        const valsFmt = f.valores.map(v => typeof v === 'number' ? v.toLocaleString('es-AR') : v);
+                        return [f.localidadLabel, ...valsFmt];
+                    });
+
+                    doc.autoTable({
+                        startY: 18,
+                        head: [headCf1, headCf2],
+                        body: bodyCfPDF,
+                        theme: 'grid',
+                        margin: { left: 10, right: 10 },
+                        styles: { fontSize: 6.1, cellPadding: 1.2, halign: 'center', valign: 'middle', lineColor: [148, 163, 184], lineWidth: 0.15 },
+                        columnStyles: {
+                            0: { halign: 'left', fontStyle: 'bold' }
+                        },
+                        didParseCell: function(data) {
+                            if (data.section === 'body') {
+                                const rowMeta = filasComisionesRender[data.row.index];
+                                if (!rowMeta) return;
+                                if (rowMeta.tipo === 'total_general') {
+                                    data.cell.styles.fillColor = [205, 220, 57];
+                                    data.cell.styles.fontStyle = 'bold';
+                                } else if (rowMeta.tipo === 'total_provincia') {
+                                    data.cell.styles.fillColor = [189, 189, 189];
+                                    data.cell.styles.fontStyle = 'bold';
+                                } else if (rowMeta.tipo === 'coef_var') {
+                                    data.cell.styles.fillColor = [219, 234, 254];
+                                    data.cell.styles.fontStyle = 'bold';
+                                    data.cell.styles.textColor = [30, 58, 138];
+                                }
+                            }
+                        }
+                    });
+                }
+
+                doc.save(`Tabla_Generica_Oficial_RN_${aniosSel.join("-")}.pdf`);
+                statusEl.innerText = `✓ ¡PDF Tabla Genérica Oficial descargado!`;
             } catch (err) {
-                alert("Error al generar el reporte con DAEBot: " + err.message);
-                statusEl.innerText = "⚠️ Error al generar reporte.";
+                alert("Error al generar reporte oficial: " + err.message);
+                statusEl.innerText = "⚠️ Error al generar el reporte.";
             } finally {
-                btn.disabled = false;
-                btn.classList.remove('opacity-70');
+                btnPdf.disabled = false;
+                btnXls.disabled = false;
+                btnPdf.classList.remove('opacity-70');
+                btnXls.classList.remove('opacity-70');
             }
         }
 
@@ -1565,6 +2486,7 @@
 
             actualizarDivisionTerritorialPublico();
             await actualizarFiltros(true);
+            await refrescarCatalogoConstructor();
 
             supabaseClient
                 .channel('public:resultados_mesas')
