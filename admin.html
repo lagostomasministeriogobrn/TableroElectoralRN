@@ -107,13 +107,28 @@
             
             <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de Excel Consolidado, Planillas CNE, ODS, CSV y Capturas</h3>
-                    <p class="text-xs text-slate-600 mt-1">Subí el Excel consolidado provincial, planillas CNE, planillas municipales (<code>.ods</code> / <code>.xlsx</code> / <code>.xls</code>), CSV o capturas (<strong>Ctrl+V</strong>).</p>
+                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación de Excel Consolidado, Planillas CNE, ODS, CSV y Capturas</h3>
+                    <p class="text-xs text-slate-600 mt-1">Al subir un archivo, los datos se cargan en vista previa sin guardarse solos: podés editar Año, Localidad, Circuito y revisar cada Categoría antes de guardar.</p>
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
                     <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .ods, .json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/vnd.oasis.opendocument.spreadsheet" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
                     <span id="ocr-progress" class="text-[11px] font-bold text-rnblue hidden"></span>
                 </div>
+            </div>
+
+            <!-- Banner de Archivo Importado en Vista Previa -->
+            <div id="staged-banner" class="hidden bg-amber-50 border border-amber-300 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="bg-amber-500 text-white text-[10px] font-extrabold uppercase px-2 py-0.5 rounded">Vista Previa Activa</span>
+                        <span id="staged-summary" class="text-xs font-bold text-slate-800"></span>
+                    </div>
+                    <div id="staged-quick-tabs" class="flex flex-wrap items-center gap-1.5"></div>
+                    <p class="text-[11px] text-slate-600">Saltá rápido entre categorías con los botones o editá <strong>Circuito</strong> y <strong>Localidad</strong> antes de guardar.</p>
+                </div>
+                <button type="button" onclick="descartarImportacionEnMemoria()" class="bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold px-3 py-1.5 rounded text-xs transition whitespace-nowrap">
+                    ✕ Salir de vista previa
+                </button>
             </div>
 
             <div class="bg-white p-6 rounded border border-slate-200 custom-shadow space-y-6">
@@ -124,14 +139,14 @@
                     <div class="flex flex-wrap gap-2 w-full md:w-auto">
                         <button onclick="resetCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-3 py-2 rounded text-xs transition">Limpiar Categoría</button>
                         <button onclick="eliminarLocalidadCompleta()" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-2 rounded text-xs transition">Eliminar Localidad</button>
-                        <button id="btn-save-top" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Guardar en Supabase ☁️</button>
+                        <button id="btn-save-top" onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-4 py-2 rounded text-xs transition shadow">Guardar Categoría Actual ☁️</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Año Electoral</label>
-                        <select id="admin-year" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
+                        <select id="admin-year" onchange="onYearChangeAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
                             <option value="2027">2027</option>
                             <option value="2026">2026</option>
                             <option value="2025">2025</option>
@@ -156,7 +171,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Paraje</label>
                         <div class="flex gap-1">
                             <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, San Javier...">
-                            <button type="button" onclick="loadAdminData()" title="Buscar datos de esta localidad" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
+                            <button type="button" onclick="descartarImportacionEnMemoria(true)" title="Buscar datos guardados en Supabase" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
                         </div>
                     </div>
 
@@ -171,7 +186,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
-                        <select id="admin-election-type" onchange="loadAdminData()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
+                        <select id="admin-election-type" onchange="onCategoryChangeAdmin()" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-2 text-xs font-semibold">
                             <option value="GOB">Gobernador / Vice</option>
                         </select>
                     </div>
@@ -207,9 +222,16 @@
                     <div id="admin-parties-container" class="space-y-3"></div>
                 </div>
 
-                <div class="flex justify-between items-center pt-4 border-t">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-4 border-t">
                     <span id="admin-status" class="text-xs font-bold text-slate-600">Listo.</span>
-                    <button onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded text-sm shadow">Guardar en Supabase ☁️</button>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                        <button id="btn-save-all-staged" type="button" onclick="guardarTodasCategoriasImportadas()" class="hidden bg-rnblue hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded text-sm shadow transition">
+                            Guardar Todas las Categorías del Archivo ☁️
+                        </button>
+                        <button onclick="saveAdminData()" class="bg-rngreen hover:bg-green-600 text-white font-bold px-6 py-2.5 rounded text-sm shadow transition">
+                            Guardar Categoría Actual ☁️
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -218,6 +240,9 @@
     <script>
         const ADMIN_PASS = "rn2026";
         const SESSION_KEY = "dae_rn_admin_auth";
+
+        let importacionEnMemoria = null;
+        let categoriaEnEdicion = null;
 
         function desbloquearPanel() {
             document.getElementById('login-overlay').classList.add('hidden');
@@ -391,13 +416,147 @@
             });
         }
 
+        function leerFilasActualesDelDOM() {
+            const parties = [];
+            document.querySelectorAll('.party-row').forEach(row => {
+                const nombre = row.querySelector('.party-name').value.trim();
+                if (nombre) {
+                    parties.push({
+                        lista_id: parseInt(row.querySelector('.party-id').value) || 0,
+                        nombre_lista: nombre,
+                        votos: parseInt(row.querySelector('.party-votes').value) || 0
+                    });
+                }
+            });
+            const subValidosText = document.getElementById('admin-subvalidos').value;
+            const blanco = parseInt((subValidosText.match(/Blanco:\s*(\d+)/i) || [])[1]) || 0;
+            const nulos = parseInt((subValidosText.match(/Nulos:\s*(\d+)/i) || [])[1]) || 0;
+            return { parties, blanco, nulos };
+        }
+
+        function guardarCambiosDeCategoriaEnMemoria() {
+            if (!importacionEnMemoria || !categoriaEnEdicion) return;
+            const bloque = importacionEnMemoria.categorias[categoriaEnEdicion];
+            if (!bloque) return;
+            const actual = leerFilasActualesDelDOM();
+            bloque.parties = actual.parties;
+            bloque.blanco = actual.blanco;
+            bloque.nulos = actual.nulos;
+        }
+
+        function renderBotonesRapidosCategoria() {
+            const tabsContainer = document.getElementById('staged-quick-tabs');
+            if (!tabsContainer) return;
+            tabsContainer.innerHTML = "";
+            if (!importacionEnMemoria) return;
+
+            const categorias = Object.values(importacionEnMemoria.categorias);
+            categorias.forEach(cat => {
+                const activa = cat.code === categoriaEnEdicion;
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.onclick = () => saltarACategoriaImportada(cat.code);
+                btn.className = activa
+                    ? "bg-rnblue text-white font-bold px-3 py-1 rounded text-xs shadow-sm transition cursor-pointer"
+                    : "bg-white hover:bg-amber-100 text-slate-700 border border-amber-300 font-semibold px-3 py-1 rounded text-xs transition cursor-pointer";
+                btn.innerText = `${cat.code} · ${cat.label} (${cat.parties.length})`;
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function saltarACategoriaImportada(catCode) {
+            if (!importacionEnMemoria || !importacionEnMemoria.categorias[catCode]) return;
+            guardarCambiosDeCategoriaEnMemoria();
+            const selCat = document.getElementById('admin-election-type');
+            if (Array.from(selCat.options).some(o => o.value === catCode)) {
+                selCat.value = catCode;
+            }
+            mostrarCategoriaDesdeMemoria(catCode);
+        }
+
+        function actualizarBannerVistaPrevia() {
+            const banner = document.getElementById('staged-banner');
+            const btnSaveAll = document.getElementById('btn-save-all-staged');
+            if (!importacionEnMemoria) {
+                banner.classList.add('hidden');
+                btnSaveAll.classList.add('hidden');
+                return;
+            }
+            const codigos = Object.keys(importacionEnMemoria.categorias);
+            document.getElementById('staged-summary').innerText =
+                `Archivo "${importacionEnMemoria.fileName}" (${codigos.length} categoría${codigos.length > 1 ? 's' : ''})`;
+            renderBotonesRapidosCategoria();
+            banner.classList.remove('hidden');
+
+            if (codigos.length > 1) {
+                btnSaveAll.innerText = `Guardar Todas las Categorías del Archivo (${codigos.length}) ☁️`;
+                btnSaveAll.classList.remove('hidden');
+            } else {
+                btnSaveAll.classList.add('hidden');
+            }
+        }
+
+        function mostrarCategoriaDesdeMemoria(catCode) {
+            if (!importacionEnMemoria || !importacionEnMemoria.categorias[catCode]) return false;
+            const datos = importacionEnMemoria.categorias[catCode];
+            categoriaEnEdicion = catCode;
+            document.getElementById('admin-subvalidos').value = `Blanco: ${datos.blanco} | Nulos: ${datos.nulos}`;
+            renderPartiesRows(datos.parties);
+            renderBotonesRapidosCategoria();
+            document.getElementById('admin-status').innerText =
+                `📋 Editando vista previa de "${importacionEnMemoria.fileName}" — Categoría ${catCode} (${datos.parties.length} listas).`;
+            return true;
+        }
+
+        function descartarImportacionEnMemoria(recargarDesdeDB = false) {
+            importacionEnMemoria = null;
+            categoriaEnEdicion = null;
+            actualizarBannerVistaPrevia();
+            if (recargarDesdeDB) {
+                loadAdminData();
+            }
+        }
+
+        function onYearChangeAdmin() {
+            if (importacionEnMemoria) {
+                document.getElementById('admin-status').innerText =
+                    `📋 Año cambiado a ${document.getElementById('admin-year').value} para la vista previa importada.`;
+                return;
+            }
+            loadAdminData();
+        }
+
+        function onCategoryChangeAdmin() {
+            const nuevaCat = document.getElementById('admin-election-type').value;
+            if (importacionEnMemoria) {
+                guardarCambiosDeCategoriaEnMemoria();
+                if (importacionEnMemoria.categorias[nuevaCat]) {
+                    mostrarCategoriaDesdeMemoria(nuevaCat);
+                    return;
+                }
+            }
+            loadAdminData();
+        }
+
         function cambiarTipoEleccionAdmin() {
             actualizarOpcionesCategoriaAdmin();
             actualizarDivisionTerritorialAdmin();
+            if (importacionEnMemoria) {
+                const catActual = document.getElementById('admin-election-type').value;
+                if (importacionEnMemoria.categorias[catActual]) {
+                    mostrarCategoriaDesdeMemoria(catActual);
+                    return;
+                }
+            }
             loadAdminData();
         }
 
         function onCircuitChangeAdmin() {
+            if (importacionEnMemoria) {
+                document.getElementById('admin-status').innerText =
+                    `📋 Circuito/Depto ajustado a "${document.getElementById('admin-circuit').value}" para la vista previa.`;
+                return;
+            }
             const locNorm = normalizarTexto(document.getElementById('admin-locality').value);
             if (locNorm === "provincial general" || locNorm === "provincial") {
                 loadAdminData();
@@ -639,6 +798,8 @@
         }
 
         async function loadAdminData() {
+            if (importacionEnMemoria) return;
+
             const anio = parseInt(document.getElementById('admin-year').value);
             const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
@@ -767,6 +928,61 @@
             if (rows.length > 0) {
                 let { error: errIns } = await supabaseClient.from('resultados_mesas').insert(rows);
                 if (errIns) throw new Error(errIns.message);
+            }
+        }
+
+        async function guardarTodasCategoriasImportadas() {
+            if (!importacionEnMemoria) return;
+            guardarCambiosDeCategoriaEnMemoria();
+
+            const anio = parseInt(document.getElementById('admin-year').value);
+            const tipoEleccion = document.getElementById('admin-election-kind').value;
+            let localidad = document.getElementById('admin-locality').value.trim();
+            const tipoEntidad = document.getElementById('admin-entity-type').value;
+            const circuito_id = document.getElementById('admin-circuit').value;
+            const mesas = document.getElementById('admin-mesas').value.trim();
+            const participacion = document.getElementById('admin-participacion').value.trim();
+
+            if (!localidad) {
+                alert("Ingresá el nombre de la Localidad antes de guardar.");
+                return;
+            }
+            if (esTotalGeneral(localidad)) {
+                localidad = "Provincial General";
+                document.getElementById('admin-locality').value = localidad;
+            }
+
+            const categorias = Object.values(importacionEnMemoria.categorias);
+            const btn = document.getElementById('btn-save-all-staged');
+            btn.disabled = true;
+            btn.innerText = "Guardando todas las categorías...";
+
+            try {
+                for (const bloque of categorias) {
+                    await guardarBloqueCategoriaEnSupabase({
+                        anio,
+                        tipoEleccion,
+                        localidad,
+                        tipoEntidad,
+                        circuito_id,
+                        categoria: bloque.code,
+                        mesas,
+                        participacion,
+                        blanco: bloque.blanco,
+                        nulos: bloque.nulos,
+                        parties: bloque.parties
+                    });
+                }
+
+                const totalCats = categorias.length;
+                descartarImportacionEnMemoria(false);
+                document.getElementById('admin-status').innerText =
+                    `✓ ¡Las ${totalCats} categorías de "${localidad}" (${circuito_id} - ${anio}) se guardaron en Supabase!`;
+                alert(`¡Éxito! Se guardaron las ${totalCats} categorías de "${localidad}" (${circuito_id} - ${anio}) en Supabase.`);
+            } catch (err) {
+                alert("❌ Error al guardar en Supabase: " + err.message);
+            } finally {
+                btn.disabled = false;
             }
         }
 
@@ -1091,7 +1307,7 @@
             }
         }
 
-        async function procesarExcelCNE(arrayBuffer) {
+        async function procesarExcelCNE(arrayBuffer, fileName = "Planilla") {
             if (typeof XLSX === 'undefined') {
                 alert("Error: No se cargó la librería XLSX. Revisá tu conexión a internet.");
                 return;
@@ -1216,11 +1432,6 @@
                 const nombreRaw = String(rows[i][colNombre] ?? "").trim();
 
                 if (!nombreRaw) {
-                    const esSubHeaderVotos = rows[i].some(c => {
-                        const n = normalizarTexto(String(c ?? ""));
-                        return n === "votos" || n === "voto";
-                    });
-                    if (esSubHeaderVotos) continue;
                     continue;
                 }
 
@@ -1296,50 +1507,19 @@
             if (mesasDetectadas) document.getElementById('admin-mesas').value = mesasDetectadas;
             if (participacionDetectada) document.getElementById('admin-participacion').value = participacionDetectada;
 
+            importacionEnMemoria = {
+                fileName,
+                categorias: resultadosPorCategoria
+            };
+
             const primeraCat = columnasCategorias[0].code;
-            const datosPrimera = resultadosPorCategoria[primeraCat];
             const selCat = document.getElementById('admin-election-type');
             if (Array.from(selCat.options).some(o => o.value === primeraCat)) {
                 selCat.value = primeraCat;
             }
-            document.getElementById('admin-subvalidos').value = `Blanco: ${datosPrimera.blanco} | Nulos: ${datosPrimera.nulos}`;
-            renderPartiesRows(datosPrimera.parties);
 
-            if (columnasCategorias.length > 1) {
-                const listaNombres = columnasCategorias.map(c => `• ${c.label} (${c.code})`).join("\n");
-                const deptoActual = document.getElementById('admin-circuit').value;
-                const anioActual = parseInt(document.getElementById('admin-year').value);
-                const localidadActual = document.getElementById('admin-locality').value.trim() || "Provincial General";
-                const tipoActual = document.getElementById('admin-election-kind').value;
-
-                if (confirm(`Este archivo contiene ${columnasCategorias.length} categorías unificadas para "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoActual}):\n\n${listaNombres}\n\n¿Querés importar y guardar TODAS las categorías automáticamente en Supabase ahora mismo?`)) {
-                    try {
-                        for (const cat of columnasCategorias) {
-                            const bloque = resultadosPorCategoria[cat.code];
-                            await guardarBloqueCategoriaEnSupabase({
-                                anio: anioActual,
-                                tipoEleccion: tipoActual,
-                                localidad: localidadActual,
-                                tipoEntidad: document.getElementById('admin-entity-type').value,
-                                circuito_id: deptoActual,
-                                categoria: cat.code,
-                                mesas: document.getElementById('admin-mesas').value.trim(),
-                                participacion: document.getElementById('admin-participacion').value.trim(),
-                                blanco: bloque.blanco,
-                                nulos: bloque.nulos,
-                                parties: bloque.parties
-                            });
-                        }
-                        document.getElementById('admin-status').innerText = `✓ ¡Las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoActual}) se guardaron en Supabase!`;
-                        alert(`¡Éxito! Se guardaron las ${columnasCategorias.length} categorías de "${localidadActual}" (${deptoActual} - ${anioActual} - ${tipoActual}) en Supabase.`);
-                    } catch (err) {
-                        alert("❌ Error al guardar las categorías en lote: " + err.message);
-                    }
-                    return;
-                }
-            }
-
-            document.getElementById('admin-status').innerText = `✓ Planilla importada (${datosPrimera.parties.length} listas cargadas en vista previa).`;
+            actualizarBannerVistaPrevia();
+            mostrarCategoriaDesdeMemoria(primeraCat);
         }
 
         async function handleSmartUpload(event) {
@@ -1350,6 +1530,7 @@
             document.getElementById('admin-status').innerText = `⏳ Leyendo archivo "${file.name}"...`;
 
             if (file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(fileName)) {
+                descartarImportacionEnMemoria(false);
                 await procesarImagenCaptura(file);
                 return;
             }
@@ -1358,15 +1539,18 @@
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     try {
-                        await procesarExcelCNE(e.target.result);
+                        await procesarExcelCNE(e.target.result, file.name);
                     } catch (err) {
                         alert("Error al leer la planilla: " + err.message);
+                    } finally {
+                        event.target.value = "";
                     }
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
+            descartarImportacionEnMemoria(false);
             const reader = new FileReader();
             reader.readAsText(file, "UTF-8");
             reader.onload = function(e) {
@@ -1428,6 +1612,7 @@
                 if (item.type.startsWith('image/')) {
                     const blob = item.getAsFile();
                     if (blob) {
+                        descartarImportacionEnMemoria(false);
                         await procesarImagenCaptura(blob);
                         break;
                     }
@@ -1444,9 +1629,7 @@
             const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
-            const subValidosText = document.getElementById('admin-subvalidos').value;
-            let blanco = parseInt((subValidosText.match(/Blanco:\s*(\d+)/i) || [])[1]) || 0;
-            let nulos = parseInt((subValidosText.match(/Nulos:\s*(\d+)/i) || [])[1]) || 0;
+            const { parties, blanco, nulos } = leerFilasActualesDelDOM();
 
             if (!localidad) { alert("Por favor ingresa una localidad."); return; }
 
@@ -1459,17 +1642,8 @@
             if(btn) btn.innerText = "Guardando en Supabase...";
 
             try {
-                let parties = [];
-                document.querySelectorAll('.party-row').forEach(row => {
-                    parties.push({
-                        lista_id: parseInt(row.querySelector('.party-id').value) || 0,
-                        nombre_lista: row.querySelector('.party-name').value.trim(),
-                        votos: parseInt(row.querySelector('.party-votes').value) || 0
-                    });
-                });
-
                 if (parties.length === 0) {
-                    if(btn) btn.innerText = "Guardar en Supabase ☁️";
+                    if(btn) btn.innerText = "Guardar Categoría Actual ☁️";
                     alert("⚠️ No hay filas de listas para guardar.");
                     return;
                 }
@@ -1488,11 +1662,23 @@
                     parties
                 });
 
-                if(btn) btn.innerText = "Guardar en Supabase ☁️";
-                document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito: "${localidad}" (${tipoEleccion} - ${circuito_id})!`;
-                alert(`¡Los datos de ${localidad} (${tipoEleccion} - ${circuito_id}) se guardaron correctamente!`);
+                if (importacionEnMemoria && importacionEnMemoria.categorias[categoria]) {
+                    delete importacionEnMemoria.categorias[categoria];
+                    const restantes = Object.keys(importacionEnMemoria.categorias);
+                    if (restantes.length === 0) {
+                        descartarImportacionEnMemoria(false);
+                    } else {
+                        actualizarBannerVistaPrevia();
+                        document.getElementById('admin-election-type').value = restantes[0];
+                        mostrarCategoriaDesdeMemoria(restantes[0]);
+                    }
+                }
+
+                if(btn) btn.innerText = "Guardar Categoría Actual ☁️";
+                document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito: "${localidad}" (${categoria} - ${circuito_id})!`;
+                alert(`¡Los datos de ${localidad} (${categoria} - ${circuito_id}) se guardaron correctamente!`);
             } catch (err) {
-                if(btn) btn.innerText = "Guardar en Supabase ☁️";
+                if(btn) btn.innerText = "Guardar Categoría Actual ☁️";
                 alert("❌ ERROR CRÍTICO de Supabase:\n" + err.message);
                 document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
             }
@@ -1521,7 +1707,7 @@
                     alert("❌ Error al borrar: " + error.message);
                     return;
                 }
-                loadAdminData();
+                descartarImportacionEnMemoria(true);
                 alert("Datos eliminados correctamente.");
             }
         }
@@ -1548,7 +1734,7 @@
                     alert("❌ Error al eliminar localidad: " + error.message);
                     return;
                 }
-                loadAdminData();
+                descartarImportacionEnMemoria(true);
                 alert(`"${localidad}" (${tipoEleccion}) fue eliminada por completo del año ${anio}.`);
             }
         }
