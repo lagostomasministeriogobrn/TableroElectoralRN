@@ -107,11 +107,11 @@
             
             <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de Excel Consolidado, Planillas CNE, CSV y Capturas</h3>
-                    <p class="text-xs text-slate-600 mt-1">Subí el Excel consolidado provincial (detecta todas las pestañas, regiones, localidades y categorías), planillas CNE, planillas simples (.xlsx / .xls), CSV o capturas (<strong>Ctrl+V</strong>).</p>
+                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación Automática de Excel Consolidado, Planillas CNE, ODS, CSV y Capturas</h3>
+                    <p class="text-xs text-slate-600 mt-1">Subí el Excel consolidado provincial, planillas CNE, planillas municipales (<code>.ods</code> / <code>.xlsx</code> / <code>.xls</code>), CSV o capturas (<strong>Ctrl+V</strong>).</p>
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
-                    <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .odt, .json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
+                    <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .ods, .json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/vnd.oasis.opendocument.spreadsheet" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
                     <span id="ocr-progress" class="text-[11px] font-bold text-rnblue hidden"></span>
                 </div>
             </div>
@@ -306,6 +306,51 @@
             "Veinticinco de Mayo"
         ];
 
+        const MAPA_LOCALIDAD_CIRCUITO_RN = {
+            "viedma": "Valle Inferior",
+            "guardia mitre": "Valle Inferior",
+            "general conesa": "Valle Inferior",
+            "san antonio oeste": "Circuito Atlántico",
+            "las grutas": "Circuito Atlántico",
+            "sierra grande": "Circuito Atlántico",
+            "valcheta": "Línea Sur",
+            "sierra colorada": "Línea Sur",
+            "ramos mexia": "Línea Sur",
+            "maquinchao": "Línea Sur",
+            "los menucos": "Línea Sur",
+            "ingeniero jacobacci": "Línea Sur",
+            "comallo": "Línea Sur",
+            "pilcaniyeu": "Línea Sur",
+            "norquinco": "Circuito Andino",
+            "san carlos de bariloche": "Circuito Andino",
+            "bariloche": "Circuito Andino",
+            "el bolson": "Circuito Andino",
+            "dina huapi": "Circuito Andino",
+            "choele choel": "Valle Medio",
+            "lamarque": "Valle Medio",
+            "luis beltran": "Valle Medio",
+            "chimpay": "Valle Medio",
+            "coronel belisle": "Valle Medio",
+            "darwin": "Valle Medio",
+            "pomona": "Valle Medio",
+            "rio colorado": "Valle Medio",
+            "general roca": "Alto Valle Centro",
+            "allen": "Alto Valle Centro",
+            "cervantes": "Alto Valle Centro",
+            "mainque": "Alto Valle Este",
+            "ingeniero huergo": "Alto Valle Este",
+            "general enrique godoy": "Alto Valle Este",
+            "villa regina": "Alto Valle Este",
+            "chichinales": "Alto Valle Este",
+            "cipolletti": "Alto Valle Oeste",
+            "cinco saltos": "Alto Valle Oeste",
+            "fernandez oro": "Alto Valle Oeste",
+            "general fernandez oro": "Alto Valle Oeste",
+            "catriel": "Alto Valle Oeste",
+            "campo grande": "Alto Valle Oeste",
+            "contradmirante cordero": "Alto Valle Oeste"
+        };
+
         function esEleccionNacional(tipo) {
             return tipo === "General" || tipo === "PASO";
         }
@@ -396,7 +441,23 @@
             if (h.includes("poblacional")) return "LEGP";
             if (h.includes("circuital")) return "LEGC";
             if (h.includes("intendente")) return "INT";
-            if (h.includes("concejal")) return "CON";
+            if (h.includes("concejal") || h.includes("consejal")) return "CON";
+            if (h.includes("tribunal de cuentas")) return "TDC";
+            return null;
+        }
+
+        function detectarLocalidadEnTitulo(rows) {
+            for (let i = 0; i < Math.min(rows.length, 6); i++) {
+                const row = rows[i] || [];
+                for (let c = 0; c < row.length; c++) {
+                    const txt = String(row[c] ?? "").trim();
+                    if (!txt) continue;
+                    const match = txt.match(/[-–—:]\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{2,})$/);
+                    if (match && match[1]) {
+                        return match[1].trim();
+                    }
+                }
+            }
             return null;
         }
 
@@ -1052,6 +1113,7 @@
             let participacionDetectada = "";
             let mesasDetectadas = "";
             let tipoDetectado = null;
+            const localidadTituloDetectada = detectarLocalidadEnTitulo(rows);
 
             let headerRowIdx = -1;
             let colNro = 0;
@@ -1134,7 +1196,7 @@
             }
 
             if (headerRowIdx === -1 || columnasCategorias.length === 0) {
-                alert("No se reconocieron los encabezados del Excel. Asegurate de que tenga columnas como 'Agrupación Política' (o 'Partido') y los nombres de categorías o 'Votos'.");
+                alert("No se reconocieron los encabezados del archivo. Asegurate de que tenga columnas como 'Agrupación Política' o 'Partidos Políticos y Alianzas' y las categorías.");
                 return;
             }
 
@@ -1152,10 +1214,21 @@
             for (let i = headerRowIdx + 1; i < rows.length; i++) {
                 const nroRaw = colNro !== -1 ? String(rows[i][colNro] ?? "").trim() : "";
                 const nombreRaw = String(rows[i][colNombre] ?? "").trim();
-                if (!nombreRaw) continue;
+
+                if (!nombreRaw) {
+                    const esSubHeaderVotos = rows[i].some(c => {
+                        const n = normalizarTexto(String(c ?? ""));
+                        return n === "votos" || n === "voto";
+                    });
+                    if (esSubHeaderVotos) continue;
+                    continue;
+                }
 
                 const nombreNorm = normalizarTexto(nombreRaw);
-                if (nombreNorm.includes("totales") || nombreNorm === "total" || nombreNorm.includes("afirmativos")) {
+                if (nombreNorm === "votos" || nombreNorm === "voto") {
+                    continue;
+                }
+                if (nombreNorm.includes("totales") || nombreNorm === "total" || nombreNorm.startsWith("total ") || nombreNorm.includes("afirmativos")) {
                     break;
                 }
 
@@ -1193,6 +1266,19 @@
                 document.getElementById('admin-election-kind').value = tipoDetectado;
                 actualizarOpcionesCategoriaAdmin();
                 actualizarDivisionTerritorialAdmin();
+            } else if (columnasCategorias.some(c => ["INT", "CON", "TDC", "COF", "VCF"].includes(c.code))) {
+                document.getElementById('admin-election-kind').value = "Provincial";
+                actualizarOpcionesCategoriaAdmin();
+                actualizarDivisionTerritorialAdmin();
+            }
+
+            if (localidadTituloDetectada) {
+                document.getElementById('admin-locality').value = localidadTituloDetectada;
+                document.getElementById('admin-entity-type').value = "Municipio";
+                const circMapeado = MAPA_LOCALIDAD_CIRCUITO_RN[normalizarTexto(localidadTituloDetectada)];
+                if (circMapeado && !esEleccionNacional(document.getElementById('admin-election-kind').value)) {
+                    document.getElementById('admin-circuit').value = circMapeado;
+                }
             }
 
             if (seccionDetectada) {
@@ -1253,7 +1339,7 @@
                 }
             }
 
-            document.getElementById('admin-status').innerText = `✓ Excel importado (${datosPrimera.parties.length} listas cargadas en vista previa).`;
+            document.getElementById('admin-status').innerText = `✓ Planilla importada (${datosPrimera.parties.length} listas cargadas en vista previa).`;
         }
 
         async function handleSmartUpload(event) {
@@ -1268,13 +1354,13 @@
                 return;
             }
 
-            if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+            if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx') || fileName.endsWith('.ods')) {
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     try {
                         await procesarExcelCNE(e.target.result);
                     } catch (err) {
-                        alert("Error al leer el archivo Excel: " + err.message);
+                        alert("Error al leer la planilla: " + err.message);
                     }
                 };
                 reader.readAsArrayBuffer(file);
