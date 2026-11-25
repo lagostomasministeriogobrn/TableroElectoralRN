@@ -107,11 +107,11 @@
             
             <div class="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación de Excel Consolidado, Planillas CNE, ODS, CSV y Capturas</h3>
+                    <h3 class="text-sm font-bold text-rnblue">⚡ Importación de Excel Consolidado, Planillas CNE, ODS, ODT, PDF, CSV y Capturas</h3>
                     <p class="text-xs text-slate-600 mt-1">Al subir un archivo, los datos se cargan en vista previa sin guardarse solos: podés editar Año, Localidad, Circuito y revisar cada Categoría antes de guardar.</p>
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
-                    <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .ods, .json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/vnd.oasis.opendocument.spreadsheet" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
+                    <input type="file" id="file-uploader" accept=".png, .jpg, .jpeg, .webp, .csv, .xls, .xlsx, .ods, .odt, .pdf, .json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/vnd.oasis.opendocument.spreadsheet, application/vnd.oasis.opendocument.text, application/pdf" onchange="handleSmartUpload(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-rnblue file:text-white hover:file:bg-blue-700 cursor-pointer">
                     <span id="ocr-progress" class="text-[11px] font-bold text-rnblue hidden"></span>
                 </div>
             </div>
@@ -170,7 +170,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad / Paraje</label>
                         <div class="flex gap-1">
-                            <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, San Javier...">
+                            <input type="text" id="admin-locality" value="Provincial General" class="w-full bg-slate-50 border border-slate-300 rounded px-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-rnblue focus:outline-none" placeholder="Ej: Viedma, San Carlos de Bariloche...">
                             <button type="button" onclick="descartarImportacionEnMemoria(true)" title="Buscar datos guardados en Supabase" class="bg-rnblue hover:bg-blue-700 text-white px-2.5 rounded text-xs font-bold transition flex-shrink-0">🔍</button>
                         </div>
                     </div>
@@ -241,14 +241,19 @@
         const ADMIN_PASS = "rn2026";
         const SESSION_KEY = "dae_rn_admin_auth";
 
+        const TIPO_CONVENCIONALES_2026 = "Convencionales Constituyentes (Bariloche)";
+        const CODIGO_CAT_CONVENCIONALES_2026 = "CCB";
+
         let importacionEnMemoria = null;
         let categoriaEnEdicion = null;
+        let pdfJsPromise = null;
 
         function desbloquearPanel() {
             document.getElementById('login-overlay').classList.add('hidden');
             const app = document.getElementById('protected-admin-app');
             app.classList.remove('hidden');
             app.classList.add('flex');
+            actualizarTiposEleccionAdmin();
             actualizarOpcionesCategoriaAdmin();
             actualizarDivisionTerritorialAdmin();
             loadAdminData();
@@ -287,20 +292,20 @@
             { value: "PMR", text: "Parlamentario Mercosur (DR)" }
         ];
 
-        const categoriasPorTipo = {
-            "Provincial": [
-                { value: "GOB", text: "Gobernador / Vice" },
-                { value: "LEGP", text: "Legislador Poblacional" },
-                { value: "LEGC", text: "Legislador Circuital" },
-                { value: "INT", text: "Intendente" },
-                { value: "CON", text: "Concejal" },
-                { value: "TDC", text: "Miembro del Tribunal de Cuentas" },
-                { value: "COF", text: "Comisión de Fomento" },
-                { value: "VCF", text: "Vocal Com. Fomento" }
-            ],
-            "General": categoriasNacionales,
-            "PASO": categoriasNacionales
-        };
+        const categoriasProvincialesBase = [
+            { value: "GOB", text: "Gobernador / Vice" },
+            { value: "LEGP", text: "Legislador Poblacional" },
+            { value: "LEGC", text: "Legislador Circuital" },
+            { value: "INT", text: "Intendente" },
+            { value: "CON", text: "Concejal" },
+            { value: "TDC", text: "Miembro del Tribunal de Cuentas" },
+            { value: "COF", text: "Comisión de Fomento" },
+            { value: "VCF", text: "Vocal Com. Fomento" }
+        ];
+
+        const categoriasConvencionales2026 = [
+            { value: CODIGO_CAT_CONVENCIONALES_2026, text: "Convencionales Constituyentes (Bariloche)" }
+        ];
 
         const circuitosProvinciales = [
             "Provincial",
@@ -380,14 +385,64 @@
             return tipo === "General" || tipo === "PASO";
         }
 
+        function esTipoConvencionalesAdmin(tipo, anio) {
+            return String(anio) === "2026" && tipo === TIPO_CONVENCIONALES_2026;
+        }
+
+        function normalizarCodigoCategoriaAdmin(catRaw) {
+            const c = String(catRaw || "").trim().toUpperCase();
+            if (!c) return "";
+            if (["CCB", "CONV", "CC", "CONVENCIONALES", "CONVENCIONALES_CONSTITUYENTES"].includes(c)) {
+                return CODIGO_CAT_CONVENCIONALES_2026;
+            }
+            return c;
+        }
+
+        function actualizarTiposEleccionAdmin() {
+            const anio = document.getElementById('admin-year').value;
+            const selectKind = document.getElementById('admin-election-kind');
+            const previo = selectKind.value;
+            const es2026 = String(anio) === "2026";
+
+            const opciones = [
+                { value: "Provincial", text: "Provincial" },
+                { value: "General", text: "General (Nacional)" },
+                { value: "PASO", text: "PASO (Nacional)" }
+            ];
+            if (es2026) {
+                opciones.push({ value: TIPO_CONVENCIONALES_2026, text: TIPO_CONVENCIONALES_2026 });
+            }
+
+            selectKind.innerHTML = "";
+            opciones.forEach(op => {
+                const opt = document.createElement('option');
+                opt.value = op.value;
+                opt.text = op.text;
+                selectKind.appendChild(opt);
+            });
+
+            if (previo && opciones.some(o => o.value === previo)) {
+                selectKind.value = previo;
+            } else {
+                selectKind.value = "Provincial";
+            }
+        }
+
         function actualizarDivisionTerritorialAdmin() {
+            const anio = document.getElementById('admin-year').value;
             const tipoEleccion = document.getElementById('admin-election-kind').value;
             const labelCirc = document.getElementById('label-admin-circuit');
             const selectCirc = document.getElementById('admin-circuit');
             const valorPrevio = selectCirc.value;
 
-            const lista = esEleccionNacional(tipoEleccion) ? departamentosRioNegro : circuitosProvinciales;
-            labelCirc.innerText = esEleccionNacional(tipoEleccion) ? "Departamento" : "Circuito Electoral";
+            const esConv2026 = esTipoConvencionalesAdmin(tipoEleccion, anio);
+            const lista = esConv2026
+                ? ["Bariloche"]
+                : (esEleccionNacional(tipoEleccion) ? departamentosRioNegro : circuitosProvinciales);
+
+            labelCirc.innerText = esConv2026
+                ? "Departamento / Sede"
+                : (esEleccionNacional(tipoEleccion) ? "Departamento" : "Circuito Electoral");
 
             selectCirc.innerHTML = "";
             lista.forEach(item => {
@@ -397,15 +452,29 @@
                 selectCirc.appendChild(opt);
             });
 
-            if (lista.includes(valorPrevio)) {
+            if (esConv2026) {
+                selectCirc.value = "Bariloche";
+                const locInput = document.getElementById('admin-locality');
+                if (!locInput.value.trim() || esTotalGeneral(locInput.value)) {
+                    locInput.value = "San Carlos de Bariloche";
+                }
+            } else if (lista.includes(valorPrevio)) {
                 selectCirc.value = valorPrevio;
             }
         }
 
         function actualizarOpcionesCategoriaAdmin() {
+            const anio = document.getElementById('admin-year').value;
             const tipoEleccion = document.getElementById('admin-election-kind').value;
             const selectCat = document.getElementById('admin-election-type');
-            const opciones = categoriasPorTipo[tipoEleccion] || categoriasPorTipo["Provincial"];
+            const previo = normalizarCodigoCategoriaAdmin(selectCat.value);
+
+            let opciones = categoriasProvincialesBase;
+            if (esTipoConvencionalesAdmin(tipoEleccion, anio)) {
+                opciones = categoriasConvencionales2026;
+            } else if (esEleccionNacional(tipoEleccion)) {
+                opciones = categoriasNacionales;
+            }
 
             selectCat.innerHTML = "";
             opciones.forEach(op => {
@@ -414,6 +483,12 @@
                 opt.text = op.text;
                 selectCat.appendChild(opt);
             });
+
+            if (previo && opciones.some(o => o.value === previo)) {
+                selectCat.value = previo;
+            } else if (opciones.length > 0) {
+                selectCat.value = opciones[0].value;
+            }
         }
 
         function leerFilasActualesDelDOM() {
@@ -518,6 +593,9 @@
         }
 
         function onYearChangeAdmin() {
+            actualizarTiposEleccionAdmin();
+            actualizarOpcionesCategoriaAdmin();
+            actualizarDivisionTerritorialAdmin();
             if (importacionEnMemoria) {
                 document.getElementById('admin-status').innerText =
                     `📋 Año cambiado a ${document.getElementById('admin-year').value} para la vista previa importada.`;
@@ -527,7 +605,7 @@
         }
 
         function onCategoryChangeAdmin() {
-            const nuevaCat = document.getElementById('admin-election-type').value;
+            const nuevaCat = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value);
             if (importacionEnMemoria) {
                 guardarCambiosDeCategoriaEnMemoria();
                 if (importacionEnMemoria.categorias[nuevaCat]) {
@@ -542,7 +620,7 @@
             actualizarOpcionesCategoriaAdmin();
             actualizarDivisionTerritorialAdmin();
             if (importacionEnMemoria) {
-                const catActual = document.getElementById('admin-election-type').value;
+                const catActual = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value);
                 if (importacionEnMemoria.categorias[catActual]) {
                     mostrarCategoriaDesdeMemoria(catActual);
                     return;
@@ -589,6 +667,7 @@
         function mapearHeaderCategoria(textoColumna) {
             const h = normalizarTexto(textoColumna);
             if (!h) return null;
+            if (h.includes("convencional") || h.includes("constituyente") || h === "ccb") return CODIGO_CAT_CONVENCIONALES_2026;
             if (h.includes("presidente")) return "PRE";
             if (h.includes("senador")) return "SEN";
             if (h.includes("diputado")) return "DIP";
@@ -632,6 +711,39 @@
             if (!str) return 0;
             const digits = String(str).replace(/[^\d]/g, "");
             return digits ? parseInt(digits, 10) : 0;
+        }
+
+        function renderPartiesRows(data) {
+            const container = document.getElementById('admin-parties-container');
+            container.innerHTML = "";
+            if (!data || !data.length) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic">Sin filas cargadas.</p>`;
+                return;
+            }
+            const colorPalette = ["#C6E265", "#FFEE55", "#88D9E8", "#B4B5E0", "#00AEEF", "#DA251D", "#444444", "#FBB03B"];
+            [...data].sort((a, b) => (parseInt(b.votos) || 0) - (parseInt(a.votos) || 0)).forEach((row, idx) => {
+                container.innerHTML += `
+                    <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
+                        <input type="color" value="${colorPalette[idx % colorPalette.length]}" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                        <input type="text" value="${row.lista_id}" class="w-16 text-xs font-bold text-center border rounded party-id">
+                        <input type="text" value="${row.nombre_lista || 'Lista'}" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
+                        <input type="number" value="${row.votos}" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
+                        <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
+                    </div>`;
+            });
+        }
+
+        function addNewPartyRow() {
+            const container = document.getElementById('admin-parties-container');
+            if (container.querySelector('p')) container.innerHTML = "";
+            container.innerHTML += `
+                <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
+                    <input type="color" value="#0063BE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
+                    <input type="text" value="1" class="w-16 text-xs font-bold text-center border rounded party-id">
+                    <input type="text" value="Nombre de Lista" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
+                    <input type="number" value="0" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
+                    <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
+                </div>`;
         }
 
         function preprocesarImagenParaOCR(fileOrBlob) {
@@ -803,7 +915,7 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
-            const categoria = document.getElementById('admin-election-type').value;
+            const categoria = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value);
             const circuitoSeleccionado = document.getElementById('admin-circuit').value;
 
             if (!localidad) return;
@@ -863,36 +975,6 @@
             document.getElementById('admin-participacion').value = "0.00%";
             document.getElementById('admin-subvalidos').value = "Blanco: 0 | Nulos: 0";
             document.getElementById('admin-status').innerText = `ℹ️ Sin datos previos para "${localidad}" (${tipoEleccion} - ${circuitoSeleccionado}).`;
-        }
-
-        function renderPartiesRows(data) {
-            const container = document.getElementById('admin-parties-container');
-            container.innerHTML = "";
-            if (!data.length) { container.innerHTML = `<p class="text-xs text-slate-400 italic">Sin filas cargadas.</p>`; return; }
-            let colorPalette = ["#C6E265", "#FFEE55", "#88D9E8", "#B4B5E0", "#00AEEF", "#DA251D", "#444444", "#FBB03B"];
-            data.sort((a, b) => b.votos - a.votos).forEach((row, idx) => {
-                container.innerHTML += `
-                    <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
-                        <input type="color" value="${colorPalette[idx % colorPalette.length]}" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
-                        <input type="text" value="${row.lista_id}" class="w-16 text-xs font-bold text-center border rounded party-id">
-                        <input type="text" value="${row.nombre_lista || 'Lista'}" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
-                        <input type="number" value="${row.votos}" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
-                        <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
-                    </div>`;
-            });
-        }
-
-        function addNewPartyRow() {
-            const container = document.getElementById('admin-parties-container');
-            if(container.querySelector('p')) container.innerHTML = "";
-            container.innerHTML += `
-                <div class="flex items-center gap-2 party-row bg-slate-50 p-2 rounded border">
-                    <input type="color" value="#0063BE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
-                    <input type="text" value="1" class="w-16 text-xs font-bold text-center border rounded party-id">
-                    <input type="text" value="Nombre de Lista" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
-                    <input type="number" value="0" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
-                    <button onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
-                </div>`;
         }
 
         async function guardarBloqueCategoriaEnSupabase({ anio, tipoEleccion, localidad, tipoEntidad, circuito_id, categoria, mesas, participacion, blanco, nulos, parties }) {
@@ -1229,6 +1311,7 @@
             }
 
             document.getElementById('admin-year').value = String(anioDetectado);
+            actualizarTiposEleccionAdmin();
             document.getElementById('admin-election-kind').value = "Provincial";
             actualizarOpcionesCategoriaAdmin();
             actualizarDivisionTerritorialAdmin();
@@ -1341,7 +1424,9 @@
                 const row = rows[i].map(c => String(c).trim());
                 const rowJoined = row.join(" ").toUpperCase();
 
-                if (/\bELECCI[OÓ]N(ES)?\s+GENERALES?\b/i.test(rowJoined)) {
+                if (/\bCONVENCIONAL(ES)?\s+CONSTITUYENTE(S)?\b/i.test(rowJoined)) {
+                    tipoDetectado = TIPO_CONVENCIONALES_2026;
+                } else if (/\bELECCI[OÓ]N(ES)?\s+GENERALES?\b/i.test(rowJoined)) {
                     tipoDetectado = "General";
                 } else if (/\bPRIMARIAS\b/i.test(rowJoined) || (/\bP\.?\s*A\.?\s*S\.?\s*O\.?\b/.test(rowJoined) && !/\bPASO\s+(CHACABUCO|FLORES|CORDOVA|CORDOBA|DE\s+LOS|DEL|GRANDE|HONDO|SECO|VIEJO)\b/i.test(rowJoined))) {
                     if (/\bPRIMARIAS\b/i.test(rowJoined) || /P\.A\.S\.O/i.test(rowJoined) || /\bELECCI[OÓ]N(ES)?\s+PASO\b/i.test(rowJoined)) {
@@ -1407,7 +1492,7 @@
             }
 
             if (headerRowIdx !== -1 && columnasCategorias.length === 0 && colVotosSimple !== -1) {
-                const catActual = document.getElementById('admin-election-type').value || "GOB";
+                const catActual = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value) || "GOB";
                 columnasCategorias.push({ colIdx: colVotosSimple, code: catActual, label: catActual });
             }
 
@@ -1473,6 +1558,7 @@
                 }
             }
 
+            actualizarTiposEleccionAdmin();
             if (tipoDetectado) {
                 document.getElementById('admin-election-kind').value = tipoDetectado;
                 actualizarOpcionesCategoriaAdmin();
@@ -1487,7 +1573,7 @@
                 document.getElementById('admin-locality').value = localidadTituloDetectada;
                 document.getElementById('admin-entity-type').value = "Municipio";
                 const circMapeado = MAPA_LOCALIDAD_CIRCUITO_RN[normalizarTexto(localidadTituloDetectada)];
-                if (circMapeado && !esEleccionNacional(document.getElementById('admin-election-kind').value)) {
+                if (circMapeado && !esEleccionNacional(document.getElementById('admin-election-kind').value) && !esTipoConvencionalesAdmin(document.getElementById('admin-election-kind').value, document.getElementById('admin-year').value)) {
                     document.getElementById('admin-circuit').value = circMapeado;
                 }
             }
@@ -1522,6 +1608,294 @@
             mostrarCategoriaDesdeMemoria(primeraCat);
         }
 
+        async function extraerTextoDeODT(arrayBuffer) {
+            if (typeof JSZip === 'undefined') {
+                throw new Error("No se cargó la librería JSZip para leer archivos .odt.");
+            }
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            const contentFile = zip.file("content.xml");
+            if (!contentFile) {
+                throw new Error("El archivo .odt no contiene content.xml.");
+            }
+            const xmlText = await contentFile.async("string");
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+
+            const lineas = [];
+            const root = xmlDoc.documentElement;
+
+            function caminarNodo(node, bufferFila = null) {
+                if (!node) return;
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const txt = node.nodeValue || "";
+                    if (txt.trim() && bufferFila) {
+                        bufferFila.push(txt.trim());
+                    }
+                    return;
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+                const localName = node.localName || (node.nodeName || "").split(":").pop();
+                if (localName === "tab") {
+                    if (bufferFila) bufferFila.push("\t");
+                    return;
+                }
+                if (localName === "line-break") {
+                    if (bufferFila) bufferFila.push(" ");
+                    return;
+                }
+
+                if (localName === "table-row") {
+                    const celdas = [];
+                    for (const child of Array.from(node.childNodes)) {
+                        const cName = child.localName || (child.nodeName || "").split(":").pop();
+                        if (cName === "table-cell" || cName === "covered-table-cell") {
+                            const partesCelda = [];
+                            caminarNodo(child, partesCelda);
+                            celdas.push(partesCelda.join(" ").replace(/\s+/g, " ").trim());
+                        }
+                    }
+                    if (celdas.some(Boolean)) {
+                        lineas.push(celdas.join(" | "));
+                    }
+                    return;
+                }
+
+                if ((localName === "p" || localName === "h") && !bufferFila) {
+                    const partes = [];
+                    for (const child of Array.from(node.childNodes)) {
+                        caminarNodo(child, partes);
+                    }
+                    const texto = partes.join(" ").replace(/\s*\|\s*/g, " | ").replace(/\s+/g, " ").trim();
+                    if (texto) lineas.push(texto);
+                    return;
+                }
+
+                for (const child of Array.from(node.childNodes)) {
+                    caminarNodo(child, bufferFila);
+                }
+            }
+
+            caminarNodo(root, null);
+            return lineas.join("\n");
+        }
+
+        function asegurarPdfJsCargado() {
+            if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+            if (pdfJsPromise) return pdfJsPromise;
+
+            pdfJsPromise = new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+                script.onload = () => {
+                    if (window.pdfjsLib) {
+                        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+                        resolve(window.pdfjsLib);
+                    } else {
+                        reject(new Error("No se pudo inicializar PDF.js."));
+                    }
+                };
+                script.onerror = () => reject(new Error("Error al descargar PDF.js."));
+                document.head.appendChild(script);
+            });
+
+            return pdfJsPromise;
+        }
+
+        async function extraerTextoDePDF(arrayBuffer) {
+            const pdfjsLib = await asegurarPdfJsCargado();
+            const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+            const pdf = await loadingTask.promise;
+            const todasLasLineas = [];
+
+            for (let p = 1; p <= pdf.numPages; p++) {
+                const page = await pdf.getPage(p);
+                const textContent = await page.getTextContent();
+                const itemsByY = [];
+
+                for (const item of textContent.items) {
+                    if (!item.str || !item.str.trim()) continue;
+                    const x = item.transform ? item.transform[4] : 0;
+                    const y = item.transform ? Math.round(item.transform[5]) : 0;
+                    let fila = itemsByY.find(f => Math.abs(f.y - y) <= 4);
+                    if (!fila) {
+                        fila = { y, items: [] };
+                        itemsByY.push(fila);
+                    }
+                    fila.items.push({ x, str: item.str.trim() });
+                }
+
+                itemsByY.sort((a, b) => b.y - a.y);
+                for (const fila of itemsByY) {
+                    fila.items.sort((a, b) => a.x - b.x);
+                    const linea = fila.items.map(i => i.str).join(" ").replace(/\s+/g, " ").trim();
+                    if (linea) todasLasLineas.push(linea);
+                }
+            }
+
+            return todasLasLineas.join("\n");
+        }
+
+        function procesarTextoEscrutinioPlano(textoPlano, fileName = "Documento") {
+            const lineas = String(textoPlano || "")
+                .split(/\r?\n/)
+                .map(l => l.replace(/\u00a0/g, " ").trim())
+                .filter(Boolean);
+
+            if (lineas.length === 0) {
+                throw new Error("El archivo no contiene texto legible.");
+            }
+
+            const textoUnido = lineas.join(" ");
+            const textoNorm = normalizarTexto(textoUnido);
+
+            let anioDetectado = null;
+            const matchAnio = textoUnido.match(/\b(201[5-9]|202[0-9])\b/);
+            if (matchAnio) anioDetectado = matchAnio[1];
+
+            let mesasEscrutadas = null;
+            let mesasTotales = null;
+            const matchMesasSlash = textoUnido.match(/mesas\s+escrutadas[^0-9]*([\d\.]+)\s*\/\s*([\d\.]+)/i);
+            if (matchMesasSlash) {
+                mesasEscrutadas = limpiarNumeroEntero(matchMesasSlash[1]);
+                mesasTotales = limpiarNumeroEntero(matchMesasSlash[2]);
+            } else {
+                const matchEscrutadas = textoUnido.match(/mesas\s+escrutadas[^0-9]*([\d\.]+)/i);
+                const matchTotalMesas = textoUnido.match(/total\s+de\s+mesas[^0-9]*([\d\.]+)/i);
+                if (matchEscrutadas) mesasEscrutadas = limpiarNumeroEntero(matchEscrutadas[1]);
+                if (matchTotalMesas) mesasTotales = limpiarNumeroEntero(matchTotalMesas[1]);
+            }
+
+            let participacionDetectada = "";
+            const matchPart = textoUnido.match(/electores[^0-9]*[\d\.]+\s*\(\s*(\d{1,3}[,\.]\d{1,2})\s*%\s*\)/i)
+                || textoUnido.match(/participaci[oó]n[^0-9]*(\d{1,3}[,\.]\d{1,2})\s*%/i)
+                || textoUnido.match(/\(\s*(\d{1,3}[,\.]\d{1,2})\s*%\s*\)/);
+            if (matchPart) {
+                participacionDetectada = matchPart[1].replace(".", ",") + "%";
+            }
+
+            const parties = [];
+            let votosBlanco = 0;
+            let votosNulos = 0;
+
+            for (let i = 0; i < lineas.length; i++) {
+                const linea = lineas[i];
+                const lineaNorm = normalizarTexto(linea);
+
+                if (
+                    lineaNorm === "resultados electorales" ||
+                    lineaNorm === "votos por partido" ||
+                    lineaNorm === "detalle por partido" ||
+                    lineaNorm.startsWith("partido / opcion") ||
+                    lineaNorm.startsWith("padron de electores") ||
+                    lineaNorm.startsWith("pedron de electores") ||
+                    lineaNorm.startsWith("total de mesas") ||
+                    lineaNorm.startsWith("mesas escrutadas") ||
+                    /^electores\s+[\d\.]+/.test(lineaNorm) ||
+                    lineaNorm.startsWith("votos recurridos") ||
+                    lineaNorm.startsWith("votos impugnados") ||
+                    lineaNorm.startsWith("total")
+                ) {
+                    continue;
+                }
+
+                let partidoNombre = "";
+                let votosStr = "";
+
+                if (linea.includes("|")) {
+                    const partes = linea.split("|").map(p => p.trim()).filter(Boolean);
+                    if (partes.length >= 2) {
+                        partidoNombre = partes[0];
+                        votosStr = partes[1];
+                    }
+                } else {
+                    const matchSinPipe = linea.match(/^(.+?)\s+([\d\.]+)(?:\s*\(\s*\d+\s*\))?$/);
+                    if (matchSinPipe) {
+                        partidoNombre = matchSinPipe[1].trim();
+                        votosStr = matchSinPipe[2].trim();
+                    } else if (i + 1 < lineas.length) {
+                        const siguiente = lineas[i + 1];
+                        const matchSoloVotos = siguiente.match(/^([\d\.]+)(?:\s*\(\s*\d+\s*\))?$/);
+                        if (matchSoloVotos && !/^[\d\.]+(?:\s*\(\s*\d+\s*\))?$/.test(linea)) {
+                            partidoNombre = linea;
+                            votosStr = matchSoloVotos[1];
+                            i++;
+                        }
+                    }
+                }
+
+                if (!partidoNombre || !votosStr) continue;
+
+                const votos = limpiarNumeroEntero(votosStr);
+                const partidoNorm = normalizarTexto(partidoNombre);
+
+                if (partidoNorm.includes("blanco")) {
+                    votosBlanco = votos;
+                } else if (partidoNorm.includes("nulo")) {
+                    votosNulos = votos;
+                } else if (!partidoNorm.includes("recurrido") && !partidoNorm.includes("impugnado")) {
+                    parties.push({
+                        lista_id: parties.length + 1,
+                        nombre_lista: partidoNombre,
+                        votos
+                    });
+                }
+            }
+
+            if (parties.length === 0) {
+                throw new Error("No se detectaron filas de partidos y votos en el documento.");
+            }
+
+            if (anioDetectado) {
+                const selYear = document.getElementById('admin-year');
+                if (Array.from(selYear.options).some(o => o.value === anioDetectado)) {
+                    selYear.value = anioDetectado;
+                }
+            }
+
+            actualizarTiposEleccionAdmin();
+            const esConvBariloche = textoNorm.includes("convencional") && textoNorm.includes("bariloche");
+            if (esConvBariloche && String(document.getElementById('admin-year').value) === "2026") {
+                document.getElementById('admin-election-kind').value = TIPO_CONVENCIONALES_2026;
+                actualizarOpcionesCategoriaAdmin();
+                actualizarDivisionTerritorialAdmin();
+                document.getElementById('admin-locality').value = "San Carlos de Bariloche";
+                document.getElementById('admin-entity-type').value = "Municipio";
+                document.getElementById('admin-circuit').value = "Bariloche";
+                document.getElementById('admin-election-type').value = CODIGO_CAT_CONVENCIONALES_2026;
+            }
+
+            if (mesasEscrutadas !== null && mesasTotales !== null) {
+                document.getElementById('admin-mesas').value = `${mesasEscrutadas} / ${mesasTotales}`;
+            } else if (mesasEscrutadas !== null) {
+                document.getElementById('admin-mesas').value = `${mesasEscrutadas} / ${mesasEscrutadas}`;
+            }
+
+            if (participacionDetectada) {
+                document.getElementById('admin-participacion').value = participacionDetectada;
+            }
+
+            const catActiva = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value) || CODIGO_CAT_CONVENCIONALES_2026;
+            const labelCatActiva = document.getElementById('admin-election-type').selectedOptions?.[0]?.text || catActiva;
+
+            importacionEnMemoria = {
+                fileName,
+                categorias: {
+                    [catActiva]: {
+                        code: catActiva,
+                        label: labelCatActiva,
+                        parties,
+                        blanco: votosBlanco,
+                        nulos: votosNulos
+                    }
+                }
+            };
+
+            actualizarBannerVistaPrevia();
+            mostrarCategoriaDesdeMemoria(catActiva);
+        }
+
         async function handleSmartUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1532,6 +1906,42 @@
             if (file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(fileName)) {
                 descartarImportacionEnMemoria(false);
                 await procesarImagenCaptura(file);
+                return;
+            }
+
+            if (fileName.endsWith('.odt')) {
+                descartarImportacionEnMemoria(false);
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const textoODT = await extraerTextoDeODT(e.target.result);
+                        procesarTextoEscrutinioPlano(textoODT, file.name);
+                    } catch (err) {
+                        alert("Error al leer el archivo .odt: " + err.message);
+                        document.getElementById('admin-status').innerText = "⚠️ Error al leer el archivo .odt.";
+                    } finally {
+                        event.target.value = "";
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+                return;
+            }
+
+            if (fileName.endsWith('.pdf')) {
+                descartarImportacionEnMemoria(false);
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const textoPDF = await extraerTextoDePDF(e.target.result);
+                        procesarTextoEscrutinioPlano(textoPDF, file.name);
+                    } catch (err) {
+                        alert("Error al leer el archivo .pdf: " + err.message);
+                        document.getElementById('admin-status').innerText = "⚠️ Error al leer el archivo .pdf.";
+                    } finally {
+                        event.target.value = "";
+                    }
+                };
+                reader.readAsArrayBuffer(file);
                 return;
             }
 
@@ -1625,7 +2035,7 @@
             const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
             const tipoEntidad = document.getElementById('admin-entity-type').value;
-            const categoria = document.getElementById('admin-election-type').value;
+            const categoria = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value);
             const circuito_id = document.getElementById('admin-circuit').value;
             const mesas = document.getElementById('admin-mesas').value.trim();
             const participacion = document.getElementById('admin-participacion').value.trim();
@@ -1639,11 +2049,11 @@
             }
 
             const btn = document.getElementById('btn-save-top');
-            if(btn) btn.innerText = "Guardando en Supabase...";
+            if (btn) btn.innerText = "Guardando en Supabase...";
 
             try {
                 if (parties.length === 0) {
-                    if(btn) btn.innerText = "Guardar Categoría Actual ☁️";
+                    if (btn) btn.innerText = "Guardar Categoría Actual ☁️";
                     alert("⚠️ No hay filas de listas para guardar.");
                     return;
                 }
@@ -1674,11 +2084,11 @@
                     }
                 }
 
-                if(btn) btn.innerText = "Guardar Categoría Actual ☁️";
+                if (btn) btn.innerText = "Guardar Categoría Actual ☁️";
                 document.getElementById('admin-status').innerText = `✓ ¡Guardado con éxito: "${localidad}" (${categoria} - ${circuito_id})!`;
                 alert(`¡Los datos de ${localidad} (${categoria} - ${circuito_id}) se guardaron correctamente!`);
             } catch (err) {
-                if(btn) btn.innerText = "Guardar Categoría Actual ☁️";
+                if (btn) btn.innerText = "Guardar Categoría Actual ☁️";
                 alert("❌ ERROR CRÍTICO de Supabase:\n" + err.message);
                 document.getElementById('admin-status').innerText = "⚠️ Error al guardar.";
             }
@@ -1688,7 +2098,7 @@
             const anio = parseInt(document.getElementById('admin-year').value);
             const tipoEleccion = document.getElementById('admin-election-kind').value;
             let localidad = document.getElementById('admin-locality').value.trim();
-            const categoria = document.getElementById('admin-election-type').value;
+            const categoria = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value);
             const circuito_id = document.getElementById('admin-circuit').value;
 
             if (confirm(`¿Estás seguro de borrar los datos para ${localidad} (${tipoEleccion} - ${circuito_id} - ${categoria}) del año ${anio}?`)) {
