@@ -296,7 +296,7 @@
                                     <rect x="123" y="54" width="13" height="28" rx="6.5" fill="url(#botGreenGrad)"/>
 
                                     <rect x="33" y="38" width="94" height="54" rx="24" fill="url(#botWhiteGrad)"/>
-                                    <rect x="42" y="45" width="76" height="40" rx="18" fill="url(#visorGloss)"/>
+                                    <rect x="42" y="45" width="76" height="40" rx="18" fill="visorGloss)"/>
 
                                     <rect class="daebot-eye" x="62" y="57" width="6.5" height="11" rx="3.25" fill="#FFFFFF"/>
                                     <rect class="daebot-eye" x="91.5" y="57" width="6.5" height="11" rx="3.25" fill="#FFFFFF"/>
@@ -381,14 +381,14 @@
                                             <button type="button" onclick="setCheckboxes('#rep-years-list', false)" class="font-bold text-slate-500 hover:underline">Limpiar</button>
                                         </div>
                                         <div id="rep-years-list" class="grid grid-cols-2 gap-1">
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2027" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2027</label>
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2026" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2026</label>
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2025" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2025</label>
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2023" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2023</label>
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2021" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2021</label>
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2019" checked onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2019</label>
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2017" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2017</label>
-                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2015" onchange="actualizarContadoresConstructor()" class="rounded text-rnblue"> 2015</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2027" onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2027</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2026" onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2026</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2025" onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2025</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2023" onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2023</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2021" onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2021</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2019" checked onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2019</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2017" onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2017</label>
+                                            <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold"><input type="checkbox" value="2015" onchange="onConstructorYearsChanged()" class="rounded text-rnblue"> 2015</label>
                                         </div>
                                     </div>
                                 </details>
@@ -530,7 +530,7 @@
                         <h2 id="context-title-category" class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Gobernador / Vice</h2>
                     </div>
 
-                    <div id="winner-pill" class="hidden sm:flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 max-w-xs">
+                    <div id="winner-pill" class="hidden items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 max-w-xs">
                         <span id="winner-dot" class="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-rnblue"></span>
                         <div class="min-w-0">
                             <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">1° Fuerza</span>
@@ -645,6 +645,7 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let chartInstance = null;
+        let datosCacheAnioCompleto = [];
         let datosCacheGlobal = [];
         let ultimoHashDatos = "";
         let sincronizando = false;
@@ -652,6 +653,18 @@
         let consolidadoCategoriaActual = null;
         let partidosSeleccionadosKeys = new Set();
         let claveContextoPartidos = "";
+
+        const TIPO_CONVENCIONALES_2026 = "Convencionales Constituyentes (Bariloche)";
+        const CODIGO_CAT_CONVENCIONALES_2026 = "CCB";
+
+        const etiquetasTipoEleccion = {
+            "Provincial": "Provincial",
+            "General": "General (Distrito RN)",
+            "PASO": "PASO (Distrito RN)",
+            [TIPO_CONVENCIONALES_2026]: TIPO_CONVENCIONALES_2026
+        };
+
+        const ordenTiposEleccionUI = ["Provincial", "General", "PASO", TIPO_CONVENCIONALES_2026];
 
         const nombresCategorias = {
             "GOB": "Gobernador / Vice",
@@ -666,7 +679,8 @@
             "SEN": "Senador Nacional (Distrito Río Negro)",
             "DIP": "Diputado Nacional (Distrito Río Negro)",
             "PMN": "Parlamentario Mercosur DN (Distrito Río Negro)",
-            "PMR": "Parlamentario Mercosur DR (Distrito Río Negro)"
+            "PMR": "Parlamentario Mercosur DR (Distrito Río Negro)",
+            [CODIGO_CAT_CONVENCIONALES_2026]: "Convencionales Constituyentes (Bariloche)"
         };
 
         const circuitosProvinciales = [
@@ -801,11 +815,34 @@
             "VILLA MASCARDI"
         ];
 
-        const ordenCategorias = ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC", "COF", "VCF", "PRE", "SEN", "DIP", "PMN", "PMR"];
+        const ordenCategorias = ["GOB", "LEGP", "LEGC", "INT", "CON", "TDC", "COF", "VCF", CODIGO_CAT_CONVENCIONALES_2026, "PRE", "SEN", "DIP", "PMN", "PMR"];
         const codigosNacionales = ["PRE", "SEN", "DIP", "PMN", "PMR"];
 
         function esEleccionNacional(tipo) {
             return tipo === "General" || tipo === "PASO";
+        }
+
+        function esTipoConvencionales2026(tipo, anio) {
+            return String(anio) === "2026" && tipo === TIPO_CONVENCIONALES_2026;
+        }
+
+        function normalizarCodigoCategoria(catRaw) {
+            const c = String(catRaw || "").trim().toUpperCase();
+            if (!c) return "";
+            if (["CCB", "CONV", "CC", "CONVENCIONALES", "CONVENCIONALES_CONSTITUYENTES"].includes(c)) {
+                return CODIGO_CAT_CONVENCIONALES_2026;
+            }
+            return c;
+        }
+
+        function esFilaConvencionales2026(row) {
+            if (!row || String(row.anio) !== "2026") return false;
+            const catNorm = normalizarCodigoCategoria(row.categoria);
+            if (catNorm === CODIGO_CAT_CONVENCIONALES_2026) return true;
+            const tipoNorm = normalizarTexto(row.tipo_eleccion);
+            return tipoNorm === normalizarTexto(TIPO_CONVENCIONALES_2026)
+                || tipoNorm.includes("convencionales constituyentes")
+                || (tipoNorm.includes("convencionales") && tipoNorm.includes("bariloche"));
         }
 
         function normalizarTexto(texto) {
@@ -882,9 +919,11 @@
                 locNorm === "provincial" ||
                 (circNorm && (
                     locNorm === circNorm ||
+                    locNorm === `total ${circNorm}` ||
                     locNorm === `general ${circNorm}` ||
                     locNorm === `circuito ${circNorm}` ||
-                    locNorm === `departamento ${circNorm}`
+                    locNorm === `departamento ${circNorm}` ||
+                    locNorm === `dpto ${circNorm}`
                 ))
             );
         }
@@ -963,6 +1002,98 @@
             return { valor: 0, esEstimado: true };
         }
 
+        function filtrarFilasPorTipoEleccion(filasAnio, tipoEleccion) {
+            return (filasAnio || []).filter(d => {
+                const catNorm = normalizarCodigoCategoria(d.categoria);
+                const esCatNac = codigosNacionales.includes(catNorm);
+                const esConv = esFilaConvencionales2026(d);
+
+                if (tipoEleccion === TIPO_CONVENCIONALES_2026) {
+                    return esConv;
+                }
+                if (esConv) {
+                    return false;
+                }
+                if (tipoEleccion === "PASO") return d.tipo_eleccion === "PASO";
+                if (tipoEleccion === "General") {
+                    if (d.tipo_eleccion === "PASO") return false;
+                    return d.tipo_eleccion === "General" || esCatNac;
+                }
+                if (esCatNac) return false;
+                return !d.tipo_eleccion || d.tipo_eleccion === "Provincial";
+            });
+        }
+
+        function actualizarTiposEleccionDisponibles(filasAnio, anioActual = null) {
+            const selectKind = document.getElementById('filter-election-kind');
+            const tipoPrevio = selectKind.value;
+            const anioStr = String(anioActual || document.getElementById('filter-year').value || "");
+            const es2026 = anioStr === "2026";
+
+            const baseTipos = es2026
+                ? [...ordenTiposEleccionUI]
+                : ordenTiposEleccionUI.filter(t => t !== TIPO_CONVENCIONALES_2026);
+
+            const tiposConDatos = baseTipos.filter(tipo => filtrarFilasPorTipoEleccion(filasAnio, tipo).length > 0);
+            let tiposAMostrar = tiposConDatos.length > 0 ? tiposConDatos : [...baseTipos];
+
+            if (es2026 && !tiposAMostrar.includes(TIPO_CONVENCIONALES_2026)) {
+                tiposAMostrar.push(TIPO_CONVENCIONALES_2026);
+            }
+
+            selectKind.innerHTML = "";
+            tiposAMostrar.forEach(tipo => {
+                const opt = document.createElement('option');
+                opt.value = tipo;
+                opt.text = etiquetasTipoEleccion[tipo] || tipo;
+                selectKind.appendChild(opt);
+            });
+
+            if (tipoPrevio && tiposAMostrar.includes(tipoPrevio)) {
+                selectKind.value = tipoPrevio;
+            } else {
+                selectKind.value = tiposAMostrar[0];
+            }
+
+            return selectKind.value;
+        }
+
+        function onConstructorYearsChanged() {
+            sincronizarOpcionesTipoConstructor();
+            actualizarContadoresConstructor();
+        }
+
+        function sincronizarOpcionesTipoConstructor() {
+            const container = document.getElementById('rep-kinds-list');
+            if (!container) return;
+
+            const checkedPrevios = new Set(Array.from(container.querySelectorAll('input:checked')).map(i => i.value));
+            const aniosMarcados = Array.from(document.querySelectorAll('#rep-years-list input:checked')).map(i => i.value);
+            const incluye2026 = aniosMarcados.includes("2026") || String(document.getElementById('filter-year').value) === "2026";
+
+            const items = [
+                { value: "PASO", label: "P.A.S.O. (Distrito RN)" },
+                { value: "General", label: "GENERALES (Distrito RN)" },
+                { value: "Provincial", label: "PROVINCIALES / MUNICIPALES" }
+            ];
+
+            if (incluye2026) {
+                items.push({ value: TIPO_CONVENCIONALES_2026, label: "CONVENCIONALES CONSTITUYENTES (BARILOCHE) · 2026" });
+            }
+
+            container.innerHTML = items.map(it => {
+                const checked = checkedPrevios.size > 0
+                    ? checkedPrevios.has(it.value)
+                    : it.value === "Provincial";
+                return `
+                    <label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-white cursor-pointer font-semibold">
+                        <input type="checkbox" value="${it.value}" ${checked ? "checked" : ""} onchange="actualizarContadoresConstructor()" class="rounded text-rnblue">
+                        <span class="leading-tight">${it.label}</span>
+                    </label>
+                `;
+            }).join("");
+        }
+
         function onPrimaryFilterChanged() {
             actualizarFiltros(true);
         }
@@ -970,14 +1101,14 @@
         function actualizarBannerContexto() {
             const anio = document.getElementById('filter-year').value;
             const tipoEleccion = document.getElementById('filter-election-kind').value;
-            const circuito = document.getElementById('filter-circuit').value || "Provincial";
+            const circuito = document.getElementById('filter-circuit').value || "Sin división";
             const selectLoc = document.getElementById('filter-locality');
-            const locText = selectLoc.options[selectLoc.selectedIndex]?.text || "Provincial General";
-            const catCode = document.getElementById('filter-category').value;
+            const locText = selectLoc.options[selectLoc.selectedIndex]?.text || "Sin localidad";
+            const catCode = normalizarCodigoCategoria(document.getElementById('filter-category').value);
             const catText = nombresCategorias[catCode] || catCode || "Sin categoría";
 
             document.getElementById('context-badge-year').innerText = anio;
-            document.getElementById('context-badge-kind').innerText = tipoEleccion === "General" ? "General (Distrito RN)" : (tipoEleccion === "PASO" ? "PASO (Distrito RN)" : "Provincial");
+            document.getElementById('context-badge-kind').innerText = etiquetasTipoEleccion[tipoEleccion] || tipoEleccion;
             document.getElementById('context-badge-territory').innerText = `${circuito} · ${locText}`;
             document.getElementById('context-title-category').innerText = catText;
         }
@@ -1001,33 +1132,71 @@
             document.getElementById('bar-participacion').style.width = partClamped + "%";
         }
 
-        function actualizarDivisionTerritorialPublico() {
+        function tieneDatosProvincialesGenerales(cacheRows) {
+            return cacheRows.some(d => {
+                const c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                const l = d.localidad ? normalizarTexto(d.localidad) : "";
+                return (c === "provincial" || c === "") && (l === "provincial general" || l === "provincial");
+            });
+        }
+
+        function actualizarDivisionTerritorialPublico(cacheRows = null) {
+            const anio = document.getElementById('filter-year').value;
             const tipoEleccion = document.getElementById('filter-election-kind').value;
             const labelCirc = document.getElementById('label-filter-circuit');
             const selectCirc = document.getElementById('filter-circuit');
             const valorPrevio = selectCirc.value;
 
-            const lista = esEleccionNacional(tipoEleccion) ? departamentosRioNegro : circuitosProvinciales;
-            labelCirc.innerText = esEleccionNacional(tipoEleccion) ? "Departamento" : "Circuito Electoral";
+            const esConv2026 = esTipoConvencionales2026(tipoEleccion, anio);
+            const listaBase = esConv2026
+                ? ["Bariloche"]
+                : (esEleccionNacional(tipoEleccion) ? departamentosRioNegro : circuitosProvinciales);
+
+            labelCirc.innerText = esConv2026
+                ? "Departamento / Sede"
+                : (esEleccionNacional(tipoEleccion) ? "Departamento" : "Circuito Electoral");
+
+            let listaMostrar = [...listaBase];
+
+            if (!esConv2026 && Array.isArray(cacheRows) && cacheRows.length > 0) {
+                const hayProvincial = tieneDatosProvincialesGenerales(cacheRows);
+                const divisionesConDatos = listaBase.filter(item => {
+                    const itemNorm = normalizarTexto(item);
+                    if (itemNorm === "provincial") return hayProvincial;
+                    return cacheRows.some(d => {
+                        const c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
+                        const l = d.localidad ? normalizarTexto(d.localidad) : "";
+                        return coincideDivisionTerritorial(c, itemNorm) || ((c === "provincial" || c === "") && esNombreTotalGeneral(l, itemNorm) && l.includes(itemNorm));
+                    });
+                });
+
+                if (divisionesConDatos.length > 0) {
+                    listaMostrar = divisionesConDatos;
+                } else if (!hayProvincial) {
+                    listaMostrar = listaBase.filter(item => normalizarTexto(item) !== "provincial");
+                }
+            }
 
             selectCirc.innerHTML = "";
-            lista.forEach(item => {
+            listaMostrar.forEach(item => {
                 let opt = document.createElement('option');
                 opt.value = item;
                 opt.text = item;
                 selectCirc.appendChild(opt);
             });
 
-            if (valorPrevio && lista.includes(valorPrevio)) {
+            if (valorPrevio && listaMostrar.includes(valorPrevio)) {
                 selectCirc.value = valorPrevio;
-            } else {
-                selectCirc.value = "Provincial";
+            } else if (listaMostrar.length > 0) {
+                selectCirc.value = listaMostrar[0];
             }
         }
 
         function cambiarTipoEleccionPublico() {
-            actualizarDivisionTerritorialPublico();
-            actualizarFiltros(true);
+            const tipoEleccion = document.getElementById('filter-election-kind').value;
+            datosCacheGlobal = filtrarFilasPorTipoEleccion(datosCacheAnioCompleto, tipoEleccion);
+            actualizarDivisionTerritorialPublico(datosCacheGlobal);
+            actualizarLocalidadesPorCircuito();
         }
 
         function obtenerTipoEntidadNormalizado(row) {
@@ -1037,9 +1206,52 @@
             return 'municipio';
         }
 
-        function filtrarFilasDeCache(cacheRows, circuito, localidadSeleccionada) {
+        function resolverSubconjuntoCategoriaTerritorio(rowsTerritorio, categoria) {
+            const catBuscada = normalizarCodigoCategoria(categoria);
+            const porCat = rowsTerritorio.filter(d => normalizarCodigoCategoria(d.categoria) === catBuscada);
+            if (porCat.length === 0) return [];
+
+            const circuito = document.getElementById('filter-circuit').value || "Provincial";
+            const localidadSeleccionada = document.getElementById('filter-locality').value || "Provincial General";
             const circNorm = normalizarTexto(circuito);
             const locNorm = normalizarTexto(localidadSeleccionada);
+
+            if (circNorm !== "provincial" && locNorm === "provincial general") {
+                const explicitosGeneral = porCat.filter(d => {
+                    const l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    return esNombreTotalGeneral(l, circNorm);
+                });
+
+                if (explicitosGeneral.length > 0) {
+                    const exactosPG = explicitosGeneral.filter(d => {
+                        const l = normalizarTexto(d.localidad);
+                        return l === "provincial general" || l === "provincial";
+                    });
+                    if (exactosPG.length > 0) return exactosPG;
+
+                    const primeraLoc = normalizarTexto(explicitosGeneral[0].localidad);
+                    return explicitosGeneral.filter(d => normalizarTexto(d.localidad) === primeraLoc);
+                }
+            }
+
+            return porCat;
+        }
+
+        function filtrarFilasDeCache(cacheRows, circuito, localidadSeleccionada) {
+            const anio = document.getElementById('filter-year').value;
+            const tipoEleccion = document.getElementById('filter-election-kind').value;
+            const circNorm = normalizarTexto(circuito);
+            const locNorm = normalizarTexto(localidadSeleccionada);
+
+            if (esTipoConvencionales2026(tipoEleccion, anio)) {
+                return cacheRows.filter(d => {
+                    const l = d.localidad ? normalizarTexto(d.localidad) : "";
+                    if (!locNorm || locNorm === "provincial general" || locNorm === "bariloche" || locNorm === "san carlos de bariloche") {
+                        return l.includes("bariloche") || esNombreTotalGeneral(l, "bariloche");
+                    }
+                    return l === locNorm;
+                });
+            }
 
             if (circNorm === "provincial" && locNorm === "provincial general") {
                 return cacheRows.filter(d => {
@@ -1050,19 +1262,11 @@
             }
 
             if (circNorm !== "provincial" && locNorm === "provincial general") {
-                const filasCircuito = cacheRows.filter(d => {
+                return cacheRows.filter(d => {
                     let c = d.circuito_id ? normalizarTexto(d.circuito_id) : "";
                     let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    return coincideDivisionTerritorial(c, circNorm) || ((c === "provincial" || c === "") && l === circNorm);
+                    return coincideDivisionTerritorial(c, circNorm) || ((c === "provincial" || c === "") && esNombreTotalGeneral(l, circNorm) && l.includes(circNorm));
                 });
-
-                const explicitosGeneral = filasCircuito.filter(d => {
-                    let l = d.localidad ? normalizarTexto(d.localidad) : "";
-                    return esNombreTotalGeneral(l, circNorm);
-                });
-
-                if (explicitosGeneral.length > 0) return explicitosGeneral;
-                return filasCircuito;
             }
 
             return cacheRows.filter(d => {
@@ -1079,7 +1283,7 @@
             return filtrarFilasDeCache(datosCacheGlobal, circuito, localidadSeleccionada);
         }
 
-        async function consultarAnioTipoEnSupabase(anio, tipoEleccion) {
+        async function consultarTodasLasFilasAnioEnSupabase(anio) {
             let todasLasFilas = [];
             let desde = 0;
             const paso = 1000;
@@ -1103,16 +1307,12 @@
                 }
             }
 
-            return todasLasFilas.filter(d => {
-                const esCatNac = codigosNacionales.includes(d.categoria);
-                if (tipoEleccion === "PASO") return d.tipo_eleccion === "PASO";
-                if (tipoEleccion === "General") {
-                    if (d.tipo_eleccion === "PASO") return false;
-                    return d.tipo_eleccion === "General" || esCatNac;
-                }
-                if (esCatNac) return false;
-                return !d.tipo_eleccion || d.tipo_eleccion === "Provincial";
-            });
+            return todasLasFilas;
+        }
+
+        async function consultarAnioTipoEnSupabase(anio, tipoEleccion) {
+            const todasLasFilas = await consultarTodasLasFilasAnioEnSupabase(anio);
+            return filtrarFilasPorTipoEleccion(todasLasFilas, tipoEleccion);
         }
 
         function consolidarBloqueResultados(rawRows) {
@@ -1189,20 +1389,31 @@
                         part: parseFloat(String(row.porcentaje_participacion || "0").replace("%", "").replace(",", ".")) || 0,
                         blanco: parseInt(row.votos_blanco) || 0,
                         nulos: parseInt(row.votos_nulos) || 0,
-                        padronExplicito: parseInt(row.electores_habilitados || row.padron || row.electores || 0) || 0
+                        padronExplicito: parseInt(row.electores_habilitados || row.padron || row.electores || 0) || 0,
+                        listasLoc: {}
                     };
                 }
 
                 const nombreLimpio = limpiarComillas(row.nombre_lista || `Lista ${row.lista_id}`);
                 const listaKey = `${row.lista_id}_${normalizarTexto(nombreLimpio)}`;
-                if (!sumaListas[listaKey]) {
-                    sumaListas[listaKey] = {
-                        lista_id: row.lista_id,
-                        nombre: nombreLimpio,
-                        votos: 0
-                    };
-                }
-                sumaListas[listaKey].votos += (parseInt(row.votos) || 0);
+                metaPorLocalidad[locKey].listasLoc[listaKey] = {
+                    lista_id: row.lista_id,
+                    nombre: nombreLimpio,
+                    votos: parseInt(row.votos) || 0
+                };
+            });
+
+            Object.values(metaPorLocalidad).forEach(m => {
+                Object.entries(m.listasLoc).forEach(([listaKey, info]) => {
+                    if (!sumaListas[listaKey]) {
+                        sumaListas[listaKey] = {
+                            lista_id: info.lista_id,
+                            nombre: info.nombre,
+                            votos: 0
+                        };
+                    }
+                    sumaListas[listaKey].votos += info.votos;
+                });
             });
 
             let mesasEscrutadasSum = 0;
@@ -1269,18 +1480,23 @@
 
             try {
                 const anio = parseInt(document.getElementById('filter-year').value);
-                const tipoEleccion = document.getElementById('filter-election-kind').value;
+                const todasLasFilasAnio = await consultarTodasLasFilasAnioEnSupabase(anio);
 
-                const filasFiltradasPorTipo = await consultarAnioTipoEnSupabase(anio, tipoEleccion);
-
-                const filasOrdenadas = [...filasFiltradasPorTipo].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
-                const nuevoHash = JSON.stringify({ tipoEleccion, filas: filasOrdenadas });
+                const filasOrdenadas = [...todasLasFilasAnio].sort((a, b) => String(a.id || a.lista_id).localeCompare(String(b.id || b.lista_id)));
+                const nuevoHash = JSON.stringify({ anio, filas: filasOrdenadas });
 
                 if (!forzar && nuevoHash === ultimoHashDatos) return;
 
                 ultimoHashDatos = nuevoHash;
-                datosCacheGlobal = filasFiltradasPorTipo;
+                datosCacheAnioCompleto = todasLasFilasAnio;
 
+                const tipoSeleccionadoValido = actualizarTiposEleccionDisponibles(datosCacheAnioCompleto, anio);
+                datosCacheGlobal = filtrarFilasPorTipoEleccion(datosCacheAnioCompleto, tipoSeleccionadoValido);
+
+                sincronizarOpcionesTipoConstructor();
+                actualizarContadoresConstructor();
+
+                actualizarDivisionTerritorialPublico(datosCacheGlobal);
                 actualizarLocalidadesPorCircuito();
                 marcarHoraSincronizacion();
             } catch (err) {
@@ -1299,12 +1515,42 @@
         }
 
         function actualizarLocalidadesPorCircuito() {
+            const anio = document.getElementById('filter-year').value;
+            const tipoEleccion = document.getElementById('filter-election-kind').value;
             const circuitoSeleccionado = document.getElementById('filter-circuit').value || "Provincial";
             const selectLoc = document.getElementById('filter-locality');
             const localidadAnterior = selectLoc.value;
             let circuitoSeleccionadoNorm = normalizarTexto(circuitoSeleccionado);
 
             selectLoc.innerHTML = "";
+
+            if (esTipoConvencionales2026(tipoEleccion, anio)) {
+                const locs2026 = [...new Set(
+                    datosCacheGlobal
+                        .map(d => (d.localidad || "").trim())
+                        .filter(l => l && !esNombreTotalGeneral(normalizarTexto(l), circuitoSeleccionadoNorm))
+                )].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+                const optTotalBariloche = document.createElement('option');
+                optTotalBariloche.value = locs2026.includes("San Carlos de Bariloche")
+                    ? "San Carlos de Bariloche"
+                    : (locs2026[0] || "San Carlos de Bariloche");
+                optTotalBariloche.text = optTotalBariloche.value;
+                selectLoc.appendChild(optTotalBariloche);
+
+                locs2026.forEach(loc => {
+                    if (loc !== optTotalBariloche.value) {
+                        const opt = document.createElement('option');
+                        opt.value = loc;
+                        opt.text = loc;
+                        selectLoc.appendChild(opt);
+                    }
+                });
+
+                selectLoc.value = optTotalBariloche.value;
+                actualizarCategoriasDisponibles();
+                return;
+            }
 
             let optGeneral = document.createElement('option');
             optGeneral.value = "Provincial General";
@@ -1400,10 +1646,10 @@
 
         function actualizarCategoriasDisponibles() {
             const selectCat = document.getElementById('filter-category');
-            const categoriaAnterior = selectCat.value;
+            const categoriaAnterior = normalizarCodigoCategoria(selectCat.value);
 
             const filasTerritorio = filtrarPorTerritorioSeleccionado();
-            let unicasCat = [...new Set(filasTerritorio.map(d => d.categoria))].filter(Boolean);
+            let unicasCat = [...new Set(filasTerritorio.map(d => normalizarCodigoCategoria(d.categoria)))].filter(Boolean);
 
             unicasCat.sort((a, b) => {
                 let idxA = ordenCategorias.indexOf(a);
@@ -1496,7 +1742,8 @@
                 return;
             }
 
-            const filtrados = filtrarPorTerritorioSeleccionado().filter(d => d.categoria === categoria);
+            const rowsTerritorio = filtrarPorTerritorioSeleccionado();
+            const filtrados = resolverSubconjuntoCategoriaTerritorio(rowsTerritorio, categoria);
             renderizarResultadosUnicos(filtrados);
         }
 
@@ -1553,7 +1800,10 @@
                 document.getElementById('stat-subvalidos').innerText = "Blanco: 0 | Nulos: 0";
                 document.getElementById('badge-total-listas').innerText = "0 listas";
                 actualizarBarrasKPI("0 / 0", "0%");
-                if (winnerPill) winnerPill.classList.add('hidden');
+                if (winnerPill) {
+                    winnerPill.classList.add('hidden');
+                    winnerPill.classList.remove('flex', 'sm:flex');
+                }
                 tbody.innerHTML = `<p class="py-8 text-center text-xs text-slate-400">Sin registros computados para esta selección.</p>`;
                 if (legendContainer) legendContainer.innerHTML = "";
                 if (chartInstance) {
@@ -1599,7 +1849,10 @@
                 : `${data.length} ${data.length === 1 ? 'lista' : 'listas'}`;
 
             if (data.length === 0) {
-                if (winnerPill) winnerPill.classList.add('hidden');
+                if (winnerPill) {
+                    winnerPill.classList.add('hidden');
+                    winnerPill.classList.remove('flex', 'sm:flex');
+                }
                 tbody.innerHTML = `<p class="py-8 text-center text-xs text-slate-400">Ningún partido tildado. Seleccioná al menos una fuerza en el panel izquierdo.</p>`;
                 if (chartInstance) {
                     chartInstance.data.labels = [];
@@ -1617,7 +1870,7 @@
                 const topPct = totalAfirmativosCategoria > 0 ? ((data[0].votos / totalAfirmativosCategoria) * 100).toFixed(2) : "0.00";
                 const topColor = data[0].color;
                 winnerPill.classList.remove('hidden');
-                winnerPill.classList.add('flex');
+                winnerPill.classList.add('hidden', 'sm:flex');
                 winnerPill.querySelector('span.uppercase').innerText = `${data[0].posicionOficial}° Fuerza`;
                 document.getElementById('winner-dot').style.backgroundColor = topColor;
                 document.getElementById('winner-name').innerText = data[0].nombre;
@@ -1735,6 +1988,9 @@
             document.querySelectorAll(`${selector} input[type="checkbox"]`).forEach(cb => {
                 cb.checked = state;
             });
+            if (selector === '#rep-years-list') {
+                sincronizarOpcionesTipoConstructor();
+            }
             actualizarContadoresConstructor();
         }
 
@@ -1774,6 +2030,8 @@
             const prevTerr = new Set(Array.from(document.querySelectorAll('#rep-territories-list input:checked')).map(i => i.value));
             const prevCat = new Set(Array.from(document.querySelectorAll('#rep-categories-list input:checked')).map(i => i.value));
             const prevParties = new Set(Array.from(document.querySelectorAll('#rep-parties-list input:checked')).map(i => i.value));
+
+            sincronizarOpcionesTipoConstructor();
 
             if (catList) {
                 catList.innerHTML = ordenCategorias.map((code, idx) => {
@@ -1957,7 +2215,7 @@
 
             const aniosSel = Array.from(document.querySelectorAll('#rep-years-list input:checked')).map(i => i.value).sort();
             const tiposSel = Array.from(document.querySelectorAll('#rep-kinds-list input:checked')).map(i => i.value);
-            const categoriasSel = Array.from(document.querySelectorAll('#rep-categories-list input:checked')).map(i => i.value);
+            const categoriasSel = Array.from(document.querySelectorAll('#rep-categories-list input:checked')).map(i => normalizarCodigoCategoria(i.value));
             const territoriosRaw = Array.from(document.querySelectorAll('#rep-territories-list input:checked')).map(i => i.value);
             const partidosElegidosCanon = new Set(Array.from(document.querySelectorAll('#rep-parties-list input:checked')).map(i => i.value));
             const metricasSet = new Set(Array.from(document.querySelectorAll('#rep-metrics-list input:checked')).map(i => i.value));
@@ -1984,16 +2242,21 @@
                     return;
                 }
 
-                // Ordenar instancias tipo planilla oficial (PASO primero, luego GENERALES)
-                const ordenTipos = { "PASO": 1, "General": 2, "Provincial": 3 };
+                const ordenTipos = { "PASO": 1, "General": 2, "Provincial": 3, [TIPO_CONVENCIONALES_2026]: 4 };
                 const tiposOrdenados = [...tiposSel].sort((a, b) => (ordenTipos[a] || 9) - (ordenTipos[b] || 9));
 
                 const paresConsulta = [];
                 aniosSel.forEach(a => {
                     tiposOrdenados.forEach(t => {
+                        if (t === TIPO_CONVENCIONALES_2026 && String(a) !== "2026") return;
                         paresConsulta.push({ anio: a, tipo: t });
                     });
                 });
+
+                if (paresConsulta.length === 0) {
+                    alert("La opción Convencionales Constituyentes (Bariloche) solo aplica para el año 2026.");
+                    return;
+                }
 
                 statusEl.innerText = `🤖 Armando Tabla Genérica Oficial (${paresConsulta.length} ${paresConsulta.length === 1 ? 'elección' : 'elecciones'})...`;
 
@@ -2001,14 +2264,17 @@
                     paresConsulta.map(p => consultarAnioTipoEnSupabase(p.anio, p.tipo).then(filas => ({ ...p, filas })))
                 );
 
-                // Construir columnas de escenario (ej: P.A.S.O. / GENERALES o 2019 / 2023 según lo asignado)
                 const escenarios = [];
                 consultas.forEach(c => {
                     categoriasSel.forEach(catCode => {
-                        const filasCat = c.filas.filter(r => r.categoria === catCode);
+                        const filasCat = c.filas.filter(r => normalizarCodigoCategoria(r.categoria) === catCode);
                         if (filasCat.length === 0) return;
 
-                        const etiquetaTipo = c.tipo === "PASO" ? "P.A.S.O" : (c.tipo === "General" ? "GENERALES" : "PROVINCIAL");
+                        const etiquetaTipo = c.tipo === "PASO"
+                            ? "P.A.S.O"
+                            : (c.tipo === "General"
+                                ? "GENERALES"
+                                : (c.tipo === TIPO_CONVENCIONALES_2026 ? "CONV. CONST. BRC" : "PROVINCIAL"));
                         const partesLabel = [];
                         if (aniosSel.length > 1) partesLabel.push(c.anio);
                         if (tiposOrdenados.length > 1 || aniosSel.length === 1) partesLabel.push(etiquetaTipo);
@@ -2031,7 +2297,6 @@
                     return;
                 }
 
-                // Detectar fuerzas políticas presentes en los escenarios seleccionados
                 const mapaFuerzas = new Map();
                 escenarios.forEach(esc => {
                     esc.filas.forEach(r => {
@@ -2056,9 +2321,8 @@
                 });
 
                 const fuerzasCols = Array.from(mapaFuerzas.values()).sort((a, b) => b.maxVotos - a.maxVotos);
-                const k = escenarios.length; // cantidad de subcolumnas por bloque (ej: 2 si PASO + GENERALES)
+                const k = escenarios.length;
 
-                // Filtrar circuitos/municipios según selección del usuario (o todos los 5 circuitos + 39 municipios por defecto)
                 const circFiltroSet = new Set(territoriosRaw.filter(v => v.startsWith("CIRC|")).map(v => v.slice(5)));
                 const munFiltroSet = new Set(territoriosRaw.filter(v => v.startsWith("MUN|")).map(v => v.slice(4)));
 
@@ -2069,7 +2333,6 @@
                     return { circuito: grp.circuito, municipios: muns };
                 }).filter(grp => grp.municipios.length > 0);
 
-                // Construir columnas dinámicas de la Tabla Genérica Oficial
                 const bloquesColumnas = [];
                 if (metricasSet.has('electores')) {
                     bloquesColumnas.push({ id: 'electores', grupoSup: 'ELECTORES', titulo: 'CANTIDAD DE ELECTORES HABILITADOS', isPartido: false });
@@ -2163,7 +2426,6 @@
                     return vals;
                 };
 
-                // Armar filas del bloque Municipios agrupado por Circuitos
                 const filasMunicipiosRender = [];
                 const todosMunicipiosMetricas = [];
 
@@ -2208,7 +2470,6 @@
                     });
                 }
 
-                // Armar filas de Comisiones de Fomento (31 en orden alfabético)
                 const filasComisionesRender = [];
                 const todasComisionesMetricas = [];
                 if (metricasSet.has('comisiones')) {
@@ -2248,7 +2509,6 @@
 
                 const catsLabel = escenarios.map(e => `${e.catNombre} (${e.anio})`).filter((v, i, a) => a.indexOf(v) === i).join(" / ");
 
-                // --- EXPORTACIÓN EXCEL (FORMATO PLANILLA GENÉRICA OFICIAL) ---
                 if (formato === 'excel') {
                     const wb = XLSX.utils.book_new();
 
@@ -2267,7 +2527,6 @@
                             merges.push({ s: { r: 2, c: 1 }, e: { r: 4, c: 1 } });
                         }
 
-                        // Agrupar VOTOS VÁLIDOS en encabezado superior
                         let idxCol = colOffset;
                         const partidosBloques = bloquesColumnas.filter(b => b.isPartido);
                         const idxInicioPartidos = bloquesColumnas.findIndex(b => b.isPartido);
@@ -2329,7 +2588,6 @@
                     return;
                 }
 
-                // --- EXPORTACIÓN PDF (TABLA GENÉRICA OFICIAL APISADA A3/A4 HORIZONTAL) ---
                 const totalCols = 2 + bloquesColumnas.length * k;
                 const formatoHoja = totalCols > 14 ? 'a3' : 'a4';
                 const doc = new jsPDFConstructor({ orientation: 'l', unit: 'mm', format: formatoHoja });
@@ -2348,7 +2606,6 @@
                 doc.setFontSize(11);
                 doc.text(`TABLA GENÉRICA OFICIAL — ${catsLabel.toUpperCase()}`, 10, 20);
 
-                // Encabezado multinivel para AutoTable
                 const headRow1 = [
                     { content: 'CIRCUITOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } },
                     { content: 'MUNICIPIOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } }
