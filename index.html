@@ -126,7 +126,7 @@
 
             <div class="ppt-reveal-sub pt-2 flex flex-col items-center space-y-4">
                 <p class="text-xs md:text-sm text-white/95 max-w-xl font-medium">
-                    Sistema de consulta de cómputos provinciales y nacionales (Distrito Río Negro) por circuito, departamento y localidad.
+                    Sistema de consulta de cómputos provinciales y nacionales (Distrito Río Negro) por circuito electoral y localidad.
                 </p>
                 <div class="w-52 h-1.5 bg-black/20 rounded-full overflow-hidden">
                     <div class="h-full bg-white ppt-progress-bar"></div>
@@ -1168,11 +1168,11 @@
             const esConv2026 = esTipoConvencionales2026(tipoEleccion, anio);
             const listaBase = esConv2026
                 ? ["Bariloche"]
-                : (esEleccionNacional(tipoEleccion) ? departamentosRioNegro : circuitosProvinciales);
+                : circuitosProvinciales;
 
             labelCirc.innerText = esConv2026
-                ? "Departamento / Sede"
-                : (esEleccionNacional(tipoEleccion) ? "Departamento" : "Circuito Electoral");
+                ? "Circuito / Sede"
+                : "Circuito Electoral";
 
             let listaMostrar = [...listaBase];
 

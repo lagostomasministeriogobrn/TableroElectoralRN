@@ -343,10 +343,13 @@
             "san antonio oeste": "Circuito Atlántico",
             "san antonio": "Circuito Atlántico",
             "las grutas": "Circuito Atlántico",
+            "puerto de sae": "Circuito Atlántico",
+            "puerto de san antonio este": "Circuito Atlántico",
             "sierra grande": "Circuito Atlántico",
             "valcheta": "Línea Sur",
             "sierra colorada": "Línea Sur",
             "ramos mexia": "Línea Sur",
+            "ministro ramos mexia": "Línea Sur",
             "maquinchao": "Línea Sur",
             "los menucos": "Línea Sur",
             "ingeniero jacobacci": "Línea Sur",
@@ -379,7 +382,8 @@
             "general fernandez oro": "Alto Valle Oeste",
             "catriel": "Alto Valle Oeste",
             "campo grande": "Alto Valle Oeste",
-            "contradmirante cordero": "Alto Valle Oeste"
+            "contradmirante cordero": "Alto Valle Oeste",
+            "contralmirante cordero": "Alto Valle Oeste"
         };
 
         function esEleccionNacional(tipo) {
@@ -439,11 +443,11 @@
             const esConv2026 = esTipoConvencionalesAdmin(tipoEleccion, anio);
             const lista = esConv2026
                 ? ["Bariloche"]
-                : (esEleccionNacional(tipoEleccion) ? departamentosRioNegro : circuitosProvinciales);
+                : circuitosProvinciales;
 
             labelCirc.innerText = esConv2026
-                ? "Departamento / Sede"
-                : (esEleccionNacional(tipoEleccion) ? "Departamento" : "Circuito Electoral");
+                ? "Circuito / Sede"
+                : "Circuito Electoral";
 
             selectCirc.innerHTML = "";
             lista.forEach(item => {
@@ -1422,6 +1426,336 @@
             }
         }
 
+        const MAPA_LOCALIDAD_2025_RN = {
+            "allen": { nombre: "Allen", circuito: "Alto Valle Centro" },
+            "campo grande": { nombre: "Campo Grande", circuito: "Alto Valle Oeste" },
+            "catriel": { nombre: "Catriel", circuito: "Alto Valle Oeste" },
+            "cervantes": { nombre: "Cervantes", circuito: "Alto Valle Centro" },
+            "cinco saltos": { nombre: "Cinco Saltos", circuito: "Alto Valle Oeste" },
+            "cipolletti": { nombre: "Cipolletti", circuito: "Alto Valle Oeste" },
+            "comallo": { nombre: "Comallo", circuito: "Línea Sur" },
+            "contralmirante cordero": { nombre: "Contralmirante Cordero", circuito: "Alto Valle Oeste" },
+            "coronel belisle": { nombre: "Coronel Belisle", circuito: "Valle Medio" },
+            "chichinales": { nombre: "Chichinales", circuito: "Alto Valle Este" },
+            "chimpay": { nombre: "Chimpay", circuito: "Valle Medio" },
+            "choele choel": { nombre: "Choele Choel", circuito: "Valle Medio" },
+            "darwin": { nombre: "Darwin", circuito: "Valle Medio" },
+            "dina huapi": { nombre: "Dina Huapi", circuito: "Circuito Andino" },
+            "el bolson": { nombre: "El Bolsón", circuito: "Circuito Andino" },
+            "general conesa": { nombre: "General Conesa", circuito: "Valle Inferior" },
+            "general enrique godoy": { nombre: "General Enrique Godoy", circuito: "Alto Valle Este" },
+            "general fernandez oro": { nombre: "General Fernández Oro", circuito: "Alto Valle Oeste" },
+            "general roca": { nombre: "General Roca", circuito: "Alto Valle Centro" },
+            "guardia mitre": { nombre: "Guardia Mitre", circuito: "Valle Inferior" },
+            "ingeniero huergo": { nombre: "Ingeniero Huergo", circuito: "Alto Valle Este" },
+            "ingeniero jacobacci": { nombre: "Ingeniero Jacobacci", circuito: "Línea Sur" },
+            "lamarque": { nombre: "Lamarque", circuito: "Valle Medio" },
+            "los menucos": { nombre: "Los Menucos", circuito: "Línea Sur" },
+            "luis beltran": { nombre: "Luis Beltrán", circuito: "Valle Medio" },
+            "mainque": { nombre: "Mainqué", circuito: "Alto Valle Este" },
+            "maquinchao": { nombre: "Maquinchao", circuito: "Línea Sur" },
+            "ministro ramos mexia": { nombre: "Ministro Ramos Mexía", circuito: "Línea Sur" },
+            "norquinco": { nombre: "Ñorquincó", circuito: "Circuito Andino" },
+            "pilcaniyeu": { nombre: "Pilcaniyeu", circuito: "Línea Sur" },
+            "pomona": { nombre: "Pomona", circuito: "Valle Medio" },
+            "rio colorado": { nombre: "Río Colorado", circuito: "Valle Medio" },
+            "san antonio oeste": { nombre: "San Antonio Oeste", circuito: "Circuito Atlántico" },
+            "las grutas": { nombre: "Las Grutas", circuito: "Circuito Atlántico" },
+            "puerto de sae": { nombre: "Puerto de San Antonio Este", circuito: "Circuito Atlántico" },
+            "san carlos de bariloche": { nombre: "San Carlos de Bariloche", circuito: "Circuito Andino" },
+            "sierra colorada": { nombre: "Sierra Colorada", circuito: "Línea Sur" },
+            "sierra grande": { nombre: "Sierra Grande", circuito: "Circuito Atlántico" },
+            "valcheta": { nombre: "Valcheta", circuito: "Línea Sur" },
+            "viedma": { nombre: "Viedma", circuito: "Valle Inferior" },
+            "villa regina": { nombre: "Villa Regina", circuito: "Alto Valle Este" }
+        };
+
+        function formatearParticipacionExcel(valRaw) {
+            if (typeof valRaw === "number" && !isNaN(valRaw)) {
+                const pct = valRaw <= 1 ? valRaw * 100 : valRaw;
+                return pct.toFixed(2).replace(".", ",") + "%";
+            }
+            const limpio = String(valRaw ?? "").replace(/\s+/g, "").replace("%", "").replace(",", ".");
+            const num = parseFloat(limpio);
+            if (!isNaN(num) && num > 0) {
+                const pct = num <= 1 ? num * 100 : num;
+                return pct.toFixed(2).replace(".", ",") + "%";
+            }
+            return "0,00%";
+        }
+
+        function formatearNombreLocalidad2025(rawLoc) {
+            const norm = normalizarTexto(rawLoc);
+            if (MAPA_LOCALIDAD_2025_RN[norm]) {
+                return MAPA_LOCALIDAD_2025_RN[norm];
+            }
+            const limpio = String(rawLoc || "").trim().toLowerCase().replace(/\w/g, l => l.toUpperCase());
+            return { nombre: limpio, circuito: MAPA_LOCALIDAD_CIRCUITO_RN[norm] || "Provincial" };
+        }
+
+        async function procesarExcelLegislativas2025(workbook, fileName = "Escrutinio 2025.xlsx") {
+            const statusEl = document.getElementById('admin-status');
+            const progressEl = document.getElementById('ocr-progress');
+
+            const hojasCategorias = [
+                { sheetName: workbook.SheetNames.find(s => normalizarTexto(s) === "senadores"), code: "SEN", label: "Senador Nacional" },
+                { sheetName: workbook.SheetNames.find(s => normalizarTexto(s) === "diputados"), code: "DIP", label: "Diputado Nacional" }
+            ].filter(h => h.sheetName);
+
+            const partidosConfig = [
+                { colVotos: 3, lista_id: 503, nombre: "JUNTOS DEFENDEMOS RIONEGRO" },
+                { colVotos: 5, lista_id: 501, nombre: "FUERZA PATRIA" },
+                { colVotos: 7, lista_id: 64, nombre: "PRO - PROPUESTA REPUBLICANA" },
+                { colVotos: 9, lista_id: 504, nombre: "FRENTE DE IZQUIERDA Y DE TRABAJADORES" },
+                { colVotos: 11, lista_id: 13, nombre: "MOVIMIENTO AL SOCIALISMO" },
+                { colVotos: 13, lista_id: 181, nombre: "PRIMERO RIO NEGRO" },
+                { colVotos: 15, lista_id: 502, nombre: "ALIANZA LA LIBERTAD AVANZA" }
+            ];
+
+            let anioDetectado = 2025;
+            const bloques = [];
+
+            for (const hojaCfg of hojasCategorias) {
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[hojaCfg.sheetName], { header: 1, defval: "" });
+                const titulo = String(rows[0]?.[0] || "");
+                const mAnio = titulo.match(/(20\d{2})/);
+                if (mAnio) anioDetectado = parseInt(mAnio[1], 10);
+
+                const headerRow = rows[2] || [];
+                const partidosActivos = partidosConfig.map(p => {
+                    const headerNombre = String(headerRow[p.colVotos] || "").trim();
+                    return {
+                        ...p,
+                        nombre: headerNombre || p.nombre
+                    };
+                });
+
+                const acumCircuitos = {};
+                let totalProv = {
+                    electores: 0,
+                    votantes: 0,
+                    mesas: 0,
+                    otros: 0,
+                    votos: partidosActivos.map(() => 0)
+                };
+
+                for (let i = 3; i < rows.length; i++) {
+                    const r = rows[i];
+                    const locRaw = String(r[0] ?? "").trim();
+                    const locNorm = normalizarTexto(locRaw);
+
+                    if (!locRaw) continue;
+                    if (locNorm === "total" || locNorm === "totales" || locNorm === "real") {
+                        if (locNorm === "total" || locNorm === "totales") {
+                            const mesasTot = limpiarNumeroEntero(r[19]) || totalProv.mesas;
+                            const electTot = limpiarNumeroEntero(r[2]) || totalProv.electores;
+                            const votTot = limpiarNumeroEntero(r[18]) || totalProv.votantes;
+                            const otrosTot = limpiarNumeroEntero(r[17]);
+                            const partTotStr = electTot > 0
+                                ? ((votTot / electTot) * 100).toFixed(2).replace(".", ",") + "%"
+                                : "0,00%";
+
+                            bloques.push({
+                                anio: anioDetectado,
+                                tipoEleccion: "General",
+                                localidad: "Provincial General",
+                                tipoEntidad: "Municipio",
+                                circuito_id: "Provincial",
+                                categoria: hojaCfg.code,
+                                mesas: `${mesasTot} / ${mesasTot}`,
+                                participacion: partTotStr,
+                                blanco: 0,
+                                nulos: otrosTot,
+                                parties: partidosActivos.map(p => ({
+                                    lista_id: p.lista_id,
+                                    nombre_lista: p.nombre,
+                                    votos: limpiarNumeroEntero(r[p.colVotos])
+                                }))
+                            });
+                        }
+                        break;
+                    }
+
+                    const { nombre: localidadLimpia, circuito } = formatearNombreLocalidad2025(locRaw);
+                    const electores = limpiarNumeroEntero(r[2]);
+                    const otrosVotos = limpiarNumeroEntero(r[17]);
+                    const totalVotos = limpiarNumeroEntero(r[18]);
+                    const mesas = limpiarNumeroEntero(r[19]) || 1;
+                    const partStr = formatearParticipacionExcel(r[20]);
+
+                    const partiesLoc = partidosActivos.map((p, idx) => {
+                        const v = limpiarNumeroEntero(r[p.colVotos]);
+                        totalProv.votos[idx] += v;
+                        return {
+                            lista_id: p.lista_id,
+                            nombre_lista: p.nombre,
+                            votos: v
+                        };
+                    });
+
+                    totalProv.electores += electores;
+                    totalProv.votantes += totalVotos;
+                    totalProv.mesas += mesas;
+                    totalProv.otros += otrosVotos;
+
+                    if (circuito && circuito !== "Provincial") {
+                        if (!acumCircuitos[circuito]) {
+                            acumCircuitos[circuito] = {
+                                electores: 0,
+                                votantes: 0,
+                                mesas: 0,
+                                otros: 0,
+                                votos: partidosActivos.map(() => 0)
+                            };
+                        }
+                        acumCircuitos[circuito].electores += electores;
+                        acumCircuitos[circuito].votantes += totalVotos;
+                        acumCircuitos[circuito].mesas += mesas;
+                        acumCircuitos[circuito].otros += otrosVotos;
+                        partiesLoc.forEach((pl, idx) => {
+                            acumCircuitos[circuito].votos[idx] += pl.votos;
+                        });
+                    }
+
+                    bloques.push({
+                        anio: anioDetectado,
+                        tipoEleccion: "General",
+                        localidad: localidadLimpia,
+                        tipoEntidad: "Municipio",
+                        circuito_id: circuito,
+                        categoria: hojaCfg.code,
+                        mesas: `${mesas} / ${mesas}`,
+                        participacion: partStr,
+                        blanco: 0,
+                        nulos: otrosVotos,
+                        parties: partiesLoc
+                    });
+                }
+
+                for (const [circNombre, cData] of Object.entries(acumCircuitos)) {
+                    const partCirc = cData.electores > 0
+                        ? ((cData.votantes / cData.electores) * 100).toFixed(2).replace(".", ",") + "%"
+                        : "0,00%";
+                    bloques.push({
+                        anio: anioDetectado,
+                        tipoEleccion: "General",
+                        localidad: "Provincial General",
+                        tipoEntidad: "Municipio",
+                        circuito_id: circNombre,
+                        categoria: hojaCfg.code,
+                        mesas: `${cData.mesas} / ${cData.mesas}`,
+                        participacion: partCirc,
+                        blanco: 0,
+                        nulos: cData.otros,
+                        parties: partidosActivos.map((p, idx) => ({
+                            lista_id: p.lista_id,
+                            nombre_lista: p.nombre,
+                            votos: cData.votos[idx]
+                        }))
+                    });
+                }
+            }
+
+            document.getElementById('admin-year').value = String(anioDetectado);
+            actualizarTiposEleccionAdmin();
+            document.getElementById('admin-election-kind').value = "General";
+            actualizarOpcionesCategoriaAdmin();
+            actualizarDivisionTerritorialAdmin();
+            document.getElementById('admin-locality').value = "Provincial General";
+            document.getElementById('admin-circuit').value = "Provincial";
+            document.getElementById('admin-election-type').value = "SEN";
+
+            const previewProvSen = bloques.find(b => b.localidad === "Provincial General" && b.circuito_id === "Provincial" && b.categoria === "SEN") || bloques[0];
+            const previewProvDip = bloques.find(b => b.localidad === "Provincial General" && b.circuito_id === "Provincial" && b.categoria === "DIP");
+
+            if (previewProvSen) {
+                document.getElementById('admin-mesas').value = previewProvSen.mesas;
+                document.getElementById('admin-participacion').value = previewProvSen.participacion;
+                document.getElementById('admin-subvalidos').value = `Blanco: ${previewProvSen.blanco} | Nulos: ${previewProvSen.nulos}`;
+                renderPartiesRows(previewProvSen.parties);
+            }
+
+            if (previewProvSen && previewProvDip) {
+                importacionEnMemoria = {
+                    fileName,
+                    categorias: {
+                        SEN: { code: "SEN", label: "Senador Nacional (Provincial)", parties: previewProvSen.parties, blanco: previewProvSen.blanco, nulos: previewProvSen.nulos },
+                        DIP: { code: "DIP", label: "Diputado Nacional (Provincial)", parties: previewProvDip.parties, blanco: previewProvDip.blanco, nulos: previewProvDip.nulos }
+                    }
+                };
+                actualizarBannerVistaPrevia();
+            }
+
+            const resumenMsg =
+                `Se detectó el Escrutinio Legislativo ${anioDetectado} ("${fileName}") con ${bloques.length} bloques de resultados:
+
+` +
+                `• Categorías: Senadores Nacionales (SEN) y Diputados Nacionales (DIP)
+` +
+                `• 41 Localidades de Río Negro (82 bloques)
+` +
+                `• Totales calculados por los 8 Circuitos Electorales y Total Provincial
+
+` +
+                `¿Querés importar y guardar TODO automáticamente en Supabase ahora mismo?`;
+
+            if (confirm(resumenMsg)) {
+                progressEl.classList.remove('hidden');
+                try {
+                    progressEl.innerText = `⏳ Limpiando registros previos de ${anioDetectado} (SEN/DIP)...`;
+                    await supabaseClient
+                        .from('resultados_mesas')
+                        .delete()
+                        .eq('anio', anioDetectado)
+                        .eq('tipo_eleccion', 'General')
+                        .in('categoria', ['SEN', 'DIP']);
+
+                    const allRows = [];
+                    for (const b of bloques) {
+                        for (const p of b.parties) {
+                            allRows.push({
+                                anio: b.anio,
+                                tipo_eleccion: b.tipoEleccion,
+                                localidad: b.localidad,
+                                tipo_entidad: b.tipoEntidad,
+                                circuito_id: b.circuito_id,
+                                categoria: b.categoria,
+                                mesa_numero: 1,
+                                mesas_procesadas: b.mesas,
+                                porcentaje_participacion: b.participacion,
+                                lista_id: p.lista_id,
+                                nombre_lista: p.nombre_lista,
+                                votos: p.votos,
+                                votos_blanco: b.blanco,
+                                votos_nulos: b.nulos
+                            });
+                        }
+                    }
+
+                    const chunkSize = 250;
+                    for (let i = 0; i < allRows.length; i += chunkSize) {
+                        const chunk = allRows.slice(i, i + chunkSize);
+                        const pct = Math.min(100, Math.round(((i + chunk.length) / allRows.length) * 100));
+                        progressEl.innerText = `⏳ Guardando en Supabase (${pct}%)...`;
+                        const { error: errIns } = await supabaseClient.from('resultados_mesas').insert(chunk);
+                        if (errIns) throw new Error(errIns.message);
+                    }
+
+                    descartarImportacionEnMemoria(false);
+                    statusEl.innerText = `✓ ¡Escrutinio ${anioDetectado} guardado completo (${bloques.length} bloques / ${allRows.length} registros)!`;
+                    alert(`¡Éxito total! Se cargaron los ${bloques.length} bloques de las Elecciones Legislativas ${anioDetectado} (Senadores y Diputados) en el tablero.`);
+                } catch (err) {
+                    alert("❌ Error al guardar el escrutinio 2025: " + err.message);
+                    statusEl.innerText = "⚠️ Error al guardar en Supabase.";
+                } finally {
+                    progressEl.classList.add('hidden');
+                    progressEl.innerText = "";
+                }
+            } else {
+                statusEl.innerText = `✓ Escrutinio ${anioDetectado} leído (${bloques.length} bloques listos). Total Provincial cargado en vista previa.`;
+            }
+        }
+
         function extraerTextoPlanoDesdeBinario(arrayBuffer) {
             const bytes = new Uint8Array(arrayBuffer);
             const latin1 = new TextDecoder("latin1").decode(bytes);
@@ -1474,6 +1808,12 @@
 
             if (workbook.SheetNames.includes('Resumen Provincial') && workbook.SheetNames.includes('GOB por Localidad')) {
                 await procesarExcelConsolidadoProvincial(workbook);
+                return;
+            }
+
+            const hojasNorm = workbook.SheetNames.map(s => normalizarTexto(s));
+            if (hojasNorm.includes('senadores') && hojasNorm.includes('diputados')) {
+                await procesarExcelLegislativas2025(workbook, fileName);
                 return;
             }
 
@@ -1670,7 +2010,7 @@
                 document.getElementById('admin-locality').value = localidadDetectada;
                 document.getElementById('admin-entity-type').value = "Municipio";
                 const circMapeado = MAPA_LOCALIDAD_CIRCUITO_RN[normalizarTexto(localidadDetectada)];
-                if (circMapeado && !esEleccionNacional(document.getElementById('admin-election-kind').value) && !esTipoConvencionalesAdmin(document.getElementById('admin-election-kind').value, document.getElementById('admin-year').value)) {
+                if (circMapeado && !esTipoConvencionalesAdmin(document.getElementById('admin-election-kind').value, document.getElementById('admin-year').value)) {
                     document.getElementById('admin-circuit').value = circMapeado;
                 }
             }
