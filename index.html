@@ -869,12 +869,13 @@
                 n = n.replace(/^(alianza|frente|partido|movimiento|nuevo|nueva|confederacion|lista)\s+/i, "").trim();
             }
 
-            if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n === "jsrn") return "canonical_jsrn";
+            if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n.includes("juntos defendemos rio negro") || n.includes("juntos defendemos rionegro") || n === "jsrn" || n === "jdrn") return "canonical_jsrn";
             if (n.includes("union civica radical") || /\bucr\b/.test(n)) return "canonical_ucr";
-            if (n.includes("izquierda") || n === "fit" || n === "fit u" || n === "fit unidad") return "canonical_fit";
+            if (n.includes("izquierda") || n.includes("izq") || n === "fit" || n === "fit u" || n === "fit unidad") return "canonical_fit";
             if (n.includes("al socialismo") || n === "mas" || n === "nuevo mas") return "canonical_mas";
-            if (n.includes("cambiemos") || n.includes("cambia rio negro") || n.includes("juntos por el cambio") || n === "jxc") return "canonical_jxc_cambiemos";
-            if (n.includes("para la victoria") || n.includes("frente de todos") || n.includes("union por la patria")) return "canonical_fpv_upv";
+            if (n.includes("propuesta republicana") || /\bpro\b/.test(n) || n.includes("cambiemos") || n.includes("cambia rio negro") || n.includes("juntos por el cambio") || n === "jxc") return "canonical_jxc_cambiemos";
+            if (n.includes("fuerza patria") || n.includes("para la victoria") || n.includes("frente de todos") || n.includes("union por la patria")) return "canonical_fpv_upv";
+            if (n.includes("primero rio negro") || n.includes("primero rionegro")) return "canonical_primero_rn";
             if (n.includes("socialista") || n === "ps" || n === "mst") return "canonical_ps_mst";
             if (n.includes("libertad avanza") || n === "lla") return "canonical_lla";
             if (n.includes("justicialista") || n === "pj") return "canonical_pj";
@@ -890,25 +891,28 @@
                 return tonos[idx % tonos.length];
             };
 
-            if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n === "jsrn") {
+            if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n.includes("juntos defendemos rio negro") || n.includes("juntos defendemos rionegro") || n === "jsrn" || n === "jdrn") {
                 return asignarTono("jsrn", ["#39C937", "#16A34A", "#15803D"]);
+            }
+            if (n.includes("fuerza patria") || n.includes("frente de todos") || n.includes("union por la patria") || n.includes("para la victoria") || n.includes("nos une rio negro") || n.includes("vamos con todos") || n.includes("justicialista")) {
+                return asignarTono("pj_fdt", ["#0EA5E9", "#38BDF8", "#0284C7"]);
+            }
+            if (n.includes("primero rio negro") || n.includes("primero rionegro")) {
+                return asignarTono("primero_rn", ["#F97316", "#EA580C", "#FB923C"]);
+            }
+            if (n.includes("propuesta republicana") || /\bpro\b/.test(n) || n.includes("juntos por el cambio") || n.includes("cambiemos") || n.includes("cambia rio negro")) {
+                return asignarTono("jxc", ["#EAB308", "#FACC15", "#CA8A04"]);
+            }
+            if (n.includes("izquierda") || n.includes("izq") || n.includes("socialismo") || n.includes("socialista") || /\bfit\b/.test(n) || /\bmas\b/.test(n)) {
+                return asignarTono("izq", ["#EF4444", "#DC2626", "#B91C1C"]);
             }
             if (n.includes("union civica radical") || /\bucr\b/.test(n)) {
                 return asignarTono("ucr", ["#DC2626", "#B91C1C", "#991B1B"]);
             }
-            if (n.includes("frente de todos") || n.includes("union por la patria") || n.includes("para la victoria") || n.includes("nos une rio negro") || n.includes("vamos con todos") || n.includes("justicialista")) {
-                return asignarTono("pj_fdt", ["#0063BE", "#0284C7", "#2563EB"]);
-            }
-            if (n.includes("juntos por el cambio") || n.includes("cambiemos") || n.includes("cambia rio negro")) {
-                return asignarTono("jxc", ["#EAB308", "#F59E0B", "#CA8A04"]);
-            }
-            if (n.includes("libertad avanza") || n.includes("primero rio negro") || /\blla\b/.test(n)) {
+            if (n.includes("libertad avanza") || /\blla\b/.test(n)) {
                 return asignarTono("lla", ["#7C3AED", "#9333EA", "#6D28D9"]);
             }
-            if (n.includes("izquierda") || n.includes("socialismo") || n.includes("socialista") || /\bfit\b/.test(n) || /\bmas\b/.test(n)) {
-                return asignarTono("izq", ["#EF4444", "#E11D48", "#BE123C"]);
-            }
-            return asignarTono("otros", ["#0D9488", "#F97316", "#475569", "#EC4899", "#0891B2"]);
+            return asignarTono("otros", ["#0D9488", "#475569", "#EC4899", "#0891B2", "#64748B"]);
         }
 
         function hexARgb(hex, fallback = [100, 116, 139]) {
@@ -1894,14 +1898,14 @@
                 document.getElementById('winner-name').innerText = data[0].nombre;
                 const winnerPctEl = document.getElementById('winner-pct');
                 winnerPctEl.innerText = `${topPct}%`;
-                winnerPctEl.style.color = topColor === "#EAB308" ? "#B45309" : topColor;
+                winnerPctEl.style.color = ["#EAB308", "#FACC15"].includes(topColor) ? "#B45309" : topColor;
             }
 
             data.forEach((row, index) => {
                 let pctNum = totalAfirmativosCategoria > 0 ? (row.votos / totalAfirmativosCategoria) * 100 : 0;
                 let pct = pctNum.toFixed(2);
                 const color = row.color;
-                const textContrastClass = color === "#EAB308" ? "text-slate-950" : "text-white";
+                const textContrastClass = ["#EAB308", "#FACC15"].includes(color) ? "text-slate-950" : "text-white";
                 const isFirst = row.posicionOficial === 1 && row.votos > 0;
 
                 if (index < 8) {
@@ -1982,7 +1986,7 @@
                                 color: (context) => {
                                     const bg = context.dataset.backgroundColor[context.dataIndex];
                                     if (bg === '#E2E8F0') return 'transparent';
-                                    return bg === '#EAB308' ? '#0f172a' : '#ffffff';
+                                    return ['#EAB308', '#FACC15'].includes(bg) ? '#0f172a' : '#ffffff';
                                 },
                                 font: { weight: 'bold', size: 11 },
                                 formatter: (value, context) => {
