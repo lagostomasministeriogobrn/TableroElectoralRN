@@ -870,13 +870,13 @@
             }
 
             if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n === "jsrn") return "canonical_jsrn";
+            if (n.includes("union civica radical") || /\bucr\b/.test(n)) return "canonical_ucr";
             if (n.includes("izquierda") || n === "fit" || n === "fit u" || n === "fit unidad") return "canonical_fit";
             if (n.includes("al socialismo") || n === "mas" || n === "nuevo mas") return "canonical_mas";
             if (n.includes("cambiemos") || n.includes("cambia rio negro") || n.includes("juntos por el cambio") || n === "jxc") return "canonical_jxc_cambiemos";
             if (n.includes("para la victoria") || n.includes("frente de todos") || n.includes("union por la patria")) return "canonical_fpv_upv";
             if (n.includes("socialista") || n === "ps" || n === "mst") return "canonical_ps_mst";
             if (n.includes("libertad avanza") || n === "lla") return "canonical_lla";
-            if (n.includes("union civica radical") || n === "ucr") return "canonical_ucr";
             if (n.includes("justicialista") || n === "pj") return "canonical_pj";
 
             return n;
@@ -893,19 +893,37 @@
             if (n.includes("juntos somos rio negro") || n.includes("juntos somos rionegro") || n === "jsrn") {
                 return asignarTono("jsrn", ["#39C937", "#16A34A", "#15803D"]);
             }
+            if (n.includes("union civica radical") || /\bucr\b/.test(n)) {
+                return asignarTono("ucr", ["#DC2626", "#B91C1C", "#991B1B"]);
+            }
             if (n.includes("frente de todos") || n.includes("union por la patria") || n.includes("para la victoria") || n.includes("nos une rio negro") || n.includes("vamos con todos") || n.includes("justicialista")) {
                 return asignarTono("pj_fdt", ["#0063BE", "#0284C7", "#2563EB"]);
             }
-            if (n.includes("juntos por el cambio") || n.includes("cambiemos") || n.includes("cambia rio negro") || n.includes("union civica radical") || /\bucr\b/.test(n)) {
+            if (n.includes("juntos por el cambio") || n.includes("cambiemos") || n.includes("cambia rio negro")) {
                 return asignarTono("jxc", ["#EAB308", "#F59E0B", "#CA8A04"]);
             }
             if (n.includes("libertad avanza") || n.includes("primero rio negro") || /\blla\b/.test(n)) {
                 return asignarTono("lla", ["#7C3AED", "#9333EA", "#6D28D9"]);
             }
             if (n.includes("izquierda") || n.includes("socialismo") || n.includes("socialista") || /\bfit\b/.test(n) || /\bmas\b/.test(n)) {
-                return asignarTono("izq", ["#DC2626", "#E11D48", "#B91C1C"]);
+                return asignarTono("izq", ["#EF4444", "#E11D48", "#BE123C"]);
             }
             return asignarTono("otros", ["#0D9488", "#F97316", "#475569", "#EC4899", "#0891B2"]);
+        }
+
+        function hexARgb(hex, fallback = [100, 116, 139]) {
+            const limpio = String(hex || "").replace("#", "").trim();
+            if (!/^[0-9a-fA-F]{6}$/.test(limpio)) return fallback;
+            return [
+                parseInt(limpio.slice(0, 2), 16),
+                parseInt(limpio.slice(2, 4), 16),
+                parseInt(limpio.slice(4, 6), 16)
+            ];
+        }
+
+        function textoContrasteRgb([r, g, b]) {
+            const luminancia = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminancia > 0.62 ? [15, 23, 42] : [255, 255, 255];
         }
 
         function obtenerColorHexExcelFuerza(nombre) {
@@ -2308,6 +2326,7 @@
                             mapaFuerzas.set(canon, {
                                 canon,
                                 nombre: nomLimpio.toUpperCase(),
+                                colorHex: obtenerColorFuerzaPolitica(nomLimpio, {}),
                                 maxVotos: 0
                             });
                         }
@@ -2316,6 +2335,7 @@
                         if (v > entry.maxVotos) {
                             entry.maxVotos = v;
                             entry.nombre = nomLimpio.toUpperCase();
+                            entry.colorHex = obtenerColorFuerzaPolitica(nomLimpio, {});
                         }
                     });
                 });
@@ -2342,6 +2362,7 @@
                         bloquesColumnas.push({
                             id: `partido_${f.canon}`,
                             canon: f.canon,
+                            colorHex: f.colorHex,
                             grupoSup: 'VOTOS VÁLIDOS',
                             titulo: f.nombre,
                             isPartido: true
@@ -2593,9 +2614,9 @@
                 const doc = new jsPDFConstructor({ orientation: 'l', unit: 'mm', format: formatoHoja });
                 const anchoPag = doc.internal.pageSize.getWidth();
 
-                doc.setFillColor(57, 201, 55);
-                doc.rect(0, 0, anchoPag, 12, "F");
                 doc.setFillColor(0, 99, 190);
+                doc.rect(0, 0, anchoPag, 12, "F");
+                doc.setFillColor(15, 23, 42);
                 doc.rect(0, 12, anchoPag, 2, "F");
                 doc.setTextColor(255, 255, 255);
                 doc.setFont("helvetica", "bold");
@@ -2606,26 +2627,40 @@
                 doc.setFontSize(11);
                 doc.text(`TABLA GENÉRICA OFICIAL — ${catsLabel.toUpperCase()}`, 10, 20);
 
-                const headRow1 = [
-                    { content: 'CIRCUITOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } },
-                    { content: 'MUNICIPIOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } }
-                ];
-                const headRow2 = [];
+                const construirCabeceraPdf = (primerColLabel, esDosCols) => {
+                    const h1 = esDosCols
+                        ? [
+                            { content: 'CIRCUITOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [30, 41, 59], textColor: [255, 255, 255] } },
+                            { content: 'MUNICIPIOS', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [30, 41, 59], textColor: [255, 255, 255] } }
+                        ]
+                        : [
+                            { content: primerColLabel, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [30, 41, 59], textColor: [255, 255, 255] } }
+                        ];
+                    const h2 = [];
 
-                bloquesColumnas.forEach(b => {
-                    const bgCol = b.isPartido ? [205, 220, 57] : [189, 189, 189];
-                    headRow1.push({
-                        content: b.titulo,
-                        colSpan: k,
-                        styles: { halign: 'center', valign: 'middle', fillColor: bgCol, textColor: [15, 23, 42], fontSize: 6.2 }
-                    });
-                    escenarios.forEach(esc => {
-                        headRow2.push({
-                            content: esc.subHeader,
-                            styles: { halign: 'center', valign: 'middle', fillColor: b.isPartido ? [220, 231, 117] : [215, 215, 215], textColor: [15, 23, 42], fontSize: 5.8 }
+                    bloquesColumnas.forEach(b => {
+                        const rgbPartido = b.isPartido ? hexARgb(b.colorHex, [0, 99, 190]) : [226, 232, 240];
+                        const fgPartido = b.isPartido ? textoContrasteRgb(rgbPartido) : [15, 23, 42];
+                        const rgbSub = b.isPartido
+                            ? rgbPartido.map(v => Math.min(255, Math.round(v + (255 - v) * 0.25)))
+                            : [241, 245, 249];
+                        const fgSub = b.isPartido ? textoContrasteRgb(rgbSub) : [30, 41, 59];
+
+                        h1.push({
+                            content: b.titulo,
+                            colSpan: k,
+                            styles: { halign: 'center', valign: 'middle', fillColor: rgbPartido, textColor: fgPartido, fontSize: 6.2 }
+                        });
+                        escenarios.forEach(esc => {
+                            h2.push({
+                                content: esc.subHeader,
+                                styles: { halign: 'center', valign: 'middle', fillColor: rgbSub, textColor: fgSub, fontSize: 5.8 }
+                            });
                         });
                     });
-                });
+
+                    return [h1, h2];
+                };
 
                 const bodyMunPDF = filasMunicipiosRender.map(f => {
                     const valsFmt = f.valores.map(v => typeof v === 'number' ? v.toLocaleString('es-AR') : v);
@@ -2634,13 +2669,13 @@
 
                 doc.autoTable({
                     startY: 24,
-                    head: [headRow1, headRow2],
+                    head: construirCabeceraPdf('CIRCUITOS', true),
                     body: bodyMunPDF,
                     theme: 'grid',
                     margin: { left: 10, right: 10 },
                     styles: { fontSize: 6.1, cellPadding: 1.2, halign: 'center', valign: 'middle', lineColor: [148, 163, 184], lineWidth: 0.15 },
                     columnStyles: {
-                        0: { fontStyle: 'bold', halign: 'left', fillColor: [241, 245, 249] },
+                        0: { fontStyle: 'bold', halign: 'left', fillColor: [248, 250, 252] },
                         1: { halign: 'left' }
                     },
                     didParseCell: function(data) {
@@ -2648,11 +2683,11 @@
                             const rowMeta = filasMunicipiosRender[data.row.index];
                             if (!rowMeta) return;
                             if (rowMeta.tipo === 'subtotal') {
-                                data.cell.styles.fillColor = [192, 202, 51];
+                                data.cell.styles.fillColor = [226, 232, 240];
                                 data.cell.styles.fontStyle = 'bold';
                                 data.cell.styles.textColor = [15, 23, 42];
                             } else if (rowMeta.tipo === 'total_general') {
-                                data.cell.styles.fillColor = [189, 189, 189];
+                                data.cell.styles.fillColor = [203, 213, 225];
                                 data.cell.styles.fontStyle = 'bold';
                                 data.cell.styles.textColor = [15, 23, 42];
                             } else if (rowMeta.tipo === 'coef_var') {
@@ -2671,25 +2706,6 @@
                     doc.setTextColor(15, 23, 42);
                     doc.text(`COMISIONES DE FOMENTO — ${catsLabel.toUpperCase()}`, 10, 14);
 
-                    const headCf1 = [
-                        { content: 'COMISIÓN DE FOMENTO', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [189, 189, 189], textColor: [15, 23, 42] } }
-                    ];
-                    const headCf2 = [];
-                    bloquesColumnas.forEach(b => {
-                        const bgCol = b.isPartido ? [205, 220, 57] : [189, 189, 189];
-                        headCf1.push({
-                            content: b.titulo,
-                            colSpan: k,
-                            styles: { halign: 'center', valign: 'middle', fillColor: bgCol, textColor: [15, 23, 42], fontSize: 6.2 }
-                        });
-                        escenarios.forEach(esc => {
-                            headCf2.push({
-                                content: esc.subHeader,
-                                styles: { halign: 'center', valign: 'middle', fillColor: b.isPartido ? [220, 231, 117] : [215, 215, 215], textColor: [15, 23, 42], fontSize: 5.8 }
-                            });
-                        });
-                    });
-
                     const bodyCfPDF = filasComisionesRender.map(f => {
                         const valsFmt = f.valores.map(v => typeof v === 'number' ? v.toLocaleString('es-AR') : v);
                         return [f.localidadLabel, ...valsFmt];
@@ -2697,7 +2713,7 @@
 
                     doc.autoTable({
                         startY: 18,
-                        head: [headCf1, headCf2],
+                        head: construirCabeceraPdf('COMISIÓN DE FOMENTO', false),
                         body: bodyCfPDF,
                         theme: 'grid',
                         margin: { left: 10, right: 10 },
@@ -2710,10 +2726,10 @@
                                 const rowMeta = filasComisionesRender[data.row.index];
                                 if (!rowMeta) return;
                                 if (rowMeta.tipo === 'total_general') {
-                                    data.cell.styles.fillColor = [205, 220, 57];
+                                    data.cell.styles.fillColor = [226, 232, 240];
                                     data.cell.styles.fontStyle = 'bold';
                                 } else if (rowMeta.tipo === 'total_provincia') {
-                                    data.cell.styles.fillColor = [189, 189, 189];
+                                    data.cell.styles.fillColor = [203, 213, 225];
                                     data.cell.styles.fontStyle = 'bold';
                                 } else if (rowMeta.tipo === 'coef_var') {
                                     data.cell.styles.fillColor = [219, 234, 254];
