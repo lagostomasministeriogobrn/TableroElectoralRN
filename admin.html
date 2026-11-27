@@ -215,10 +215,33 @@
                 </div>
 
                 <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Listas Oficiales, Votos y Porcentajes</h3>
-                        <button type="button" onclick="addNewPartyRow()" class="bg-rnblue hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded text-xs transition">+ Agregar Fila Manual</button>
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Listas Oficiales, Votos y Porcentajes</h3>
+                            <div class="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-0.5 text-[11px] font-bold">
+                                <button type="button" id="btn-mode-votos" onclick="cambiarModoCargaListas('votos')" class="px-2.5 py-1 rounded-md bg-white text-rnblue shadow-xs transition">
+                                    Votos (Enteros)
+                                </button>
+                                <button type="button" id="btn-mode-porcentajes" onclick="cambiarModoCargaListas('porcentajes')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
+                                    Porcentajes (%)
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addNewPartyRow()" class="bg-rnblue hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded text-xs transition self-start sm:self-auto">+ Agregar Fila Manual</button>
                     </div>
+
+                    <div id="decimal-detect-banner" class="hidden mb-3 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-900">
+                        <span>💡 Detectamos valores decimales (ej. <strong>56,16</strong>). Si los datos están en porcentajes, activá el modo porcentual para guardarlos con exactitud.</span>
+                        <button type="button" onclick="cambiarModoCargaListas('porcentajes')" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1 rounded text-[11px] flex-shrink-0 transition">
+                            Usar Modo Porcentajes (%)
+                        </button>
+                    </div>
+
+                    <div id="parties-mode-summary" class="mb-2.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-slate-600">
+                        <span id="parties-mode-hint">Ingresá la cantidad de votos enteros por lista.</span>
+                        <span id="parties-mode-total" class="font-extrabold text-slate-800">Total afirmativos: 0</span>
+                    </div>
+
                     <div id="admin-parties-container" class="space-y-3"></div>
                 </div>
 
@@ -246,6 +269,149 @@
 
         let importacionEnMemoria = null;
         let categoriaEnEdicion = null;
+        let modoCargaListas = 'votos'; // 'votos' | 'porcentajes'
+
+        function parsearDecimalFlexible(val) {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            const limpio = String(val || "").replace(/%/g, "").replace(/\s+/g, "").replace(",", ".").trim();
+            const num = parseFloat(limpio);
+            return isNaN(num) ? 0 : num;
+        }
+
+        function formatearPorcentajeInput(num) {
+            const val = Number(num) || 0;
+            return val.toFixed(2).replace(".", ",");
+        }
+
+        function obtenerColorAutomaticoAdmin(nombre, fallback = "#0063BE") {
+            const n = normalizarTexto(nombre);
+            if (n.includes("juntos somos rio negro") || n.includes("juntos defendemos rio negro") || n === "jsrn" || n === "jdrn") return "#39C937";
+            if (n.includes("fuerza patria") || n.includes("frente de todos") || n.includes("union por la patria") || n.includes("para la victoria") || n.includes("justicialista")) return "#0EA5E9";
+            if (n.includes("primero rio negro")) return "#F97316";
+            if (n.includes("propuesta republicana") || /\bpro\b/.test(n) || n.includes("cambiemos") || n.includes("juntos por el cambio")) return "#EAB308";
+            if (n.includes("izquierda") || n.includes("socialismo") || /\bfit\b/.test(n) || /\bmas\b/.test(n)) return "#EF4444";
+            if (n.includes("libertad avanza") || /\blla\b/.test(n)) return "#7C3AED";
+            return fallback;
+        }
+
+        function cambiarModoCargaListas(nuevoModo, opciones = {}) {
+            const { omitirConversion = false } = opciones;
+            const modoAnterior = modoCargaListas;
+            modoCargaListas = nuevoModo === 'porcentajes' ? 'porcentajes' : 'votos';
+
+            const btnVotos = document.getElementById('btn-mode-votos');
+            const btnPct = document.getElementById('btn-mode-porcentajes');
+            const bannerDec = document.getElementById('decimal-detect-banner');
+            if (bannerDec) bannerDec.classList.add('hidden');
+
+            if (btnVotos && btnPct) {
+                if (modoCargaListas === 'porcentajes') {
+                    btnPct.className = "px-2.5 py-1 rounded-md bg-rnblue text-white shadow-xs transition";
+                    btnVotos.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition";
+                } else {
+                    btnVotos.className = "px-2.5 py-1 rounded-md bg-white text-rnblue shadow-xs transition";
+                    btnPct.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition";
+                }
+            }
+
+            document.querySelectorAll('.party-row').forEach(row => {
+                const input = row.querySelector('.party-votes');
+                const suffix = row.querySelector('.party-unit-suffix');
+                if (!input) return;
+                const valActual = parsearDecimalFlexible(input.value);
+
+                if (modoCargaListas === 'porcentajes') {
+                    if (suffix) suffix.classList.remove('hidden');
+                    input.placeholder = "0,00";
+                    if (!omitirConversion && modoAnterior === 'votos' && valActual > 100) {
+                        input.value = formatearPorcentajeInput(valActual / 100);
+                    } else if (valActual > 0) {
+                        input.value = formatearPorcentajeInput(valActual);
+                    } else {
+                        input.value = "0,00";
+                    }
+                } else {
+                    if (suffix) suffix.classList.add('hidden');
+                    input.placeholder = "0";
+                    if (!omitirConversion && modoAnterior === 'porcentajes') {
+                        input.value = String(Math.round(valActual));
+                    } else {
+                        input.value = String(Math.round(valActual));
+                    }
+                }
+            });
+
+            actualizarResumenCargaListas();
+        }
+
+        function onPartyValueInput(inputEl) {
+            const raw = String(inputEl.value || "");
+            if (modoCargaListas === 'votos' && (raw.includes(',') || raw.includes('.'))) {
+                const bannerDec = document.getElementById('decimal-detect-banner');
+                if (bannerDec) bannerDec.classList.remove('hidden');
+            }
+            actualizarResumenCargaListas();
+        }
+
+        function actualizarResumenCargaListas() {
+            const hintEl = document.getElementById('parties-mode-hint');
+            const totalEl = document.getElementById('parties-mode-total');
+            const rows = Array.from(document.querySelectorAll('.party-row'));
+
+            if (modoCargaListas === 'porcentajes') {
+                let sumaPct = 0;
+                rows.forEach(row => {
+                    const inp = row.querySelector('.party-votes');
+                    const badge = row.querySelector('.party-live-pct');
+                    const v = parsearDecimalFlexible(inp ? inp.value : 0);
+                    sumaPct += v;
+                    if (badge) {
+                        badge.innerText = `${v.toFixed(2).replace('.', ',')}%`;
+                    }
+                });
+
+                if (hintEl) {
+                    hintEl.innerText = "Ingresá los porcentajes directos de cada lista (ej: 56,16 y 31,03).";
+                }
+                if (totalEl) {
+                    const restante = 100 - sumaPct;
+                    if (sumaPct > 100.05) {
+                        totalEl.className = "font-extrabold text-red-600";
+                        totalEl.innerText = `Suma cargada: ${sumaPct.toFixed(2).replace('.', ',')}% (excede 100%)`;
+                    } else if (sumaPct > 0 && restante > 0.05) {
+                        totalEl.className = "font-extrabold text-rnblue";
+                        totalEl.innerText = `Suma cargada: ${sumaPct.toFixed(2).replace('.', ',')}% · Sin asignar: ${restante.toFixed(2).replace('.', ',')}%`;
+                    } else {
+                        totalEl.className = "font-extrabold text-green-700";
+                        totalEl.innerText = `Suma cargada: ${sumaPct.toFixed(2).replace('.', ',')}%`;
+                    }
+                }
+            } else {
+                let totalVotos = 0;
+                const valores = rows.map(row => {
+                    const inp = row.querySelector('.party-votes');
+                    const v = Math.round(parsearDecimalFlexible(inp ? inp.value : 0));
+                    totalVotos += v;
+                    return { row, v };
+                });
+
+                valores.forEach(({ row, v }) => {
+                    const badge = row.querySelector('.party-live-pct');
+                    if (badge) {
+                        const pct = totalVotos > 0 ? ((v / totalVotos) * 100).toFixed(2).replace('.', ',') : "0,00";
+                        badge.innerText = `${pct}%`;
+                    }
+                });
+
+                if (hintEl) {
+                    hintEl.innerText = "Ingresá la cantidad de votos enteros por lista.";
+                }
+                if (totalEl) {
+                    totalEl.className = "font-extrabold text-slate-800";
+                    totalEl.innerText = `Total afirmativos: ${totalVotos.toLocaleString('es-AR')}`;
+                }
+            }
+        }
         let pdfJsPromise = null;
 
         function desbloquearPanel() {
@@ -498,20 +664,24 @@
 
         function leerFilasActualesDelDOM() {
             const parties = [];
+            const esPorcentaje = modoCargaListas === 'porcentajes';
             document.querySelectorAll('.party-row').forEach(row => {
                 const nombre = row.querySelector('.party-name').value.trim();
                 if (nombre) {
+                    const numVal = parsearDecimalFlexible(row.querySelector('.party-votes').value);
+                    const votosEnteros = esPorcentaje ? Math.round(numVal * 100) : Math.round(numVal);
                     parties.push({
                         lista_id: parseInt(row.querySelector('.party-id').value) || 0,
                         nombre_lista: nombre,
-                        votos: parseInt(row.querySelector('.party-votes').value) || 0
+                        votos: votosEnteros,
+                        porcentaje_directo: esPorcentaje ? numVal : null
                     });
                 }
             });
             const subValidosText = document.getElementById('admin-subvalidos').value;
             const blanco = parseInt((subValidosText.match(/Blanco:\s*(\d+)/i) || [])[1]) || 0;
             const nulos = parseInt((subValidosText.match(/Nulos:\s*(\d+)/i) || [])[1]) || 0;
-            return { parties, blanco, nulos };
+            return { parties, blanco, nulos, esPorcentaje };
         }
 
         function guardarCambiosDeCategoriaEnMemoria() {
@@ -748,21 +918,32 @@
             container.innerHTML = "";
             if (!data || !data.length) {
                 container.innerHTML = `<p class="text-xs text-slate-400 italic">Sin filas cargadas.</p>`;
+                actualizarResumenCargaListas();
                 return;
             }
-            const colorPalette = ["#C6E265", "#FFEE55", "#88D9E8", "#B4B5E0", "#00AEEF", "#DA251D", "#444444", "#FBB03B"];
+            const colorPalette = ["#0EA5E9", "#39C937", "#F97316", "#EAB308", "#EF4444", "#7C3AED", "#475569", "#0D9488"];
+            const esPct = modoCargaListas === 'porcentajes';
             [...data].sort((a, b) => (parseInt(b.votos) || 0) - (parseInt(a.votos) || 0)).forEach((row, idx) => {
                 const rowEl = document.createElement('div');
                 rowEl.className = "flex items-center gap-2 party-row bg-slate-50 p-2 rounded border";
+                const colorAuto = obtenerColorAutomaticoAdmin(row.nombre_lista, colorPalette[idx % colorPalette.length]);
+                const valorDisplay = esPct
+                    ? formatearPorcentajeInput((parseInt(row.votos) || 0) / 100)
+                    : String(parseInt(row.votos) || 0);
                 rowEl.innerHTML = `
-                    <input type="color" value="${colorPalette[idx % colorPalette.length]}" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
-                    <input type="text" value="${row.lista_id}" class="w-16 text-xs font-bold text-center border rounded party-id">
-                    <input type="text" value="${row.nombre_lista || 'Lista'}" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
-                    <input type="number" value="${row.votos}" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
-                    <button type="button" onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
+                    <input type="color" value="${colorAuto}" class="w-8 h-8 rounded cursor-pointer border-0 party-color flex-shrink-0">
+                    <input type="text" value="${row.lista_id}" class="w-14 sm:w-16 text-xs font-bold text-center border rounded py-1 party-id flex-shrink-0">
+                    <input type="text" value="${row.nombre_lista || 'Lista'}" oninput="this.closest('.party-row').querySelector('.party-color').value = obtenerColorAutomaticoAdmin(this.value, this.closest('.party-row').querySelector('.party-color').value)" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
+                    <div class="relative flex items-center flex-shrink-0">
+                        <input type="text" inputmode="decimal" value="${valorDisplay}" oninput="onPartyValueInput(this)" placeholder="${esPct ? '0,00' : '0'}" class="w-28 text-right border rounded px-2 ${esPct ? 'pr-6' : ''} py-1 text-sm font-bold party-votes">
+                        <span class="party-unit-suffix ${esPct ? '' : 'hidden'} absolute right-2 text-xs font-extrabold text-slate-400 pointer-events-none">%</span>
+                    </div>
+                    <span class="party-live-pct hidden sm:inline-block w-16 text-right text-[11px] font-bold text-slate-500 flex-shrink-0">0,00%</span>
+                    <button type="button" onclick="this.closest('.party-row').remove(); actualizarResumenCargaListas();" class="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1 rounded text-xs font-bold flex-shrink-0">✕</button>
                 `;
                 container.appendChild(rowEl);
             });
+            actualizarResumenCargaListas();
         }
 
         function addNewPartyRow() {
@@ -770,16 +951,24 @@
             const emptyMsg = container.querySelector('p');
             if (emptyMsg) emptyMsg.remove();
 
+            const esPct = modoCargaListas === 'porcentajes';
             const rowEl = document.createElement('div');
             rowEl.className = "flex items-center gap-2 party-row bg-slate-50 p-2 rounded border";
             rowEl.innerHTML = `
-                <input type="color" value="#0063BE" class="w-8 h-8 rounded cursor-pointer border-0 party-color">
-                <input type="text" value="1" class="w-16 text-xs font-bold text-center border rounded party-id">
-                <input type="text" value="Nombre de Lista" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
-                <input type="number" value="0" class="w-28 text-right border rounded px-2 py-1 text-sm font-bold party-votes">
-                <button type="button" onclick="this.closest('.party-row').remove();" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">✕</button>
+                <input type="color" value="#0063BE" class="w-8 h-8 rounded cursor-pointer border-0 party-color flex-shrink-0">
+                <input type="text" value="1" class="w-14 sm:w-16 text-xs font-bold text-center border rounded py-1 party-id flex-shrink-0">
+                <input type="text" value="" placeholder="Nombre de Lista / Fuerza Política" oninput="this.closest('.party-row').querySelector('.party-color').value = obtenerColorAutomaticoAdmin(this.value, this.closest('.party-row').querySelector('.party-color').value)" class="w-full text-xs font-semibold border rounded px-2 py-1 party-name">
+                <div class="relative flex items-center flex-shrink-0">
+                    <input type="text" inputmode="decimal" value="${esPct ? '0,00' : '0'}" oninput="onPartyValueInput(this)" placeholder="${esPct ? '0,00' : '0'}" class="w-28 text-right border rounded px-2 ${esPct ? 'pr-6' : ''} py-1 text-sm font-bold party-votes">
+                    <span class="party-unit-suffix ${esPct ? '' : 'hidden'} absolute right-2 text-xs font-extrabold text-slate-400 pointer-events-none">%</span>
+                </div>
+                <span class="party-live-pct hidden sm:inline-block w-16 text-right text-[11px] font-bold text-slate-500 flex-shrink-0">0,00%</span>
+                <button type="button" onclick="this.closest('.party-row').remove(); actualizarResumenCargaListas();" class="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1 rounded text-xs font-bold flex-shrink-0">✕</button>
             `;
             container.appendChild(rowEl);
+            actualizarResumenCargaListas();
+            const nameInput = rowEl.querySelector('.party-name');
+            if (nameInput) nameInput.focus();
         }
 
         function preprocesarImagenParaOCR(fileOrBlob) {
@@ -987,8 +1176,12 @@
 
                 if (filtrados.length > 0) {
                     let row = filtrados[0];
+                    const mesasRaw = String(row.mesas_procesadas || "0");
+                    const esModoPorcentajeGuardado = mesasRaw.includes("[%]");
+                    const mesasLimpias = mesasRaw.replace(/\s*\[%\]\s*/g, "").trim() || "0 / 0";
+
                     document.getElementById('admin-locality').value = row.localidad || localidad;
-                    document.getElementById('admin-mesas').value = row.mesas_procesadas || "0";
+                    document.getElementById('admin-mesas').value = mesasLimpias;
                     document.getElementById('admin-participacion').value = row.porcentaje_participacion || "0.00%";
                     document.getElementById('admin-subvalidos').value = `Blanco: ${row.votos_blanco || 0} | Nulos: ${row.votos_nulos || 0}`;
                     if (row.tipo_entidad) document.getElementById('admin-entity-type').value = row.tipo_entidad;
@@ -1000,12 +1193,14 @@
                         }
                     }
 
+                    cambiarModoCargaListas(esModoPorcentajeGuardado ? 'porcentajes' : 'votos', { omitirConversion: true });
                     renderPartiesRows(filtrados);
-                    document.getElementById('admin-status').innerText = `✓ Datos de "${row.localidad || localidad}" (${tipoEleccion} - ${circuitoSeleccionado}) cargados.`;
+                    document.getElementById('admin-status').innerText = `✓ Datos de "${row.localidad || localidad}" (${tipoEleccion} - ${circuitoSeleccionado})${esModoPorcentajeGuardado ? ' [Modo Porcentajes]' : ''} cargados.`;
                     return;
                 }
             }
 
+            cambiarModoCargaListas('votos', { omitirConversion: true });
             renderPartiesRows([]);
             document.getElementById('admin-mesas').value = "0 / 0";
             document.getElementById('admin-participacion').value = "0.00%";
@@ -2496,9 +2691,10 @@
             const tipoEntidad = document.getElementById('admin-entity-type').value;
             const categoria = normalizarCodigoCategoriaAdmin(document.getElementById('admin-election-type').value);
             const circuito_id = document.getElementById('admin-circuit').value;
-            const mesas = document.getElementById('admin-mesas').value.trim();
+            const mesasBase = document.getElementById('admin-mesas').value.trim().replace(/\s*\[%\]\s*/g, "").trim() || "0 / 0";
             const participacion = document.getElementById('admin-participacion').value.trim();
-            const { parties, blanco, nulos } = leerFilasActualesDelDOM();
+            const { parties, blanco, nulos, esPorcentaje } = leerFilasActualesDelDOM();
+            const mesas = esPorcentaje ? `${mesasBase} [%]` : mesasBase;
 
             if (!localidad) { alert("Por favor ingresa una localidad."); return; }
 
